@@ -26,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-800 text-white`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0E0F19] text-[#EAE0C8]`}
       >
         <WikiSidebar>{children}</WikiSidebar>
       </body>
