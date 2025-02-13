@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import WikiSidebar from "./components/layout/WikiSidebar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,7 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-800 text-white`}
       >
-        {children}
+        <WikiSidebar>{children}</WikiSidebar>
       </body>
     </html>
   );
