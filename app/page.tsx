@@ -1,12 +1,10 @@
-import { getData } from "@/utils/getData";
+import WikiSidebar from "./components/layout/WikiSidebar";
+import ReusableTitle from "./components/ReusableTitle";
 
 export default async function Home() {
-  const data = await getData("monsters");
   return (
-    <div>
-      {data?.results?.map((monster: any) => (
-        <p key={monster.index}>{monster.name}</p>
-      ))}
-    </div>
+    <WikiSidebar>
+      <ReusableTitle title="Dungeons and Dragons!" />
+    </WikiSidebar>
   );
 }

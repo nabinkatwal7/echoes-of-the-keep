@@ -14,3 +14,7 @@ html {
 ::-webkit-scrollbar-thumb {
   background: #ff0000;
 }
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

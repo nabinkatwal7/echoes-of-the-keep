@@ -9,11 +9,12 @@ export const ReusableSubtitle = ({
   subtitle,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
 }) => {
   return (
     <p className="text-2xl">
-      {title} <span className="text-neutral-400">({subtitle})</span>
+      {title}
+      {subtitle && <span className="text-neutral-400">({subtitle})</span>}
     </p>
   );
 };

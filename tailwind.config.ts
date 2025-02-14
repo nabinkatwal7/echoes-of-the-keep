@@ -11,6 +11,13 @@ export default {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        primary: "#EAE6DA",
+        secondary: "#C3B299",
+        textPrimary: "#2E2A24",
+        accentColor: "#5D7CA6",
+        highlightColor: "#A64242",
+        borderColor: "#708D81",
+        royalGold: "#D4AF37",
       },
     },
   },
