@@ -345,14 +345,13 @@ export async function moveCombatant(combatantId: string, x: number, y: number): 
   const from = c.x !== null && c.y !== null ? { x: c.x, y: c.y } : null;
   const to = { x, y };
 
-  // the DM can place tokens freely; during combat players spend movement
-  if (!ctx.isDm || (enc.state === "ACTIVE" && enc.combatants[enc.activeIndex]?.id === row.id && from)) {
-    if (enc.state === "ACTIVE" && enc.combatants[enc.activeIndex]?.id !== row.id) return fail("It is not that creature's turn");
-  }
+  // the DM can reposition anyone for free; creatures moving on their own turn spend movement
+  const isActive = enc.state === "ACTIVE" && enc.combatants[enc.activeIndex]?.id === row.id;
+  if (!ctx.isDm && enc.state === "ACTIVE" && !isActive) return fail("It is not that creature's turn");
   const lines: string[] = [];
   let provokes: string[] = [];
   let next = { ...c, x, y };
-  if (from && enc.state === "ACTIVE") {
+  if (from && isActive) {
     const cost = moveCost(from, to, { width: enc.gridWidth, height: enc.gridHeight, crawling: c.conditions.some((k) => k.condition === "prone") });
     if (!cost.ok) return fail(cost.reason);
     if (cost.feet > c.turn.movement) return fail(`Not enough movement (${cost.feet} ft needed, ${c.turn.movement} ft left)`);
