@@ -102,6 +102,15 @@ export async function postMessage(campaignId: string, input: string): Promise<Re
     case "whisper-dm":
       await create("chat", { text: msg.text, whisper: true }, "DM");
       break;
+    case "whisper-player": {
+      const members = await prisma.campaignMember.findMany({ where: { campaignId }, include: { user: { select: { id: true, username: true, displayName: true } } } });
+      const want = msg.to.toLowerCase();
+      const target = members.find((m) => m.user.username.toLowerCase() === want || m.user.displayName.toLowerCase().replace(/\s+/g, "") === want);
+      if (!target) return { ok: false, errors: [`No one named "${msg.to}" is at this table`] };
+      if (target.userId === user.id) return { ok: false, errors: ["You cannot whisper to yourself"] };
+      await create("chat", { text: msg.text, whisper: true, to: target.user.displayName }, `USER:${target.userId}`);
+      break;
+    }
     case "roll": {
       if (msg.secret && !isDm) return { ok: false, errors: ["Only the DM can make secret rolls"] };
       const result = rollExpression(msg.expression);

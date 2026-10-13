@@ -95,4 +95,19 @@ describe.skipIf(!RUN_DB)("campaigns (database)", () => {
     signInAs(outsider);
     expect((await postMessage(campaignId, "let me in")).ok).toBe(false);
   });
+
+  it("whispers between players reach only the two of them", async () => {
+    const carol = await makeUser("carol");
+    signInAs(carol);
+    await joinCampaign(code);
+    signInAs(alice);
+    const first = await postMessage(campaignId, `/w ${carol.username} meet me at the well`);
+    expect(first.ok).toBe(true);
+    expect((await postMessage(campaignId, "/w nobody hello")).ok).toBe(false);
+    expect((await postMessage(campaignId, `/w ${alice.username} to myself`)).ok).toBe(false);
+    const sees = async (u: { id: string }, isDm: boolean) => (await getVisibleEventsForTest(campaignId, { userId: u.id, isDm })).some((e) => JSON.stringify(e.payload).includes("meet me at the well"));
+    expect(await sees(alice, false)).toBe(true);
+    expect(await sees(carol, false)).toBe(true);
+    expect(await sees(dm, true)).toBe(false); // the DM does not read player-to-player whispers
+  });
 });

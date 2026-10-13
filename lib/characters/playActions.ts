@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { AbilityScores } from "@/engine/abilities";
 import { CASTER_KIND, CLASS_NAME, validateSpellSelection, type SpellMeta, type SpellSelection } from "@/engine/classes/spellcasting";
-import { CASTING_ABILITY, beginConcentration, canCastAsRitual, checkCasting, lowestAvailableSlot, spendSlot } from "@/engine/spells";
+import { CASTING_ABILITY, beginConcentration, canCastAsRitual, checkCasting, lowestAvailableSlot, slotCreationCost, slotToPoints, spendSlot } from "@/engine/spells";
 import { canLongRest, longRest, shortRest, spendResource } from "@/engine/rest";
 import type { ClassLevel } from "@/engine/progression";
 import { fadePenalty } from "@/engine/world";
@@ -11,7 +11,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit, editable } from "./access";
 import { toEngineInput } from "./derive";
-import { PACT_KEY, fromRestState, lastLongRest, slotViews, toRestState, type StoredPlay } from "./play";
+import { PACT_KEY, fromRestState, lastLongRest, resourceViews, slotViews, toRestState, type StoredPlay } from "./play";
 
 export type Result<T = object> = ({ ok: true } & T) | { ok: false; errors: string[] };
 const fail = (m: string): { ok: false; errors: string[] } => ({ ok: false, errors: [m] });
@@ -203,6 +203,46 @@ export async function adjustSlot(characterId: string, level: number, delta: 1 | 
     spent[level - 1] = Math.max(0, Math.min(slot.total, slot.used + delta));
     await prisma.character.update({ where: { id: characterId }, data: { spellSlotsUsed: spent } });
   }
+  touch(characterId);
+  return { ok: true };
+}
+
+// ------------------------------------------------------------------ Flexible Casting (sorcerer, PHB p.101)
+
+/**
+ * Trade a spell slot for sorcery points, or sorcery points for a slot. Turning points into a slot restores a slot you have
+ * already spent at that level (creating slots beyond your normal total is not tracked).
+ */
+export async function convertSorcery(characterId: string, direction: "slot-to-points" | "points-to-slot", level: number): Promise<Result> {
+  const user = await requireUser();
+  const c = await editable(characterId, user.id);
+  if (!c) return fail("Character not found");
+  if (!Number.isInteger(level) || level < 1 || level > 5) return fail("Flexible Casting works with slots of levels 1-5");
+  const pool = resourceViews(c).find((r) => r.key.endsWith("sorcery-points"));
+  if (!pool) return fail("Only sorcerers of level 2 or higher have sorcery points");
+  const views = slotViews(c);
+  const slot = views.slots.find((s) => s.level === level);
+  if (!slot) return fail(`You have no level ${level} slots`);
+  const spent = views.slots.map((s) => s.used);
+  const resources = { ...((c.resources && !Array.isArray(c.resources) ? c.resources : {}) as Record<string, unknown>) };
+  let line: string;
+  if (direction === "slot-to-points") {
+    if (slot.total - slot.used < 1) return fail(`No level ${level} slot left to convert`);
+    const gain = slotToPoints(level);
+    if (pool.max - pool.used + gain > pool.max) return fail("That would exceed your maximum sorcery points");
+    spent[level - 1] += 1;
+    resources[pool.key] = pool.used - gain;
+    line = `${c.name} converts a level ${level} slot into ${gain} sorcery points`;
+  } else {
+    const cost = slotCreationCost(level);
+    if (pool.max - pool.used < cost) return fail(`Creating a level ${level} slot costs ${cost} sorcery points`);
+    if (slot.used < 1) return fail(`You have no spent level ${level} slot to restore`);
+    spent[level - 1] -= 1;
+    resources[pool.key] = pool.used + cost;
+    line = `${c.name} spends ${cost} sorcery points to create a level ${level} slot`;
+  }
+  await prisma.character.update({ where: { id: characterId }, data: { spellSlotsUsed: spent, resources: resources as object } });
+  await audit(characterId, c.name, user.id, user.name ?? "Someone", line);
   touch(characterId);
   return { ok: true };
 }

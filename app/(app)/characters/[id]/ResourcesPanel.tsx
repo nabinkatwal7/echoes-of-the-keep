@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
-import { takeLongRest, takeShortRest, spendClassResource } from "@/lib/characters/playActions";
+import { takeLongRest, takeShortRest, spendClassResource, convertSorcery } from "@/lib/characters/playActions";
 import type { ResourceView } from "@/lib/characters/play";
 
 export function ResourcesPanel({
@@ -46,6 +46,18 @@ export function ResourcesPanel({
   return (
     <Card className="no-print flex flex-col gap-4">
       <h2 className="font-display text-lg uppercase tracking-[0.12em] text-goldBright">Features and rest</h2>
+
+      {resources.some((r) => r.key.endsWith("sorcery-points")) && (
+        <div className="flex flex-wrap items-center gap-2 rounded border border-border p-2 text-sm">
+          <span className="rune-label">Flexible Casting</span>
+          {[1, 2, 3].map((lvl) => (
+            <span key={lvl} className="flex gap-1">
+              <Button variant="secondary" className="min-h-8 px-2 text-[0.65rem]" disabled={pending} onClick={() => run(() => convertSorcery(id, "slot-to-points", lvl))}>L{lvl} slot → points</Button>
+              <Button variant="secondary" className="min-h-8 px-2 text-[0.65rem]" disabled={pending} onClick={() => run(() => convertSorcery(id, "points-to-slot", lvl))}>points → L{lvl} slot</Button>
+            </span>
+          ))}
+        </div>
+      )}
 
       {resources.length > 0 && (
         <ul className="flex flex-col divide-y divide-borderSoft">

@@ -5,6 +5,7 @@ export type ParsedMessage =
   | { kind: "emote"; text: string }
   | { kind: "roll"; expression: string; reason: string; secret: boolean }
   | { kind: "whisper-dm"; text: string }
+  | { kind: "whisper-player"; to: string; text: string }
   | { kind: "error"; message: string };
 
 /**
@@ -13,6 +14,7 @@ export type ParsedMessage =
  *   /gmroll 1d20           roll only the DM sees (DMs only; enforced by the caller)
  *   /me waves              emote
  *   /w dm message          whisper to the DM
+ *   /w name message        whisper to another player (by username or display name without spaces)
  */
 export function parseMessage(input: string): ParsedMessage {
   const text = input.trim();
@@ -38,8 +40,9 @@ export function parseMessage(input: string): ParsedMessage {
       return args ? { kind: "emote", text: args } : { kind: "error", message: "Usage: /me waves" };
     case "/w":
     case "/whisper": {
-      const m = /^dm\s+(.+)$/i.exec(args);
-      return m ? { kind: "whisper-dm", text: m[1] } : { kind: "error", message: "Usage: /w dm message" };
+      const m = /^(\S+)\s+(.+)$/.exec(args);
+      if (!m) return { kind: "error", message: "Usage: /w name message (or /w dm message)" };
+      return m[1].toLowerCase() === "dm" ? { kind: "whisper-dm", text: m[2] } : { kind: "whisper-player", to: m[1], text: m[2] };
     }
     default:
       return { kind: "error", message: `Unknown command ${cmd}` };

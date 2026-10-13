@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { cleanup, makeUser, RUN_DB, signInAs } from "./db";
 import { attachCharacter, createCampaign, joinCampaign } from "@/lib/campaigns/actions";
 import { createCharacter } from "@/lib/characters/actions";
-import { addStashItem, advanceTime, awardMilestone, awardPartyXp, callForCheck, lightSource, partyRest, raiseHero, setInspiration, socialCheck, splitCoin, takeFromStash, travel } from "@/lib/world/playActions";
+import { addStashItem, advanceTime, applyHazard, awardMilestone, awardPartyXp, callForCheck, lightSource, partyRest, raiseHero, setInspiration, socialCheck, splitCoin, takeFromStash, travel } from "@/lib/world/playActions";
 import { deleteWorldItem, saveLocation, saveNpc, saveQuest, setQuestStatus, setRevealed, setScene, spendDowntime } from "@/lib/world/worldActions";
 import { purseValueCp, type Purse } from "@/engine/economy";
 import { prisma } from "@/lib/prisma";
@@ -146,6 +146,20 @@ describe.skipIf(!RUN_DB)("the world around the party (database)", () => {
     expect(back.conditions).not.toContain("dead");
     await partyRest(cid, "long");
     expect((await prisma.character.findUniqueOrThrow({ where: { id: heroId } })).rezPenalty).toBe(3);
+  });
+
+  it("hazards hurt the chosen heroes, a fall knocks them prone, and bad input is refused", async () => {
+    await prisma.character.update({ where: { id: heroId }, data: { currentHp: 30, tempHp: 0, conditions: [] } });
+    expect((await applyHazard(cid, { characterIds: [heroId], kind: "fall", feet: 5 })).ok).toBe(false);
+    expect((await applyHazard(cid, { characterIds: [heroId], kind: "damage", dice: "nonsense" })).ok).toBe(false);
+    expect((await applyHazard(cid, { characterIds: [], kind: "fall", feet: 20 })).ok).toBe(false);
+    expect((await applyHazard(cid, { characterIds: [heroId], kind: "fall", feet: 20 })).ok).toBe(true);
+    const hurt = await prisma.character.findUniqueOrThrow({ where: { id: heroId } });
+    expect(hurt.currentHp).toBeLessThan(30);
+    expect(hurt.conditions).toContain("prone");
+    signInAs(alice);
+    expect((await applyHazard(cid, { characterIds: [heroId], kind: "damage", dice: "1d4" })).ok).toBe(false);
+    signInAs(dm);
   });
 
   it("downtime charges the purse", async () => {

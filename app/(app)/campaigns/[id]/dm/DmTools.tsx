@@ -9,7 +9,7 @@ import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Select } from "@/app/components/ui/Input";
-import { advanceTime, awardMilestone, awardPartyXp, callForCheck, lightSource, partyRest, raiseHero, setInspiration, snuffLight, travel } from "@/lib/world/playActions";
+import { advanceTime, applyHazard, awardMilestone, awardPartyXp, callForCheck, lightSource, partyRest, raiseHero, setInspiration, snuffLight, travel } from "@/lib/world/playActions";
 
 type Out = { ok: boolean; errors?: string[] };
 export type DmToolsProps = {
@@ -56,6 +56,12 @@ export function DmTools(p: DmToolsProps) {
   const [rezKind, setRezKind] = useState<ResurrectionKind>("raise-dead");
   const [days, setDays] = useState(1);
   const [rezHero, setRezHero] = useState(p.heroes.find((h) => h.dead)?.id ?? "");
+  // hazards
+  const [hazard, setHazard] = useState<"fall" | "damage">("fall");
+  const [feet, setFeet] = useState(20);
+  const [dice, setDice] = useState("2d10");
+  const [hazDc, setHazDc] = useState(13);
+  const [hazSave, setHazSave] = useState<"" | Ability>("");
   // encounter builder
   const [roster, setRoster] = useState<Record<string, number>>({});
   const [add, setAdd] = useState(p.creatures[0]?.index ?? "");
@@ -152,6 +158,22 @@ export function DmTools(p: DmToolsProps) {
               </div>
             ))}
           </div>
+        </Card>
+
+        <Card className="flex flex-col gap-3 p-4">
+          <h2 className="eyebrow">Hazards</h2>
+          <p className="text-sm text-muted">Applies damage to the heroes ticked under &ldquo;Call for a check&rdquo;.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select aria-label="Hazard" value={hazard} onChange={(e) => setHazard(e.target.value as "fall" | "damage")} className="w-auto"><option value="fall">Fall</option><option value="damage">Trap or other damage</option></Select>
+            {hazard === "fall" ? <Input type="number" min={10} step={10} value={feet} onChange={(e) => setFeet(Number(e.target.value))} aria-label="Feet" className="w-24" /> : <Input value={dice} onChange={(e) => setDice(e.target.value)} aria-label="Damage dice" className="w-28" />}
+            {hazard === "damage" && (
+              <>
+                <Select aria-label="Save" value={hazSave} onChange={(e) => setHazSave(e.target.value as "" | Ability)} className="w-auto"><option value="">no save</option>{ABILITY_NAMES.map((a) => <option key={a} value={a}>{a.toUpperCase()} save</option>)}</Select>
+                {hazSave && <Input type="number" min={1} max={30} value={hazDc} onChange={(e) => setHazDc(Number(e.target.value))} aria-label="Save DC" className="w-20" />}
+              </>
+            )}
+          </div>
+          <Button variant="danger" disabled={pending || !picked.length} onClick={() => run(() => applyHazard(p.campaignId, { characterIds: picked, kind: hazard, feet, dice, saveAbility: hazSave || undefined, dc: hazSave ? hazDc : undefined }))}>Apply</Button>
         </Card>
 
         <Card className="flex flex-col gap-3 p-4">

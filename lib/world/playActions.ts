@@ -9,7 +9,9 @@ import type { Pace } from "@/engine/exploration";
 import { LIGHT_SOURCES } from "@/engine/exploration";
 import { XP_THRESHOLDS } from "@/engine/progression";
 import { deriveStored, type StoredCharacter } from "@/lib/characters/derive";
-import { addCustomItem } from "@/lib/characters/sheetActions";
+import { addCustomItem, changeHitPoints } from "@/lib/characters/sheetActions";
+import { fallDamage } from "@/engine/exploration";
+import { rollExpression } from "@/engine/dice";
 import { takeLongRest, takeShortRest } from "@/lib/characters/playActions";
 import { prisma } from "@/lib/prisma";
 import { dm, fail, member, partyOf, say, touchWorld, type Result } from "./guard";
@@ -280,4 +282,61 @@ export async function raiseHero(campaignId: string, characterId: string, kind: R
   await say(campaignId, d.user.id, `${kind.replace("-", " ")}: ${note}`);
   touchWorld(campaignId);
   return { ok: true, note };
+}
+
+// ---------------------------------------------------------------- hazards
+
+export type HazardRequest = {
+  characterIds: string[];
+  kind: "fall" | "damage";
+  /** falling distance in feet */
+  feet?: number;
+  /** damage dice for a trap, fire, acid and so on, e.g. "4d10" */
+  dice?: string;
+  label?: string;
+  /** a saving throw for half damage */
+  saveAbility?: Ability;
+  dc?: number;
+};
+
+/** Hurt heroes with a fall, a trap or a hazard. One damage roll is shared; a successful save halves it. */
+export async function applyHazard(campaignId: string, req: HazardRequest): Promise<Result<{ lines: string[] }>> {
+  const d = await dm(campaignId);
+  if (d.error) return d.error;
+  const party = (await partyOf(campaignId)).filter((c) => req.characterIds.includes(c.id));
+  if (!party.length) return fail("Choose at least one hero");
+  let raw = 0;
+  let label = req.label?.trim() || "A hazard";
+  let prone = false;
+  if (req.kind === "fall") {
+    if (!(req.feet && req.feet >= 10 && req.feet <= 2000)) return fail("Enter a fall of at least 10 feet");
+    const f = fallDamage(req.feet);
+    raw = f.damage;
+    prone = f.prone;
+    label = `A ${req.feet}-foot fall`;
+  } else {
+    try {
+      raw = rollExpression(req.dice ?? "", cryptoRng).total;
+    } catch {
+      return fail("Enter damage dice like 4d10");
+    }
+  }
+  if (req.saveAbility && !ABILITIES.includes(req.saveAbility)) return fail("Unknown ability");
+  const lines: string[] = [];
+  for (const c of party) {
+    let amount = raw;
+    let saved = false;
+    if (req.saveAbility && req.dc) {
+      const bonus = deriveStored(c as unknown as StoredCharacter).saves[req.saveAbility].total;
+      saved = rollD20(bonus, "normal", cryptoRng).total >= req.dc;
+      if (saved) amount = Math.floor(raw / 2);
+    }
+    const r = await changeHitPoints(c.id, { kind: "damage", amount });
+    if (!r.ok) return r;
+    if (prone && !((c.conditions as string[]) ?? []).includes("prone")) await prisma.character.update({ where: { id: c.id }, data: { conditions: [...((c.conditions as string[]) ?? []), "prone"] } });
+    lines.push(`${c.name} takes ${amount}${saved ? " (saved for half)" : ""}`);
+  }
+  await say(campaignId, d.user.id, `${label}: ${lines.join("; ")}.`);
+  touchWorld(campaignId);
+  return { ok: true, lines };
 }

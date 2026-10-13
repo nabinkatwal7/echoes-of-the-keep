@@ -159,7 +159,7 @@ export function TableClient({
               <code className="text-goldBright">/me waves</code>
             </li>
             <li>
-              <code className="text-goldBright">/w dm message</code> whisper to
+              <code className="text-goldBright">/w dm message</code> or <code className="text-goldBright">/w name message</code> whisper to
               the DM
             </li>
             {isDm && (
@@ -250,7 +250,7 @@ function EventLine({ event, mine }: { event: TableEvent; mine: boolean }) {
           {who}
         </span>
         {Boolean(p.isDm) && <Badge tone="crimson">DM</Badge>}
-        {whisper && <Badge tone="arcane">Whisper to DM</Badge>}
+        {whisper && <Badge tone="arcane">{p.to ? `Whisper to ${String(p.to)}` : "Whisper to DM"}</Badge>}
         <span className="ml-auto text-xs text-muted">{time}</span>
       </div>
       <p className={p.emote ? "italic text-foreground/80" : ""}>

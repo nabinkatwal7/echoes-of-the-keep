@@ -60,6 +60,7 @@ describe("parseMessage", () => {
   it("parses emotes and DM whispers", () => {
     expect(parseMessage("/me bows")).toEqual({ kind: "emote", text: "bows" });
     expect(parseMessage("/w dm I check the door")).toEqual({ kind: "whisper-dm", text: "I check the door" });
-    expect(parseMessage("/w bob hi")).toMatchObject({ kind: "error" });
+    expect(parseMessage("/w bob hi")).toEqual({ kind: "whisper-player", to: "bob", text: "hi" });
+    expect(parseMessage("/w bob")).toMatchObject({ kind: "error" });
   });
 });
