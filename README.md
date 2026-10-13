@@ -9,7 +9,7 @@ Requires Node 22+, pnpm, and Docker (or any Postgres 17).
 
 ```bash
 pnpm install
-cp .env.example .env          # then set AUTH_SECRET and at least one sign-in provider
+cp .env.example .env          # then set AUTH_SECRET (accounts are username + password; no third-party sign-in)
 pnpm db:up                    # start Postgres
 pnpm exec prisma migrate dev  # apply migrations
 pnpm db:seed                  # load rules content

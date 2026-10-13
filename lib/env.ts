@@ -3,12 +3,6 @@ import { z } from "zod";
 const schema = z.object({
   DATABASE_URL: z.string().url(),
   AUTH_SECRET: z.string().min(16, "AUTH_SECRET must be at least 16 characters"),
-  AUTH_GOOGLE_ID: z.string().optional(),
-  AUTH_GOOGLE_SECRET: z.string().optional(),
-  AUTH_DISCORD_ID: z.string().optional(),
-  AUTH_DISCORD_SECRET: z.string().optional(),
-  EMAIL_SERVER: z.string().optional(),
-  EMAIL_FROM: z.string().optional(),
   CONTENT_LICENSE_MODE: z.enum(["FULL", "SRD_ONLY"]).default("FULL"),
 });
 

@@ -3,7 +3,7 @@ D&D PROJECT TO-DO LIST (one line per feature, in build order)
 Details for each phase: docs/phases/*.md
 
 === PHASE 0: FOUNDATION ===
-[x] f1, Authentication (email magic link + Google/Discord)
+[x] f1, Authentication (username + password, no third-party sign-in)
 [x] f2, Database schema baseline and migrations
 [x] f3, Design system and layout shells
 [~] f4, Tooling and CI (Vitest, Playwright, lint, GitHub Actions)
