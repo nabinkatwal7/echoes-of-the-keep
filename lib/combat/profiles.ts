@@ -1,7 +1,8 @@
 import { abilityModifier } from "@/engine/abilities";
 import { collectEffects } from "@/engine/effects";
 import { parseChallenge } from "@/engine/companions";
-import { attacksPerAction, proficiencyBonus, type ClassLevel } from "@/engine/progression";
+import { proficiencyBonus } from "@/engine/abilities";
+import { attacksPerAction, type ClassLevel } from "@/engine/progression";
 import { parseDefenses, parseMonsterActions } from "@/engine/combat";
 import { deriveStored, toEngineInput, type StoredCharacter } from "@/lib/characters/derive";
 import type { InventoryItem } from "@/lib/characters/inventory";

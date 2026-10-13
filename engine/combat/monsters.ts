@@ -1,3 +1,5 @@
+import type { DamageType } from "../damage";
+
 export type MonsterAttack = {
   name: string;
   melee: boolean;
@@ -44,7 +46,7 @@ export function parseMonsterActions(text: string): MonsterActions {
 
 /** Damage resistances, vulnerabilities and immunities written as text, e.g. "bludgeoning, piercing, and slashing from nonmagical attacks". */
 export function parseDefenses(resistances: string | null | undefined) {
-  const types = ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"];
+  const types: DamageType[] = ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"];
   const found = types.filter((t) => new RegExp(`\\b${t}\\b`, "i").test(resistances ?? ""));
   return { resistances: found };
 }
