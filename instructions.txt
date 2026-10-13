@@ -40,9 +40,9 @@ Details for each phase: docs/phases/*.md
 [x] f31, Character validation (legal build checker)
 
 === PHASE 3: CHARACTER CREATOR AND SHEET ===
-[ ] f32, Character list and management
-[ ] f33, Creation wizard (race, class, abilities, background, equipment, review)
-[ ] f34, Character sheet (desktop and mobile)
+[x] f32, Character list and management
+[~] f33, Creation wizard (race, class, abilities, background, equipment, review)
+[~] f34, Character sheet (desktop and mobile)
 [ ] f35, Inventory, equipping and currency
 [ ] f36, Level-up flow (HP, features, subclass, ASI or feat)
 [ ] f37, Multiclassing
@@ -135,3 +135,5 @@ f10: subclasses not split out of class text; level table columns are raw text
 f13: feat prerequisites stored as text, not machine-checkable yet
 f14: Control Weather and Trap the Soul descriptions missing from the PDF
 f15: only the 31 Appendix D creatures; SRD monsters still to import
+f33: wizard has race, class, abilities (3 methods), background, skills, details, review; equipment step and racial/class effects (e.g. Hill Dwarf HP) still to do
+f34: sheet shows stats, saves, skills; no attacks, inventory, spells or HP editing yet
