@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "content:extract": "python content/build/extract_phb.py && python content/build/parse_spells.py && python content/build/parse_content.py && python content/build/report.py",
     "db:up": "docker compose up -d",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",

@@ -60,3 +60,16 @@ Target automation by phase end: every class feature through level 20 is at least
 ## Wiki content maintenance
 
 After Phase 1 the wiki reads from the DB. Fixing a typo = edit the override/extracted file → rebuild → reseed. No code changes.
+
+## Implemented extraction tooling (current state)
+
+Run `npm run content:extract` (needs Python 3, `pdftotext` from poppler/xpdf on PATH, and `pip install wordninja`).
+
+| Script | Output (`content/extracted/`) |
+|---|---|
+| `content/build/extract_phb.py` (+ `columns.py`) | `pages.json` (reading order), `pages_raw.json` (content-stream order), `pages_cols.json` (column-aware), `chapters/*.md` (17 files) |
+| `content/build/parse_spells.py` | `structured/spells.json`, `spell-lists.json`, `spell-gaps.json` |
+| `content/build/parse_content.py` | `structured/{conditions,feats,backgrounds,races,classes,equipment,creatures,gods}.json` |
+| `content/build/report.py` | `REPORT.md` (counts and known gaps) |
+
+The PDF's text layer has letter-spaced words, so `extract_phb.py` rebuilds words with a dictionary-based joiner (wordninja costs plus words seen in the book). Results and gaps are listed in [07-website-content.md](07-website-content.md#12-known-gaps-must-be-filled-by-hand-or-from-the-srd-before-launch).

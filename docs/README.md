@@ -15,6 +15,7 @@ Source of truth for the rules is the *Player's Handbook* (`DD-Player-Handbook.pd
 | [04-content-pipeline.md](04-content-pipeline.md) | How handbook/SRD content becomes database rows; licensing note |
 | [05-testing-and-quality.md](05-testing-and-quality.md) | Test strategy, the "playable" acceptance script, a11y/perf targets |
 | [06-roadmap-and-risks.md](06-roadmap-and-risks.md) | Phase order, dependencies, sizing, risks, open questions |
+| [07-website-content.md](07-website-content.md) | Site map, page-by-page content spec, extracted-data inventory, original copy |
 
 ## Phases
 
