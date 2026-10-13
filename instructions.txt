@@ -32,7 +32,7 @@ Details for each phase: docs/phases/*.md
 [x] f23, Ability modifiers, checks, saves, passive scores
 [x] f24, Ability score generation (standard array, point buy, roll)
 [ ] f25, Character stat derivation with "why" breakdown
-[ ] f26, XP, leveling and multiclass math
+[x] f26, XP, leveling and multiclass math
 [ ] f27, Resources and rests (short/long, hit dice)
 [ ] f28, Conditions and exhaustion effects
 [ ] f29, Damage, healing, resistances, death saves
