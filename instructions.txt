@@ -28,7 +28,7 @@ Details for each phase: docs/phases/*.md
 [ ] f21, Content QA gates in CI (counts, schemas, links)
 
 === PHASE 2: RULES ENGINE ===
-[ ] f22, Dice parser and roller (advantage/disadvantage)
+[x] f22, Dice parser and roller (advantage/disadvantage)
 [ ] f23, Ability modifiers, checks, saves, passive scores
 [ ] f24, Ability score generation (standard array, point buy, roll)
 [ ] f25, Character stat derivation with "why" breakdown
