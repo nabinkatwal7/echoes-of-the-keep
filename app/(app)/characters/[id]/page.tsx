@@ -17,7 +17,11 @@ import { getOwnedCharacter } from "@/lib/characters/queries";
 import { prisma } from "@/lib/prisma";
 import { InventoryPanel } from "./InventoryPanel";
 import { LevelUpPanel } from "./LevelUpPanel";
+import { CompanionsPanel } from "./CompanionsPanel";
 import { ResourcesPanel } from "./ResourcesPanel";
+import type { Companion, CompanionKind } from "@/lib/characters/companionActions";
+import { collectEffects } from "@/engine/effects";
+import { attacksPerAction } from "@/engine/progression";
 import { SpellsPanel, type CasterView } from "./SpellsPanel";
 import { CASTER_KIND, CLASS_NAME, maxSpellLevel, spellLimits, type SpellSelection } from "@/engine/classes/spellcasting";
 import { CASTING_ABILITY } from "@/engine/spells";
@@ -71,6 +75,13 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
     options: options.filter((o) => o.classes.includes(CLASS_NAME[k.classIndex]) && o.level <= maxSpellLevel(k.classIndex, k.level)),
   }));
   const slots = slotViews(c);
+  const creatures = await prisma.creature.findMany({ select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } });
+  const companionKinds: CompanionKind[] = [];
+  if (classes.some((k) => k.classIndex === "druid")) companionKinds.push("wild-shape");
+  if (classes.some((k) => k.classIndex === "ranger" && k.subclassIndex === "beast-master")) companionKinds.push("beast-companion");
+  if (classes.some((k) => k.classIndex === "wizard")) companionKinds.push("familiar");
+  const fx = collectEffects({ raceIndex: c.raceIndex, subraceIndex: c.subraceIndex, feats: c.feats as string[], classes, armor: null });
+  const perAction = attacksPerAction(classes);
   const hpPct = Math.max(0, Math.min(100, Math.round((c.currentHp / d.maxHp) * 100)));
 
   async function remove() {
@@ -212,6 +223,26 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
         currentHp={c.currentHp}
         maxHp={d.maxHp}
       />
+
+      <CompanionsPanel id={c.id} companions={c.companions as unknown as Companion[]} creatures={creatures} kinds={companionKinds} />
+
+      {fx.traits.length > 0 && (
+        <section>
+          <h2 className="eyebrow mb-3">Traits and features</h2>
+          <Card flat className="flex flex-wrap gap-2">
+            {fx.traits.map((t, i) => (
+              <Badge key={`${t.name}-${i}`} tone={t.automated ? "gold" : "neutral"} title={t.automated ? "Applied automatically" : "Noted; adjudicated at the table"}>
+                {t.name}
+              </Badge>
+            ))}
+            {fx.darkvision > 0 && <Badge tone="arcane">Darkvision {fx.darkvision} ft</Badge>}
+            {fx.resistances.map((r) => (
+              <Badge key={r} tone="emerald">Resists {r}</Badge>
+            ))}
+            {perAction > 1 && <Badge tone="crimson">{perAction} attacks per Attack action</Badge>}
+          </Card>
+        </section>
+      )}
 
       <InventoryPanel id={c.id} items={c.equipment as unknown as InventoryItem[]} purse={c.currency as unknown as Purse} catalog={catalog} strength={d.abilities.str.score} />
 

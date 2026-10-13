@@ -7,6 +7,7 @@ import {
 import { CLASS_RULES, parseSkillList, skillOptions } from "@/engine/classes/rules";
 import { isSubclassOf, subclassDueAt } from "@/engine/classes/subclasses";
 import { deriveCharacter } from "@/engine/character";
+import { toEngineInput } from "./derive";
 import { VARIANT_HUMAN, parseAbilityIncrease, parseSpeed } from "@/lib/rules/race";
 
 export type AbilityMethod = "standard" | "pointbuy" | "roll";
@@ -131,12 +132,20 @@ export function buildCharacter(choices: CreatorChoices, content: BuildContent): 
     if (errors.length) return { ok: false, errors };
   }
   const speed = parseSpeed(trait(content.race.traits, "Speed"));
-  const derived = deriveCharacter({
-    classes: [{ classIndex: choices.classIndex, level: 1 }],
-    baseScores: choices.scores,
-    scoreBonuses: bonuses,
-    speed,
-  });
+  // derive through the same path as the sheet so racial and feat effects (e.g. Hill Dwarf toughness) count
+  const derived = deriveCharacter(
+    toEngineInput({
+      classes: [{ classIndex: choices.classIndex, level: 1 }],
+      baseScores: choices.scores,
+      scoreBonuses: bonuses,
+      skillProficiencies: skillProficiencies,
+      skillExpertise: [],
+      speed,
+      raceIndex: content.race.index,
+      subraceIndex: content.subrace?.index ?? null,
+      feats,
+    }),
+  );
 
   return {
     ok: true,

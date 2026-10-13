@@ -50,6 +50,8 @@ export type CharacterInput = {
   acBonus?: number;
   /** extra to initiative (e.g. Alert feat +5) */
   initiativeBonus?: number;
+  /** extra to passive Perception (e.g. Observant feat +5) */
+  passivePerceptionBonus?: number;
 };
 
 export type Part = { label: string; value: number };
@@ -165,7 +167,7 @@ export function deriveCharacter(input: CharacterInput): DerivedCharacter {
     speed,
     saves,
     skills,
-    passivePerception: 10 + skills.perception.total,
+    passivePerception: 10 + skills.perception.total + (input.passivePerceptionBonus ?? 0),
     attacks,
   };
 }

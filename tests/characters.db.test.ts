@@ -39,7 +39,7 @@ describe.skipIf(!RUN_DB)("characters (database)", () => {
     const d = deriveStored(c);
     expect(d.armorClass.total).toBe(15); // scale mail 14 + Dex(-1, medium cap 2) = 13, shield +2
     expect(d.attacks[0]).toMatchObject({ name: "Mace" });
-    expect(c.currentHp).toBe(11);
+    expect(c.currentHp).toBe(12); // d8 + Con +3 + Hill Dwarf toughness
   });
 
   it("can roll starting gold instead of a kit", async () => {
@@ -60,11 +60,11 @@ describe.skipIf(!RUN_DB)("characters (database)", () => {
 
   it("applies damage, healing and death saves with the rules", async () => {
     expect((await changeHitPoints(id, { kind: "damage", amount: 4 })).ok).toBe(true);
-    expect((await prisma.character.findUnique({ where: { id } }))!.currentHp).toBe(7);
+    expect((await prisma.character.findUnique({ where: { id } }))!.currentHp).toBe(8);
     await changeHitPoints(id, { kind: "heal", amount: 100 });
-    expect((await prisma.character.findUnique({ where: { id } }))!.currentHp).toBe(11);
+    expect((await prisma.character.findUnique({ where: { id } }))!.currentHp).toBe(12);
 
-    await changeHitPoints(id, { kind: "damage", amount: 11 }); // down to 0, not instant death (overflow 0 < max 11)
+    await changeHitPoints(id, { kind: "damage", amount: 12 }); // down to 0, not instant death (overflow 0 < max 12)
     let c = (await prisma.character.findUnique({ where: { id } }))!;
     expect(c.currentHp).toBe(0);
     await changeHitPoints(id, { kind: "death-save", natural: 5 });

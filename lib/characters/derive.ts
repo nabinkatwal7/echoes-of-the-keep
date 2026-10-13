@@ -4,6 +4,7 @@ import { ABILITIES } from "@/engine/abilities";
 import { deriveCharacter, type CharacterInput, type DerivedCharacter } from "@/engine/character";
 import type { PrereqContext } from "@/engine/feats";
 import type { ClassLevel } from "@/engine/progression";
+import { collectEffects } from "@/engine/effects";
 import { equipmentForEngine, type InventoryItem } from "./inventory";
 
 /** Stored character fields needed to compute the sheet (a subset of the Prisma Character row). */
@@ -16,17 +17,33 @@ export type StoredCharacter = {
   speed: number;
   /** inventory items; armor, shield and weapons that are equipped feed AC and attacks */
   equipment?: unknown;
+  /** race, subrace and feats drive racial and feat effects when present */
+  raceIndex?: string;
+  subraceIndex?: string | null;
+  feats?: unknown;
 };
 
 export function toEngineInput(c: StoredCharacter): CharacterInput {
   const classes = c.classes as ClassLevel[];
   const first = CLASS_RULES[classes[0]?.classIndex];
   const gear = equipmentForEngine((c.equipment as InventoryItem[] | undefined) ?? [], classes.map((k) => k.classIndex));
+  const fx = collectEffects({
+    raceIndex: c.raceIndex ?? "human",
+    subraceIndex: c.subraceIndex,
+    feats: (c.feats as string[] | undefined) ?? [],
+    classes,
+    armor: gear.armor?.category ?? null,
+    shield: gear.shield,
+  });
   return {
     classes,
     baseScores: c.baseScores as AbilityScores,
     scoreBonuses: c.scoreBonuses as Partial<AbilityScores>,
-    speed: c.speed,
+    speed: c.speed + fx.speedBonus,
+    hpPerLevelBonus: fx.hpPerLevel || undefined,
+    initiativeBonus: fx.initiativeBonus || undefined,
+    passivePerceptionBonus: fx.passivePerceptionBonus || undefined,
+    jackOfAllTrades: fx.jackOfAllTrades || undefined,
     skillProficiencies: c.skillProficiencies as Skill[],
     skillExpertise: c.skillExpertise as Skill[],
     // only the first class grants saving throw proficiencies (PHB p.164)
@@ -34,7 +51,7 @@ export function toEngineInput(c: StoredCharacter): CharacterInput {
     armor: gear.armor,
     shield: gear.shield,
     weapons: gear.weapons,
-    acBonus: gear.acBonus || undefined,
+    acBonus: (gear.acBonus + fx.acBonus) || undefined,
   };
 }
 

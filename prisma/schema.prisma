@@ -173,6 +173,8 @@ model Character {
   /// { known: string[], prepared: string[], spellbook: string[] } spell indexes
   spells             Json                @default("{}")
   notes              String              @default("")
+  /// [{ id, creatureIndex, name, kind, hp, maxHp }] familiars, beast companions, wild shape forms, summons
+  companions         Json                @default("[]")
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   campaigns          CampaignCharacter[]

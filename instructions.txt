@@ -24,7 +24,7 @@ Details for each phase: docs/phases/*.md
 [x] f17, Wiki list and detail pages for every content type
 [x] f18, Global search (command palette)
 [x] f19, Replace external API calls with database reads
-[ ] f20, Encode mechanics (effects, handlers, automation tier)
+[x] f20, Encode mechanics (effects, handlers, automation tier)
 [x] f21, Content QA gates in CI (counts, schemas, links)
 
 === PHASE 2: RULES ENGINE ===
@@ -46,10 +46,10 @@ Details for each phase: docs/phases/*.md
 [x] f35, Inventory, equipping and currency
 [x] f36, Level-up flow (HP, features, subclass, ASI or feat)
 [~] f37, Multiclassing
-[~] f38, Feat selection
+[ ] f38, Feat selection
 [x] f39, Spell preparation, spellbook and slot tracker
 [x] f40, Class resource trackers (rage, ki, channel divinity, etc.)
-[ ] f41, Companions, familiars and wild shape forms
+[x] f41, Companions, familiars and wild shape forms
 [ ] f42, Print/PDF and JSON export-import
 [ ] f43, Character rules audit
 
@@ -132,7 +132,6 @@ f4: Playwright e2e not set up yet
 f15: only the 31 Appendix D creatures; SRD monsters still to import
 f36: level-up is generic (HP average, ASI or feat, multiclass); subclass choice and new class features per level not applied yet
 f37: multiclass prerequisites enforced on level-up; combined proficiencies not applied yet
-f38: feats can be chosen at ASI levels; feat effects not applied to stats yet
 f44: campaign name and premise only; house-rule settings not built yet
 f47: table page with chat and dice log; presence list and shared scene not built yet
 f48: SSE stream polls the database every second with Last-Event-ID resume (verified over HTTP); LISTEN/NOTIFY not used yet
@@ -140,3 +139,4 @@ f50: chat, emotes and whispers to the DM; player-to-player whispers not built
 f10: subclass level tables per subclass (domain spells, etc.) are not split out; subclass text is shown as written
 f33: wizard covers race, subclass, class, abilities, background, skills, equipment (kit or gold) and details; racial effects like Hill Dwarf HP are not applied
 f34: sheet has vitals, abilities, saves, skills, attacks, inventory, level-up; spells and class resources panels come with f39 and f40
+f20: effects registry covers racial HP/speed/darkvision/resistances, feats Tough/Alert/Mobile/Observant, bard Jack of All Trades, barbarian Fast Movement, monk Unarmored Movement; other features are shown as noted traits

@@ -35,8 +35,8 @@ describe("buildCharacter", () => {
     expect(c.scoreBonuses).toEqual({ con: 2, wis: 1 });
     expect(c.speed).toBe(25);
     expect(c.skillProficiencies).toEqual(["insight", "religion", "history", "medicine"]);
-    // d8 + Con modifier (14 + 2 = 16 -> +3)
-    expect(c.currentHp).toBe(11);
+    // d8 + Con modifier (14 + 2 = 16 -> +3) + Hill Dwarf toughness (+1)
+    expect(c.currentHp).toBe(12);
     expect(c.hitDiceSpent).toEqual({ 8: { total: 1, spent: 0 } });
   });
 
