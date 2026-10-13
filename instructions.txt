@@ -31,7 +31,7 @@ Details for each phase: docs/phases/*.md
 [x] f22, Dice parser and roller (advantage/disadvantage)
 [x] f23, Ability modifiers, checks, saves, passive scores
 [x] f24, Ability score generation (standard array, point buy, roll)
-[ ] f25, Character stat derivation with "why" breakdown
+[x] f25, Character stat derivation with "why" breakdown
 [x] f26, XP, leveling and multiclass math
 [x] f27, Resources and rests (short/long, hit dice)
 [x] f28, Conditions and exhaustion effects
