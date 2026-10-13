@@ -12,14 +12,14 @@ Details for each phase: docs/phases/*.md
 [x] f7, README and architecture decision records
 
 === PHASE 1: RULES CONTENT AND WIKI ===
-[ ] f8, Import reference data (abilities, skills, languages, alignments, damage types)
-[ ] f9, Import races and subraces (incl. Variant Human)
-[ ] f10, Import classes, level tables and subclasses
-[ ] f11, Import backgrounds and personality tables
-[ ] f12, Import equipment, packs, tools, mounts, trade goods, trinkets
-[ ] f13, Import feats with machine-checkable prerequisites
-[ ] f14, Import spells and class spell lists (fill the 2 missing spells)
-[ ] f15, Import creatures and SRD monsters
+[x] f8, Import reference data (abilities, skills, languages, alignments, damage types)
+[x] f9, Import races and subraces (incl. Variant Human)
+[x] f10, Import classes, level tables and subclasses
+[x] f11, Import backgrounds and personality tables
+[x] f12, Import equipment, packs, tools, mounts, trade goods, trinkets
+[x] f13, Import feats with machine-checkable prerequisites
+[x] f14, Import spells and class spell lists (fill the 2 missing spells)
+[x] f15, Import creatures and SRD monsters
 [ ] f16, Rules text sections (chapters 7-10, gods, planes)
 [ ] f17, Wiki list and detail pages for every content type
 [ ] f18, Global search (command palette)

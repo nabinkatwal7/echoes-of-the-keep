@@ -132,3 +132,40 @@ model Class {
   source        String @default("PHB")
   pdfPages      Int[]
 }
+
+model Creature {
+  index             String  @id
+  name              String
+  size              String
+  type              String
+  alignment         String
+  armorClass        String?
+  hitPoints         String?
+  speed             String?
+  abilities         Json?
+  savingThrows      String?
+  skills            String?
+  damageResistances String?
+  senses            String?
+  languages         String?
+  challenge         String?
+  text              String
+  source            String  @default("PHB")
+  pdfPages          Int[]
+}
+
+model EquipmentItem {
+  index               String   @id
+  name                String
+  category            String?
+  cost                String
+  weight              String?
+  damage              String?
+  properties          String?
+  armorClass          String?
+  strengthRequired    String?
+  stealthDisadvantage Boolean?
+  details             String   @default("")
+  source              String   @default("PHB")
+  pdfPage             Int
+}

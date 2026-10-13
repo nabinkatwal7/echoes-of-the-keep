@@ -57,3 +57,39 @@ export const classSchema = z.object({
     .length(20),
   text: z.string().min(100),
 });
+
+export const creatureSchema = z.object({
+  ...base,
+  size: z.enum(["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"]),
+  type: z.string().min(1),
+  alignment: z.string().min(1),
+  armorClass: z.string().nullable(),
+  hitPoints: z.string().nullable(),
+  speed: z.string().nullable(),
+  abilities: z
+    .object({ str: z.number(), dex: z.number(), con: z.number(), int: z.number(), wis: z.number(), cha: z.number() })
+    .nullable(),
+  savingThrows: z.string().nullable(),
+  skills: z.string().nullable(),
+  damageResistances: z.string().nullable(),
+  senses: z.string().nullable(),
+  languages: z.string().nullable(),
+  challenge: z.string().nullable(),
+  text: z.string().min(10),
+});
+
+export const equipmentSchema = z.object({
+  index: base.index,
+  name: base.name,
+  category: z.string().nullable(),
+  cost: z.string().min(1),
+  weight: z.string().nullable().default(null),
+  damage: z.string().nullable().default(null),
+  properties: z.string().nullable().default(null),
+  armorClass: z.string().nullable().default(null),
+  strengthRequired: z.string().nullable().default(null),
+  stealthDisadvantage: z.boolean().nullable().default(null),
+  details: z.string().default(""),
+  source: base.source,
+  pdfPage: z.number().int(),
+});

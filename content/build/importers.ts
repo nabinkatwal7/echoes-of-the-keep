@@ -3,7 +3,16 @@ import path from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { alignmentSchema } from "../schemas/alignment";
-import { backgroundSchema, classSchema, conditionSchema, featSchema, raceSchema, spellSchema } from "../schemas/phb";
+import {
+  backgroundSchema,
+  classSchema,
+  conditionSchema,
+  creatureSchema,
+  equipmentSchema,
+  featSchema,
+  raceSchema,
+  spellSchema,
+} from "../schemas/phb";
 
 export type Importer = {
   name: string;
@@ -19,6 +28,18 @@ const extracted = (file: string) =>
 
 async function upsertAll(delegate: { upsert: (args: any) => Promise<unknown> }, rows: { index: string }[]) {
   for (const row of rows) await delegate.upsert({ where: { index: row.index }, update: row, create: row });
+}
+
+/** Equipment rows have no natural key (lifestyle tiers repeat), so derive a unique slug from the name. */
+function equipmentRows() {
+  const seen = new Map<string, number>();
+  return (extracted("equipment.json") as Record<string, unknown>[]).map((r) => {
+    const base = String(r.name).toLowerCase().replace(/['’?]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const n = (seen.get(base) ?? 0) + 1;
+    seen.set(base, n);
+    const { rest, ...row } = r;
+    return { ...row, index: n === 1 ? base : `${base}-${n}`, details: rest ?? "" };
+  });
 }
 
 const overrides = (file: string) => JSON.parse(readFileSync(path.join(__dirname, "..", "overrides", file), "utf-8"));
@@ -62,5 +83,15 @@ export const importers: Importer[] = [
     name: "classes",
     load: () => z.array(classSchema).parse(extracted("classes.json")),
     write: (prisma, rows) => upsertAll(prisma.class, rows),
+  },
+  {
+    name: "creatures",
+    load: () => z.array(creatureSchema).parse(extracted("creatures.json")),
+    write: (prisma, rows) => upsertAll(prisma.creature, rows),
+  },
+  {
+    name: "equipment",
+    load: () => z.array(equipmentSchema).parse(equipmentRows()),
+    write: (prisma, rows) => upsertAll(prisma.equipmentItem, rows),
   },
 ];

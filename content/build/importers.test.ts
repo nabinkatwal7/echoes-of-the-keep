@@ -39,4 +39,12 @@ describe("importers", () => {
     expect(races).toHaveLength(18);
     expect(races.find((r) => r.index === "hill-dwarf")!.traits.length).toBeGreaterThan(0);
   });
+
+  it("imports creatures and equipment with unique keys", () => {
+    const creatures = importers.find((i) => i.name === "creatures")!.load() as { index: string }[];
+    expect(creatures.length).toBeGreaterThanOrEqual(30);
+    const equipment = importers.find((i) => i.name === "equipment")!.load() as { index: string; name: string; damage?: string }[];
+    expect(new Set(equipment.map((e) => e.index)).size).toBe(equipment.length);
+    expect(equipment.find((e) => e.name === "Longsword")!.damage).toBe("1d8 slashing");
+  });
 });
