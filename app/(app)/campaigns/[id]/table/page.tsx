@@ -7,6 +7,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatGameTime, timeOfDay } from "@/engine/world";
 import { prisma } from "@/lib/prisma";
+import { Presence } from "./Presence";
 import { TableClient, type TableEvent } from "./TableClient";
 
 export const dynamic = "force-dynamic";
@@ -54,6 +55,7 @@ export default async function TablePage({
           {formatGameTime(clock.clockMinutes)} ({timeOfDay(clock.clockMinutes)}) · {campaign.members.length} at the table
         </p>
       </div>
+      <Presence campaignId={id} userId={user.id} />
       {scene && (
         <div className="panel flex flex-col gap-2 p-4">
           <p className="eyebrow">Current scene</p>

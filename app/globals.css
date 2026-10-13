@@ -181,3 +181,20 @@ h1, h2, h3, h4, .font-display {
   .eyebrow, .rune-label { color: #333 !important; }
   a { text-decoration: none; }
 }
+
+/* Skip link: hidden until it receives keyboard focus */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  border-radius: 0.25rem;
+  background: var(--gold, #c9a24b);
+  color: #1a1208;
+  font-weight: 700;
+  transition: top 0.15s;
+}
+.skip-link:focus {
+  top: 0.5rem;
+}

@@ -223,6 +223,8 @@ model CampaignMember {
   joinedAt   DateTime @default(now())
 
   @@unique([campaignId, userId])
+  /// last time the member had the table open (presence)
+  lastSeenAt DateTime?
 }
 
 model CampaignCharacter {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 const LINKS = [
+  { href: "/learn", label: "Learn" },
   { href: "/wiki", label: "The Tome" },
   { href: "/characters", label: "Heroes" },
   { href: "/campaigns", label: "Campaigns" },
@@ -39,9 +40,14 @@ export function MobileNav({
               </Link>
             ))}
             {signedIn ? (
-              <form action={logoutAction}>
-                <button className={`${item} w-full text-left text-muted`}>Leave {name ? `(${name})` : ""}</button>
-              </form>
+              <>
+                <Link href="/account" className={item}>
+                  Account
+                </Link>
+                <form action={logoutAction}>
+                  <button className={`${item} w-full text-left text-muted`}>Leave {name ? `(${name})` : ""}</button>
+                </form>
+              </>
             ) : (
               <>
                 <Link href="/login" className={item}>

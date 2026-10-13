@@ -1,4 +1,5 @@
 import { verifyPassword } from "@/lib/password";
+import { logger } from "@/lib/log";
 import { prisma } from "@/lib/prisma";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -37,10 +38,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .trim()
           .toLowerCase();
         const password = String(raw?.password ?? "");
-        if (!username || !password || throttled(username)) return null;
+        if (!username || !password) return null;
+        if (throttled(username)) {
+          logger.warn("login throttled", { username });
+          return null;
+        }
         const user = await prisma.user.findUnique({ where: { username } });
         if (!user || !verifyPassword(password, user.passwordHash)) {
           recordFailure(username);
+          logger.info("login failed", { username });
           return null;
         }
         failures.delete(username);

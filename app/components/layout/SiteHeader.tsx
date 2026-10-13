@@ -7,6 +7,7 @@ import { MobileNav } from "./MobileNav";
 import { SearchPalette } from "./SearchPalette";
 
 export const NAV = [
+  { href: "/learn", label: "Learn" },
   { href: "/wiki", label: "The Tome" },
   { href: "/characters", label: "Heroes" },
   { href: "/campaigns", label: "Campaigns" },
@@ -42,7 +43,7 @@ export async function SiteHeader() {
         <div className="hidden items-center gap-3 md:flex">
           {user ? (
             <>
-              <span className="font-display text-xs uppercase tracking-[0.14em] text-muted">{user.name}</span>
+              <Link href="/account" className="font-display text-xs uppercase tracking-[0.14em] text-muted hover:text-goldBright">{user.name}</Link>
               <form action={logout}>
                 <button className={buttonClasses("secondary", "min-h-9 px-3 text-[0.68rem]")}>Leave</button>
               </form>
