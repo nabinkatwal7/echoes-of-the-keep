@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "The Tome" };
 
 export default async function WikiHome() {
-  const [races, classes, backgrounds, feats, equipment, spells, conditions, creatures] = await Promise.all([
+  const [races, classes, backgrounds, feats, equipment, spells, conditions, creatures, rules] = await Promise.all([
     prisma.race.count(),
     prisma.class.count(),
     prisma.background.count(),
@@ -18,8 +18,9 @@ export default async function WikiHome() {
     prisma.spell.count(),
     prisma.condition.count(),
     prisma.creature.count(),
+    prisma.ruleSection.count(),
   ]);
-  const counts: Record<string, number | undefined> = { races, classes, backgrounds, feats, equipment, spells, conditions, creatures };
+  const counts: Record<string, number | undefined> = { races, classes, backgrounds, feats, equipment, spells, conditions, creatures, rules };
 
   return (
     <>

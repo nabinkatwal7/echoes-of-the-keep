@@ -20,7 +20,7 @@ Details for each phase: docs/phases/*.md
 [~] f13, Import feats with machine-checkable prerequisites
 [~] f14, Import spells and class spell lists (fill the 2 missing spells)
 [~] f15, Import creatures and SRD monsters
-[ ] f16, Rules text sections (chapters 7-10, gods, planes)
+[x] f16, Rules text sections (chapters 7-10, gods, planes)
 [x] f17, Wiki list and detail pages for every content type
 [ ] f18, Global search (command palette)
 [x] f19, Replace external API calls with database reads

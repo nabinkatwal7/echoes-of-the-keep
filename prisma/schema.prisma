@@ -229,3 +229,19 @@ model CampaignEvent {
 
   @@index([campaignId, id])
 }
+
+/// Handbook rules chapters split into linkable sections (chapters 7-10, gods, planes, reading list).
+model RuleSection {
+  id           String @id
+  chapter      String
+  chapterTitle String
+  title        String
+  slug         String
+  body         String
+  position     Int
+  source       String @default("PHB")
+  pdfPage      Int?
+
+  @@unique([chapter, slug])
+  @@index([chapter, position])
+}

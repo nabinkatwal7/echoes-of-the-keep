@@ -3,6 +3,8 @@ import path from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { alignmentSchema } from "../schemas/alignment";
+import { ruleSectionSchema } from "../schemas/rules";
+import { loadRuleSections } from "./ruleSections";
 import {
   backgroundSchema,
   classSchema,
@@ -93,5 +95,12 @@ export const importers: Importer[] = [
     name: "equipment",
     load: () => z.array(equipmentSchema).parse(equipmentRows()),
     write: (prisma, rows) => upsertAll(prisma.equipmentItem, rows),
+  },
+  {
+    name: "rule-sections",
+    load: () => z.array(ruleSectionSchema).parse(loadRuleSections()),
+    write: async (prisma, rows) => {
+      for (const row of rows) await prisma.ruleSection.upsert({ where: { id: row.id }, update: row, create: row });
+    },
   },
 ];

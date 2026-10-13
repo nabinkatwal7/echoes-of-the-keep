@@ -5,6 +5,7 @@ export const wikiSections = [
   { key: "backgrounds", label: "Backgrounds", href: "/wiki/backgrounds", blurb: "Where your hero came from and what they carry." },
   { key: "feats", label: "Feats", href: "/wiki/feats", blurb: "Special talents that set a character apart." },
   { key: "equipment", label: "Equipment", href: "/wiki/equipment", blurb: "Armor, weapons, gear and the price of an adventure." },
+  { key: "rules", label: "Rules", href: "/wiki/rules", blurb: "Checks, adventuring, combat and spellcasting, section by section." },
   { key: "spells", label: "Spells", href: "/wiki/spells", blurb: "Every cantrip and incantation, filterable by class and school." },
   { key: "conditions", label: "Conditions", href: "/wiki/conditions", blurb: "What blinded, frightened and stunned really mean." },
   { key: "creatures", label: "Creatures", href: "/wiki/creatures", blurb: "Stat blocks for beasts, familiars and things that bite." },
