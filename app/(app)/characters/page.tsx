@@ -6,6 +6,7 @@ import { LinkButton } from "@/app/components/ui/Button";
 import { PageHeader } from "@/app/components/ui/PageHeader";
 import { requireUser } from "@/lib/auth";
 import { listCharacters } from "@/lib/characters/queries";
+import { ImportButton } from "./ImportButton";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Heroes" };
@@ -22,7 +23,12 @@ export default async function CharactersPage() {
         title="Heroes"
         subtitle="The adventurers you have forged."
         icon={<GiCrossedSwords />}
-        actions={<LinkButton href="/characters/new">Forge a hero</LinkButton>}
+        actions={
+          <>
+            <ImportButton />
+            <LinkButton href="/characters/new">Forge a hero</LinkButton>
+          </>
+        }
       />
       {characters.length === 0 ? (
         <Card className="flex flex-col items-center gap-4 py-14 text-center">

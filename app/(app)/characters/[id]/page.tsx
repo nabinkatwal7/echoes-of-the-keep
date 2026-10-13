@@ -18,6 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { InventoryPanel } from "./InventoryPanel";
 import { LevelUpPanel } from "./LevelUpPanel";
 import { CompanionsPanel } from "./CompanionsPanel";
+import { SheetTools } from "./SheetTools";
 import { ResourcesPanel } from "./ResourcesPanel";
 import type { Companion, CompanionKind } from "@/lib/characters/companionActions";
 import { collectEffects } from "@/engine/effects";
@@ -249,6 +250,8 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
       <Ornament />
 
       <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} prereq={prereqContext(c)} />
+
+      <SheetTools id={c.id} />
 
       <form action={remove} className="no-print">
         <Button variant="danger">Retire this hero</Button>

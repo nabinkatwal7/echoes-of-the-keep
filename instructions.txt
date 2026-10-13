@@ -50,8 +50,8 @@ Details for each phase: docs/phases/*.md
 [x] f39, Spell preparation, spellbook and slot tracker
 [x] f40, Class resource trackers (rage, ki, channel divinity, etc.)
 [x] f41, Companions, familiars and wild shape forms
-[ ] f42, Print/PDF and JSON export-import
-[ ] f43, Character rules audit
+[x] f42, Print/PDF and JSON export-import
+[x] f43, Character rules audit
 
 === PHASE 4: CAMPAIGNS AND LIVE SESSIONS ===
 [x] f44, Campaign creation and house-rule settings

@@ -171,7 +171,13 @@ h1, h2, h3, h4, .font-display {
 }
 
 @media print {
-  body { background: #fff; color: #000; }
+  body { background: #fff !important; color: #000 !important; font-size: 11pt; }
   body::before { display: none; }
   .no-print { display: none !important; }
+  .panel, .panel-flat { background: #fff !important; box-shadow: none !important; border: 1px solid #999 !important; color: #000 !important; }
+  .panel::before, .panel::after { display: none; }
+  .gilded { background: none !important; color: #000 !important; text-shadow: none !important; }
+  * { color: #000 !important; text-shadow: none !important; }
+  .eyebrow, .rune-label { color: #333 !important; }
+  a { text-decoration: none; }
 }
