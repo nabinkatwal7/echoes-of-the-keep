@@ -107,8 +107,8 @@ Details for each phase: docs/phases/*.md
 [ ] f88, Rest management for the party
 [ ] f89, Downtime activities
 [ ] f90, Monster library and encounter difficulty builder
-[ ] f91, XP, milestones and inspiration
-[ ] f92, Treasure, custom items and party stash
+[~] f91, XP, milestones and inspiration
+[~] f92, Treasure, custom items and party stash
 [ ] f93, NPCs, locations and quests
 [ ] f94, Maps and scenes
 [ ] f95, Death, resurrection and recovery
