@@ -35,7 +35,7 @@ Details for each phase: docs/phases/*.md
 [x] f26, XP, leveling and multiclass math
 [x] f27, Resources and rests (short/long, hit dice)
 [x] f28, Conditions and exhaustion effects
-[ ] f29, Damage, healing, resistances, death saves
+[x] f29, Damage, healing, resistances, death saves
 [ ] f30, Environment math (travel, falling, suffocation, light)
 [ ] f31, Character validation (legal build checker)
 
