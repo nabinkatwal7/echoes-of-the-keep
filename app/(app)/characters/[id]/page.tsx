@@ -7,6 +7,8 @@ import { requireUser } from "@/lib/auth";
 import { deleteCharacter } from "@/lib/characters/actions";
 import { deriveStored } from "@/lib/characters/derive";
 import { getOwnedCharacter } from "@/lib/characters/queries";
+import { prisma } from "@/lib/prisma";
+import { LevelUpPanel } from "./LevelUpPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
   if (!c) notFound();
 
   const d = deriveStored(c);
+  const feats = await prisma.feat.findMany({ select: { index: true, name: true }, orderBy: { name: "asc" } });
   const classes = c.classes as { classIndex: string; level: number }[];
   const proficient = new Set(c.skillProficiencies as Skill[]);
 
@@ -85,6 +88,8 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
           <p className="mt-2 text-sm text-muted">Passive Perception {d.passivePerception}</p>
         </section>
       </div>
+
+      <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} />
 
       <form action={remove}>
         <button className="text-sm text-danger underline">Delete character</button>

@@ -44,9 +44,9 @@ Details for each phase: docs/phases/*.md
 [~] f33, Creation wizard (race, class, abilities, background, equipment, review)
 [~] f34, Character sheet (desktop and mobile)
 [ ] f35, Inventory, equipping and currency
-[ ] f36, Level-up flow (HP, features, subclass, ASI or feat)
-[ ] f37, Multiclassing
-[ ] f38, Feat selection
+[x] f36, Level-up flow (HP, features, subclass, ASI or feat)
+[~] f37, Multiclassing
+[~] f38, Feat selection
 [ ] f39, Spell preparation, spellbook and slot tracker
 [ ] f40, Class resource trackers (rage, ki, channel divinity, etc.)
 [ ] f41, Companions, familiars and wild shape forms
@@ -137,3 +137,6 @@ f14: Control Weather and Trap the Soul descriptions missing from the PDF
 f15: only the 31 Appendix D creatures; SRD monsters still to import
 f33: wizard has race, class, abilities (3 methods), background, skills, details, review; equipment step and racial/class effects (e.g. Hill Dwarf HP) still to do
 f34: sheet shows stats, saves, skills; no attacks, inventory, spells or HP editing yet
+f36: level-up is generic (HP average, ASI or feat, multiclass); subclass choice and new class features per level not applied yet
+f37: multiclass prerequisites enforced on level-up; combined proficiencies not applied yet
+f38: feats can be chosen at ASI levels; feat effects not applied to stats yet

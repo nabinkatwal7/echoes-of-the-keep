@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { buildCharacter, type CreatorChoices } from "./build";
+import { applyLevelUp, type LevelUpChoices } from "./levelup";
 
 export type CreateResult = { ok: true; id: string } | { ok: false; errors: string[] };
 
@@ -55,4 +56,27 @@ export async function deleteCharacter(id: string) {
   const user = await requireUser();
   await prisma.character.deleteMany({ where: { id, ownerId: user.id } });
   revalidatePath("/characters");
+}
+
+export type ActionResult = { ok: true } | { ok: false; errors: string[] };
+
+/** Level up an owned character. `milestone` skips the XP requirement (until a DM controls leveling in campaigns). */
+export async function levelUpCharacter(id: string, choices: LevelUpChoices, milestone = false): Promise<ActionResult> {
+  const user = await requireUser();
+  const c = await prisma.character.findFirst({ where: { id, ownerId: user.id } });
+  if (!c) return { ok: false, errors: ["Character not found"] };
+  const result = applyLevelUp(c, choices, milestone);
+  if (!result.ok) return result;
+  await prisma.character.update({ where: { id }, data: result.update });
+  revalidatePath(`/characters/${id}`);
+  return { ok: true };
+}
+
+export async function addExperience(id: string, amount: number): Promise<ActionResult> {
+  const user = await requireUser();
+  if (!Number.isInteger(amount) || amount <= 0 || amount > 1_000_000) return { ok: false, errors: ["Enter a positive amount of XP"] };
+  const done = await prisma.character.updateMany({ where: { id, ownerId: user.id }, data: { xp: { increment: amount } } });
+  if (done.count === 0) return { ok: false, errors: ["Character not found"] };
+  revalidatePath(`/characters/${id}`);
+  return { ok: true };
 }
