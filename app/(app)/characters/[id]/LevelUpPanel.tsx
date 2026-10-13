@@ -7,6 +7,7 @@ import { Card } from "@/app/components/ui/Card";
 import { Field, Input, Select } from "@/app/components/ui/Input";
 import { ABILITIES, type Ability } from "@/engine/abilities";
 import { CLASS_RULES } from "@/engine/classes/rules";
+import { checkPrerequisites, type PrereqContext } from "@/engine/feats";
 import { XP_THRESHOLDS, levelForXp, type ClassLevel } from "@/engine/progression";
 import { addExperience, levelUpCharacter } from "@/lib/characters/actions";
 import { improvementDue, totalLevel, type ImprovementChoice } from "@/lib/characters/levelup";
@@ -19,12 +20,14 @@ export function LevelUpPanel({
   classes,
   feats,
   ownedFeats,
+  prereq,
 }: {
   id: string;
   xp: number;
   classes: ClassLevel[];
-  feats: { index: string; name: string }[];
+  feats: { index: string; name: string; prerequisite: string | null }[];
   ownedFeats: string[];
+  prereq: PrereqContext;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -130,11 +133,15 @@ export function LevelUpPanel({
                   <option value="">Choose a feat</option>
                   {feats
                     .filter((f) => !ownedFeats.includes(f.index))
-                    .map((f) => (
-                      <option key={f.index} value={f.index}>
-                        {f.name}
-                      </option>
-                    ))}
+                    .map((f) => {
+                      const check = checkPrerequisites(f.prerequisite, prereq);
+                      return (
+                        <option key={f.index} value={f.index} disabled={!check.met}>
+                          {f.name}
+                          {f.prerequisite ? ` (requires ${f.prerequisite.toLowerCase()})` : ""}
+                        </option>
+                      );
+                    })}
                 </Select>
               )}
             </div>

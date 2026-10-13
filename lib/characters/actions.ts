@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { buildCharacter, type CreatorChoices } from "./build";
+import { checkPrerequisites } from "@/engine/feats";
+import { prereqContext } from "./derive";
 import { applyLevelUp, type LevelUpChoices } from "./levelup";
 
 export type CreateResult = { ok: true; id: string } | { ok: false; errors: string[] };
@@ -65,6 +67,12 @@ export async function levelUpCharacter(id: string, choices: LevelUpChoices, mile
   const user = await requireUser();
   const c = await prisma.character.findFirst({ where: { id, ownerId: user.id } });
   if (!c) return { ok: false, errors: ["Character not found"] };
+  if (choices.improvement?.kind === "feat") {
+    const feat = await prisma.feat.findUnique({ where: { index: choices.improvement.feat } });
+    if (!feat) return { ok: false, errors: ["Unknown feat"] };
+    const check = checkPrerequisites(feat.prerequisite, prereqContext(c));
+    if (!check.met) return { ok: false, errors: [`${feat.name} requires ${check.unmet.join(", ")}`] };
+  }
   const result = applyLevelUp(c, choices, milestone);
   if (!result.ok) return result;
   await prisma.character.update({ where: { id }, data: result.update });

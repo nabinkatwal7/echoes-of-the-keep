@@ -11,7 +11,7 @@ import { explain } from "@/engine/character";
 import { CLASS_RULES } from "@/engine/classes/rules";
 import { requireUser } from "@/lib/auth";
 import { deleteCharacter } from "@/lib/characters/actions";
-import { deriveStored } from "@/lib/characters/derive";
+import { deriveStored, prereqContext } from "@/lib/characters/derive";
 import { getOwnedCharacter } from "@/lib/characters/queries";
 import { prisma } from "@/lib/prisma";
 import { LevelUpPanel } from "./LevelUpPanel";
@@ -34,7 +34,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
   if (!c) notFound();
 
   const d = deriveStored(c);
-  const feats = await prisma.feat.findMany({ select: { index: true, name: true }, orderBy: { name: "asc" } });
+  const feats = await prisma.feat.findMany({ select: { index: true, name: true, prerequisite: true }, orderBy: { name: "asc" } });
   const classes = c.classes as { classIndex: string; level: number }[];
   const proficient = new Set(c.skillProficiencies as Skill[]);
   const saveProf = new Set(CLASS_RULES[classes[0].classIndex]?.saves ?? []);
@@ -137,7 +137,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
 
       <Ornament />
 
-      <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} />
+      <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} prereq={prereqContext(c)} />
 
       <form action={remove} className="no-print">
         <Button variant="danger">Retire this hero</Button>
