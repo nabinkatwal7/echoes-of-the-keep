@@ -63,3 +63,33 @@ model Alignment {
   source       String @default("PHB")
   page         Int?
 }
+
+model Condition {
+  index       String @id
+  name        String
+  description String
+  source      String @default("PHB")
+  pdfPages    Int[]
+}
+
+model Feat {
+  index        String  @id
+  name         String
+  prerequisite String?
+  description  String
+  source       String  @default("PHB")
+  pdfPages     Int[]
+}
+
+model Background {
+  index              String  @id
+  name               String
+  skillProficiencies String?
+  toolProficiencies  String?
+  languages          String?
+  equipment          String?
+  featureName        String?
+  text               String
+  source             String  @default("PHB")
+  pdfPages           Int[]
+}

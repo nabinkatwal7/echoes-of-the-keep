@@ -10,4 +10,11 @@ describe("importers", () => {
     const alignments = importers.find((i) => i.name === "alignments")!.load();
     expect(alignments).toHaveLength(9);
   });
+
+  it("loads the expected handbook counts", () => {
+    const count = (name: string) => importers.find((i) => i.name === name)!.load().length;
+    expect(count("conditions")).toBe(15);
+    expect(count("feats")).toBe(42);
+    expect(count("backgrounds")).toBe(13);
+  });
 });
