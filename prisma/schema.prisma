@@ -93,3 +93,22 @@ model Background {
   source             String  @default("PHB")
   pdfPages           Int[]
 }
+
+model Spell {
+  index         String   @id
+  name          String
+  level         Int
+  school        String
+  ritual        Boolean  @default(false)
+  concentration Boolean  @default(false)
+  castingTime   String
+  range         String
+  components    String
+  duration      String
+  description   String
+  higherLevels  String   @default("")
+  classes       String[]
+  source        String   @default("PHB")
+
+  @@index([level])
+}

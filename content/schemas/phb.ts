@@ -24,3 +24,20 @@ export const backgroundSchema = z.object({
   featureName: z.string().nullable(),
   text: z.string().min(50),
 });
+
+export const spellSchema = z.object({
+  index: base.index,
+  name: base.name,
+  level: z.number().int().min(0).max(9),
+  school: z.enum(["abjuration", "conjuration", "divination", "enchantment", "evocation", "illusion", "necromancy", "transmutation"]),
+  ritual: z.boolean(),
+  concentration: z.boolean(),
+  castingTime: z.string().min(1),
+  range: z.string().min(1),
+  components: z.string().min(1),
+  duration: z.string().min(1),
+  description: z.string().min(10),
+  higherLevels: z.string().default(""),
+  classes: z.array(z.enum(["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"])).min(1),
+  source: base.source,
+});

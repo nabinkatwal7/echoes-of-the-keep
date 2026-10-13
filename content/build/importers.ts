@@ -3,7 +3,7 @@ import path from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { alignmentSchema } from "../schemas/alignment";
-import { backgroundSchema, conditionSchema, featSchema } from "../schemas/phb";
+import { backgroundSchema, conditionSchema, featSchema, spellSchema } from "../schemas/phb";
 
 export type Importer = {
   name: string;
@@ -47,5 +47,10 @@ export const importers: Importer[] = [
     name: "backgrounds",
     load: () => z.array(backgroundSchema).parse(extracted("backgrounds.json")),
     write: (prisma, rows) => upsertAll(prisma.background, rows),
+  },
+  {
+    name: "spells",
+    load: () => z.array(spellSchema).parse(extracted("spells.json")),
+    write: (prisma, rows) => upsertAll(prisma.spell, rows),
   },
 ];
