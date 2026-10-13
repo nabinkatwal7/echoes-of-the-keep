@@ -62,7 +62,9 @@ export function monsterStats(m: MonsterRow) {
   const actions = parseMonsterActions(m.text);
   const dexMod = abilityModifier(ab.dex);
   const walk = /^(\d+)/.exec(m.speed ?? "")?.[1];
-  const defenses: CombatDefenses = { ...parseDefenses(m.damageResistances), athletics: abilityModifier(ab.str), acrobatics: dexMod };
+  const full = (m.abilities ?? {}) as Record<string, number>;
+  const saves = Object.fromEntries((["str", "dex", "con", "int", "wis", "cha"] as const).map((k) => [k, abilityModifier(full[k] ?? 10)]));
+  const defenses: CombatDefenses = { ...parseDefenses(m.damageResistances), athletics: abilityModifier(ab.str), acrobatics: dexMod, saves };
   const hp = Number(/^(\d+)/.exec(m.hitPoints ?? "")?.[1] ?? 1);
   return {
     ac: Number(/^(\d+)/.exec(m.armorClass ?? "")?.[1] ?? 10),
@@ -89,6 +91,11 @@ export function characterCombatStats(c: CharacterRow & { currentHp: number; temp
     dexMod: d.abilities.dex.modifier,
     initiativeBonus: d.initiative.total - d.abilities.dex.modifier,
     attacksPerAction: attacksPerAction(c.classes as ClassLevel[]),
-    defenses: { resistances: fx.resistances, athletics: d.skills.athletics.total, acrobatics: d.skills.acrobatics.total } as CombatDefenses,
+    defenses: {
+      resistances: fx.resistances,
+      athletics: d.skills.athletics.total,
+      acrobatics: d.skills.acrobatics.total,
+      saves: Object.fromEntries((["str", "dex", "con", "int", "wis", "cha"] as const).map((k) => [k, d.saves[k].total])),
+    } as CombatDefenses,
   };
 }

@@ -40,7 +40,29 @@ export type AttackProfile = {
   weapon?: string;
 };
 
-export type CombatDefenses = Defenses & { athletics?: number; acrobatics?: number };
+export type CombatDefenses = Defenses & {
+  athletics?: number;
+  acrobatics?: number;
+  /** saving throw bonuses by ability; missing entries fall back to 0 (Dexterity to the dexterity modifier) */
+  saves?: Partial<Record<"str" | "dex" | "con" | "int" | "wis" | "cha", number>>;
+};
+
+/** A timed bonus from a spell or feature, tracked in rounds of the owner's turns. */
+export type Buff = {
+  id: string;
+  label: string;
+  rounds: number;
+  /** who is concentrating on it, so ending concentration removes it */
+  source?: string;
+  acBonus?: number;
+  /** a die added to attack rolls (Bless) */
+  attackDie?: number;
+  /** a die added to saving throws (Bless) */
+  saveDie?: number;
+};
+
+export const acBonus = (c: Pick<Cmb, "buffs">) => (c.buffs ?? []).reduce((s, b) => s + (b.acBonus ?? 0), 0);
+export const effectiveAc = (c: Pick<Cmb, "ac" | "buffs">) => c.ac + acBonus(c);
 
 export type Cmb = {
   id: string;
@@ -68,9 +90,12 @@ export type Cmb = {
   /** a stable (not dying) unconscious creature at 0 HP */
   stable?: boolean;
   concentrating?: string | null;
+  buffs?: Buff[];
+  /** summoned or controlled creatures fight on the party's side */
+  ally?: boolean;
 };
 
-export type Turn = TurnResources & { attacksRemaining?: number; helped?: boolean };
+export type Turn = TurnResources & { attacksRemaining?: number; helped?: boolean; /** a bonus-action spell was cast this turn: only cantrips may follow */ bonusSpell?: boolean; /** a leveled action spell was cast this turn */ leveledSpell?: boolean };
 
 export const emptyTurn = (speed = 30): Turn => startTurn(speed, false);
 
@@ -100,6 +125,11 @@ export function beginTurn(c: Cmb, rng: Rng = cryptoRng): { cmb: Cmb; lines: Line
   const tick = tickConditions(c.conditions, "start");
   cmb = { ...cmb, conditions: tick.remaining };
   for (const e of tick.expired) lines.push(`${c.name} is no longer ${e.condition}`);
+  if (cmb.buffs?.length) {
+    const aged = cmb.buffs.map((b) => ({ ...b, rounds: b.rounds - 1 }));
+    for (const b of aged.filter((x) => x.rounds <= 0)) lines.push(`${b.label} fades from ${c.name}`);
+    cmb = { ...cmb, buffs: aged.filter((x) => x.rounds > 0) };
+  }
 
   // a dying character makes a death saving throw at the start of each turn (PHB p.197)
   if (cmb.kind === "character" && cmb.hp === 0 && !cmb.defeated && !cmb.stable) {
@@ -180,6 +210,10 @@ export type AttackContext = {
   offHand?: boolean;
   /** opportunity attack: uses the reaction instead of an action */
   reaction?: boolean;
+  /** the caller has already paid for this attack (a spell, a smite, a further ray) */
+  skipEconomy?: boolean;
+  /** extra damage dice added on a hit and doubled on a crit, e.g. Sneak Attack "3d6" or Divine Smite "2d8" */
+  bonusDamage?: { dice: string; type?: string };
 };
 
 export type AttackOutcome = {
@@ -214,7 +248,9 @@ export function resolveAttackAction(attacker: Cmb, target: Cmb, profile: AttackP
 
   // spend the right resource
   let turn: Turn = { ...attacker.turn };
-  if (ctx.reaction) turn = takeReaction(turn);
+  if (ctx.skipEconomy) {
+    // already paid for
+  } else if (ctx.reaction) turn = takeReaction(turn);
   else if (ctx.offHand) turn = takeBonusAction(turn);
   else if ((turn.attacksRemaining ?? 0) > 0) turn = { ...turn, attacksRemaining: (turn.attacksRemaining ?? 0) - 1 };
   else {
@@ -249,9 +285,12 @@ export function resolveAttackAction(attacker: Cmb, target: Cmb, profile: AttackP
   const mode = resolveRollMode({ advantage, disadvantage });
 
   const cover = ctx.cover ?? "none";
+  // Bless and similar: a die added to the attack roll
+  const dieBonus = (attacker.buffs ?? []).reduce((sum, b) => sum + (b.attackDie ? Math.floor(rng() * b.attackDie) + 1 : 0), 0);
+  const toHit = profile.toHit + dieBonus;
   const out = autoMiss
-    ? { roll: rollD20(profile.toHit, "normal", rng), effectiveAc: target.ac + coverBonus(cover), hit: false, critical: false, fumble: false }
-    : resolveAttack({ attackBonus: profile.toHit, targetAc: target.ac, cover, mode, autoCrit: mods.autoCrit && adjacent, rng });
+    ? { roll: rollD20(toHit, "normal", rng), effectiveAc: effectiveAc(target) + coverBonus(cover), hit: false, critical: false, fumble: false }
+    : resolveAttack({ attackBonus: toHit, targetAc: effectiveAc(target), cover, mode, autoCrit: mods.autoCrit && adjacent, rng });
   const hit = out.hit && !autoMiss;
 
   let damage = 0;
@@ -259,21 +298,29 @@ export function resolveAttackAction(attacker: Cmb, target: Cmb, profile: AttackP
   let dropped = false;
   let concentrationDc: number | null = null;
   const verb = `${attacker.name} attacks ${target.name} with ${profile.name}`;
-  const rollText = `${out.roll.natural}${profile.toHit >= 0 ? "+" : ""}${profile.toHit} = ${out.roll.total} vs AC ${out.effectiveAc}${mode !== "normal" ? ` (${mode})` : ""}`;
+  const rollText = `${out.roll.natural}${toHit >= 0 ? "+" : ""}${toHit} = ${out.roll.total} vs AC ${out.effectiveAc}${mode !== "normal" ? ` (${mode})` : ""}`;
 
   if (!hit) {
     lines.push(`${verb}: ${out.fumble ? "natural 1, " : ""}miss (${rollText})`);
   } else {
     const modifier = ctx.offHand ? offHandModifier(profile.modifier, false) : profile.modifier;
     const dmg = profile.dice ? rollDamage(profile.dice, modifier, { critical: out.critical, rng }) : { total: Math.max(0, modifier), critical: out.critical, dice: String(modifier) };
-    const adjusted = adjustDamage(dmg.total, profile.damageType as DamageType, target.defenses);
+    let adjusted = adjustDamage(dmg.total, profile.damageType as DamageType, target.defenses);
+    let bonusText = "";
+    if (ctx.bonusDamage) {
+      const bonus = rollDamage(ctx.bonusDamage.dice, 0, { critical: out.critical, rng });
+      const bonusType = (ctx.bonusDamage.type ?? profile.damageType) as DamageType;
+      const bonusAdjusted = adjustDamage(bonus.total, bonusType, target.defenses);
+      adjusted += bonusAdjusted;
+      bonusText = ` including ${bonusAdjusted} ${bonusType} from ${ctx.bonusDamage.dice}`;
+    }
     const before = toVitals(target);
     const after = applyDamage(before, adjusted, { critical: out.critical, diesAtZero: diesAtZero(target) });
     t = fromVitals(target, after);
     damage = adjusted;
     dropped = before.hp > 0 && after.hp === 0;
     const resisted = adjusted !== dmg.total ? ` (${dmg.total} before resistances)` : "";
-    lines.push(`${verb}: ${out.critical ? "CRITICAL HIT" : "hit"} (${rollText}) for ${adjusted} ${profile.damageType} damage${resisted}`);
+    lines.push(`${verb}: ${out.critical ? "CRITICAL HIT" : "hit"} (${rollText}) for ${adjusted} ${profile.damageType} damage${bonusText}${resisted}`);
     if (dropped) lines.push(after.dead ? `${target.name} is slain` : `${target.name} falls unconscious`);
     else if (before.hp === 0 && after.deathSaves.failures > before.deathSaves.failures) lines.push(`${target.name} suffers a death save failure`);
     if (target.concentrating && !dropped) concentrationDc = Math.max(10, Math.floor(adjusted / 2));

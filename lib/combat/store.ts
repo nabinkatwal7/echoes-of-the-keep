@@ -1,7 +1,7 @@
 import type { Combatant, Prisma } from "@prisma/client";
 import type { ActiveCondition } from "@/engine/conditions/timers";
 import { prisma } from "@/lib/prisma";
-import { emptyTurn, type AttackProfile, type Cmb, type CombatDefenses, type Turn } from "./rules";
+import { emptyTurn, type AttackProfile, type Buff, type Cmb, type CombatDefenses, type Turn } from "./rules";
 
 export type Extra = {
   stable?: boolean;
@@ -11,6 +11,11 @@ export type Extra = {
   size?: string;
   /** challenge rating, for XP when defeated */
   cr?: number;
+  buffs?: Buff[];
+  /** fights on the party's side (summons, companions) */
+  ally?: boolean;
+  /** original stats while polymorphed, restored when the new form drops to 0 HP or the spell ends */
+  polymorph?: { name: string; ac: number; hp: number; maxHp: number; speed: number; attacks: unknown; defenses: unknown; attacksPerAction?: number; size?: string } | null;
 };
 
 const obj = <T,>(v: unknown, fallback: T): T => (v && typeof v === "object" ? (v as T) : fallback);
@@ -42,6 +47,8 @@ export function rowToCmb(r: Combatant): Cmb {
     attacksPerAction: extra.attacksPerAction,
     stable: extra.stable,
     concentrating: extra.concentrating ?? null,
+    buffs: extra.buffs ?? [],
+    ally: extra.ally ?? false,
   };
 }
 
@@ -66,7 +73,7 @@ export function cmbToData(c: Cmb, prev: Combatant): Prisma.CombatantUpdateInput 
     turn: c.turn as unknown as Prisma.InputJsonValue,
     x: c.x,
     y: c.y,
-    extra: { ...extra, stable: !!c.stable, concentrating: c.concentrating ?? null } as unknown as Prisma.InputJsonValue,
+    extra: { ...extra, stable: !!c.stable, concentrating: c.concentrating ?? null, buffs: c.buffs ?? [] } as unknown as Prisma.InputJsonValue,
   };
 }
 
@@ -82,3 +89,6 @@ export async function roleIn(campaignId: string, userId: string): Promise<"DM" |
   const m = await prisma.campaignMember.findUnique({ where: { campaignId_userId: { campaignId, userId } } });
   return (m?.role as "DM" | "PLAYER" | undefined) ?? null;
 }
+
+/** Which side a combatant fights on. Heroes and summoned allies are the party; everything else is a foe. */
+export const sideOf = (r: Combatant): "party" | "foes" => (r.kind === "character" || obj<Extra>(r.extra, {}).ally ? "party" : "foes");

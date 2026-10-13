@@ -1,6 +1,7 @@
 import type { Combatant, Encounter } from "@prisma/client";
 import { healthWord } from "@/engine/combat";
-import { rowToCmb, profilesOf } from "./store";
+import { effectiveAc } from "./rules";
+import { rowToCmb, profilesOf, sideOf } from "./store";
 
 export type CombatantView = {
   id: string;
@@ -15,7 +16,9 @@ export type CombatantView = {
   health: string;
   ac: number | null;
   conditions: { condition: string; rounds?: number }[];
+  buffs: { label: string; rounds: number }[];
   defeated: boolean;
+  concentrating: string | null;
   hidden: boolean;
   surprised: boolean;
   x: number | null;
@@ -55,7 +58,7 @@ export function buildEncounterView(
   const combatants = visible.map((r, i) => {
     const c = rowToCmb(r);
     const mine = !!r.characterId && ownedCharacterIds.has(r.characterId);
-    const isParty = r.kind === "character";
+    const isParty = sideOf(r) === "party";
     const exact = viewer.isDm || isParty;
     const canAct = viewer.isDm || mine;
     return {
@@ -68,8 +71,10 @@ export function buildEncounterView(
       maxHp: exact ? r.maxHp : null,
       tempHp: exact ? r.tempHp : 0,
       health: healthWord(r.hp, r.maxHp, r.defeated),
-      ac: viewer.isDm || mine ? r.ac : null,
+      ac: viewer.isDm || mine ? effectiveAc(c) : null,
       conditions: c.conditions.map((x) => ({ condition: x.condition, rounds: x.rounds })),
+      buffs: (c.buffs ?? []).map((b) => ({ label: b.label, rounds: b.rounds })),
+      concentrating: c.concentrating ?? null,
       defeated: r.defeated,
       hidden: r.hidden,
       surprised: r.surprised,

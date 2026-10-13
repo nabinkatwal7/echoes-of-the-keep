@@ -1,7 +1,6 @@
 "use server";
 
-import type { Combatant, Encounter, Prisma } from "@prisma/client";
-import { revalidatePath } from "next/cache";
+import type { Combatant, Prisma } from "@prisma/client";
 import { rollInitiative, standUp, type Cover } from "@/engine/combat";
 import { moveCost, opportunityAttackers, distanceFeet, withinFiveFeet as adjacent } from "@/engine/combat/grid";
 import { addCondition, isCondition, removeCondition } from "@/engine/conditions/timers";
@@ -9,43 +8,16 @@ import { applyDamage, heal } from "@/engine/damage";
 import { checkConcentration } from "@/engine/spells";
 import { xpForChallenge } from "@/engine/xp";
 import { requireUser } from "@/lib/auth";
+import { roleIn } from "./store";
 import { prisma } from "@/lib/prisma";
 import { characterCombatStats, characterProfiles, monsterStats } from "./profiles";
-import { commit, type Actor } from "./commit";
+import { commit } from "./commit";
 import {
   advance, beginTurn, finishTurn, fromVitals, resolveAttackAction, resolveGrappleAction, spendReaction, spendSimpleAction,
   toVitals, type AttackProfile, type Cmb, type SimpleAction,
 } from "./rules";
-import { loadEncounter, profilesOf, roleIn, rowToCmb } from "./store";
-
-type Result = { ok: true; id?: string } | { ok: false; errors: string[] };
-const fail = (m: string): Result => ({ ok: false, errors: [m] });
-const refresh = (campaignId: string) => {
-  revalidatePath(`/campaigns/${campaignId}/combat`);
-};
-
-type Ctx = { user: Actor; enc: Encounter & { combatants: Combatant[] }; isDm: boolean };
-
-async function context(encounterId: string): Promise<Ctx | Result> {
-  const u = await requireUser();
-  const enc = await loadEncounter(encounterId);
-  if (!enc) return fail("Encounter not found");
-  const role = await roleIn(enc.campaignId, u.id);
-  if (!role) return fail("You are not in this campaign");
-  return { user: { id: u.id, name: u.name ?? "Someone" }, enc, isDm: role === "DM" };
-}
-const isCtx = (c: Ctx | Result): c is Ctx => "enc" in c;
-
-async function ownsCharacter(userId: string, characterId: string | null) {
-  if (!characterId) return false;
-  return !!(await prisma.character.findFirst({ where: { id: characterId, ownerId: userId }, select: { id: true } }));
-}
-
-async function canControl(ctx: Ctx, row: Combatant) {
-  return ctx.isDm || (await ownsCharacter(ctx.user.id, row.characterId));
-}
-
-const sideOf = (c: { kind: string }) => (c.kind === "character" ? "party" : "foes");
+import { canControl, context, fail, isCtx, loadActing, refresh, type Result } from "./access";
+import { loadEncounter, profilesOf, rowToCmb, sideOf } from "./store";
 
 // ---------------------------------------------------------------------------------------------- setup (DM)
 
@@ -206,17 +178,6 @@ export async function endTurn(encounterId: string): Promise<Result> {
   return { ok: true };
 }
 
-type Acting = { error: Result; row?: undefined; ctx?: undefined } | { error?: undefined; row: Combatant; ctx: Ctx };
-
-async function loadActing(combatantId: string): Promise<Acting> {
-  const row = await prisma.combatant.findUnique({ where: { id: combatantId } });
-  if (!row) return { error: fail("Combatant not found") };
-  const ctx = await context(row.encounterId);
-  if (!isCtx(ctx)) return { error: ctx };
-  if (!(await canControl(ctx, row))) return { error: fail("Not allowed") };
-  return { row, ctx };
-}
-
 /** Actions that take your turn's action (or reaction for Ready). The active creature's controller, or the DM. */
 export async function takeAction(combatantId: string, action: SimpleAction, trigger?: string): Promise<Result> {
   const a = await loadActing(combatantId);
@@ -341,6 +302,7 @@ export async function moveCombatant(combatantId: string, x: number, y: number): 
   if (a.error) return a.error;
   const { row, ctx } = a;
   const { enc } = ctx;
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= enc.gridWidth || y >= enc.gridHeight) return fail("That square is off the map");
   const c = rowToCmb(row);
   const from = c.x !== null && c.y !== null ? { x: c.x, y: c.y } : null;
   const to = { x, y };
