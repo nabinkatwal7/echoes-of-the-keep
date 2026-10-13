@@ -4,6 +4,7 @@ import { ABILITIES } from "@/engine/abilities";
 import { deriveCharacter, type CharacterInput, type DerivedCharacter } from "@/engine/character";
 import type { PrereqContext } from "@/engine/feats";
 import type { ClassLevel } from "@/engine/progression";
+import { equipmentForEngine, type InventoryItem } from "./inventory";
 
 /** Stored character fields needed to compute the sheet (a subset of the Prisma Character row). */
 export type StoredCharacter = {
@@ -13,11 +14,14 @@ export type StoredCharacter = {
   skillProficiencies: unknown;
   skillExpertise: unknown;
   speed: number;
+  /** inventory items; armor, shield and weapons that are equipped feed AC and attacks */
+  equipment?: unknown;
 };
 
 export function toEngineInput(c: StoredCharacter): CharacterInput {
   const classes = c.classes as ClassLevel[];
   const first = CLASS_RULES[classes[0]?.classIndex];
+  const gear = equipmentForEngine((c.equipment as InventoryItem[] | undefined) ?? [], classes.map((k) => k.classIndex));
   return {
     classes,
     baseScores: c.baseScores as AbilityScores,
@@ -27,6 +31,10 @@ export function toEngineInput(c: StoredCharacter): CharacterInput {
     skillExpertise: c.skillExpertise as Skill[],
     // only the first class grants saving throw proficiencies (PHB p.164)
     saveProficiencies: first ? [...first.saves] : [],
+    armor: gear.armor,
+    shield: gear.shield,
+    weapons: gear.weapons,
+    acBonus: gear.acBonus || undefined,
   };
 }
 
