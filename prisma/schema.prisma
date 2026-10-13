@@ -331,6 +331,8 @@ model Combatant {
   defenses      Json       @default("{}")
   /// "Ready" action: free text trigger, cleared when used
   readied       String?
+  /// { stable, attacksPerAction, concentrating, exhaustion, size, cr, grappledBy }
+  extra         Json       @default("{}")
   createdAt     DateTime   @default(now())
 
   @@index([encounterId])
