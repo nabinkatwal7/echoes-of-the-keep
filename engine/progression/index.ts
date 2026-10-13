@@ -77,13 +77,19 @@ const FULL_CASTERS = new Set(["bard", "cleric", "druid", "sorcerer", "wizard"]);
 const HALF_CASTERS = new Set(["paladin", "ranger"]);
 const THIRD_CASTER_SUBCLASSES = new Set(["eldritch-knight", "arcane-trickster"]);
 
-/** Caster level for the multiclass spell slot table; Pact Magic (warlock) is separate. */
+/**
+ * Caster level for the spell slot table; Pact Magic (warlock) is separate.
+ * A single spellcasting class uses its own table, which rounds half and third casters up (a 5th-level paladin has
+ * 4 + 2 slots, like a 3rd-level caster). With several spellcasting classes the levels are added and rounded down (PHB p.164).
+ */
 export function casterLevel(classes: ClassLevel[]): number {
-  return classes.reduce((sum, c) => {
+  const thirds = (c: ClassLevel) => !!c.subclassIndex && THIRD_CASTER_SUBCLASSES.has(c.subclassIndex);
+  const casters = classes.filter((c) => FULL_CASTERS.has(c.classIndex) || HALF_CASTERS.has(c.classIndex) || thirds(c));
+  const single = casters.length === 1;
+  return casters.reduce((sum, c) => {
     if (FULL_CASTERS.has(c.classIndex)) return sum + c.level;
-    if (HALF_CASTERS.has(c.classIndex)) return sum + Math.floor(c.level / 2);
-    if (c.subclassIndex && THIRD_CASTER_SUBCLASSES.has(c.subclassIndex)) return sum + Math.floor(c.level / 3);
-    return sum;
+    if (HALF_CASTERS.has(c.classIndex)) return sum + (c.level < 2 ? 0 : single ? Math.ceil(c.level / 2) : Math.floor(c.level / 2));
+    return sum + (c.level < 3 ? 0 : single ? Math.ceil(c.level / 3) : Math.floor(c.level / 3));
   }, 0);
 }
 

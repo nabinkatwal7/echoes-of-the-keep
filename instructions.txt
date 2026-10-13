@@ -99,20 +99,20 @@ Details for each phase: docs/phases/*.md
 [x]  Spell automation coverage report
 
 === PHASE 7: EXPLORATION AND DM TOOLKIT ===
-[ ] f83, In-game clock
-[ ] f84, Travel, pace and special movement
-[ ] f85, Hazards, light sources and objects
-[ ] f86, Skill check helpers (group, contested, passive)
-[ ] f87, Social interaction and NPC attitudes
-[ ] f88, Rest management for the party
-[ ] f89, Downtime activities
-[ ] f90, Monster library and encounter difficulty builder
-[~] f91, XP, milestones and inspiration
-[~] f92, Treasure, custom items and party stash
-[ ] f93, NPCs, locations and quests
-[ ] f94, Maps and scenes
-[ ] f95, Death, resurrection and recovery
-[ ] f96, High-level (5/10/15/20) scenario tests
+[x]  In-game clock
+[x]  Travel, pace and special movement
+[~]  Hazards, light sources and objects
+[x]  Skill check helpers (group, contested, passive)
+[x]  Social interaction and NPC attitudes
+[x]  Rest management for the party
+[x]  Downtime activities
+[~]  Monster library and encounter difficulty builder
+[x]  XP, milestones and inspiration
+[x]  Treasure, custom items and party stash
+[x]  NPCs, locations and quests
+[~]  Maps and scenes
+[x]  Death, resurrection and recovery
+[x]  High-level (5/10/15/20) scenario tests
 
 === PHASE 8: POLISH AND LAUNCH ===
 [ ] f97, Rules verification and playtests
@@ -128,6 +128,9 @@ Details for each phase: docs/phases/*.md
 [ ] f107, User docs and release checklist
 
 PARTIAL NOTES
+f85: light sources burn down with the clock and ambient light follows the time of day; falling, suffocation and starvation rules exist in the engine but have no table UI yet (the DM applies damage by hand)
+f90: encounter builder uses a simple rule of thumb (the handbook has no encounter tables) and the monster list is only the 31 Appendix D creatures
+f94: scenes are https image backdrops shown to the whole table, plus the combat grid; there is no token-based exploration map
 f76: timed effects: conditions from spells carry round timers and drop with concentration; Bless, Shield and Shield of Faith are tracked as buffs; other buff spells are narrated
 f77: summons join the party's side as allies; Polymorph swaps stats and can be reverted by the DM (not part of the undo snapshot, and the form does not revert on its own at 0 HP)
 f78: utility, exploration and social spells spend the slot and are logged; their effects are narrated (see docs/spell-automation.md for the list)

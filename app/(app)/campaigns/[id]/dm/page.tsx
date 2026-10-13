@@ -8,6 +8,8 @@ import { deriveStored, type StoredCharacter } from "@/lib/characters/derive";
 import { sessionState } from "@/lib/journal/queries";
 import { prisma } from "@/lib/prisma";
 import { SessionPanel } from "../SessionPanel";
+import { DmTools } from "./DmTools";
+import { formatGameTime, timeOfDay } from "@/engine/world";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "DM Screen" };
@@ -25,6 +27,8 @@ export default async function DmScreen({ params }: { params: Promise<{ id: strin
     return {
       id: c.id,
       name: c.name,
+      dead: ((c.conditions as string[]) ?? []).includes("dead"),
+      inspiration: c.inspiration,
       level: d.level,
       ac: d.armorClass.total,
       hp: c.currentHp,
@@ -36,6 +40,9 @@ export default async function DmScreen({ params }: { params: Promise<{ id: strin
       conditions: (c.conditions as string[]) ?? [],
     };
   });
+  const camp = await prisma.campaign.findUniqueOrThrow({ where: { id } });
+  const creatures = await prisma.creature.findMany({ select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } });
+  const world = (camp.world ?? {}) as { lights?: { id: string; kind: string; remainingMinutes: number; lit: boolean }[] };
   const [{ active, last }, conditions, encounter] = await Promise.all([
     sessionState(id),
     prisma.condition.findMany({ orderBy: { name: "asc" } }),
@@ -76,10 +83,19 @@ export default async function DmScreen({ params }: { params: Promise<{ id: strin
             <Link className="text-gold hover:text-goldBright" href={`/campaigns/${id}/combat`}>{encounter ? `Running: ${encounter.name} →` : "Combat →"}</Link>
             <Link className="text-gold hover:text-goldBright" href={`/campaigns/${id}/table`}>The table →</Link>
             <Link className="text-gold hover:text-goldBright" href={`/campaigns/${id}/journal`}>Journal and handouts →</Link>
+            <Link className="text-gold hover:text-goldBright" href={`/campaigns/${id}/world`}>NPCs, places, quests, stash →</Link>
           </div>
         </Card>
         <SessionPanel campaignId={id} active={active ? { number: active.number, title: active.title, nextUp: active.nextUp } : null} last={last ? { number: last.number, summary: last.summary, nextUp: last.nextUp } : null} />
       </div>
+      <DmTools
+        campaignId={id}
+        clock={formatGameTime(camp.clockMinutes)}
+        timeOfDay={timeOfDay(camp.clockMinutes)}
+        lights={world.lights ?? []}
+        heroes={party.map((p) => ({ id: p.id, name: p.name, level: p.level, dead: p.dead, inspiration: p.inspiration }))}
+        creatures={creatures.map((c) => ({ index: c.index, name: c.name, challenge: c.challenge ?? "0" }))}
+      />
       <Card className="p-4">
         <h2 className="eyebrow mb-2">Condition reference</h2>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

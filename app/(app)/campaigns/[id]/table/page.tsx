@@ -5,6 +5,8 @@ import {
 } from "@/lib/campaigns/queries";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { formatGameTime, timeOfDay } from "@/engine/world";
+import { prisma } from "@/lib/prisma";
 import { TableClient, type TableEvent } from "./TableClient";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +24,10 @@ export default async function TablePage({
   const isDm =
     campaign.members.find((m) => m.userId === user.id)?.role === "DM";
 
+  const [clock, scene] = await Promise.all([
+    prisma.campaign.findUniqueOrThrow({ where: { id }, select: { clockMinutes: true } }),
+    prisma.location.findFirst({ where: { campaignId: id, current: true } }),
+  ]);
   const events = await getRecentVisibleEvents(id, { userId: user.id, isDm });
   const initial: TableEvent[] = events.map((e) => ({
     id: e.id,
@@ -45,9 +51,20 @@ export default async function TablePage({
           <h1 className="gilded text-3xl font-bold">The Table</h1>
         </div>
         <p className="text-sm text-muted">
-          {campaign.members.length} at the table
+          {formatGameTime(clock.clockMinutes)} ({timeOfDay(clock.clockMinutes)}) · {campaign.members.length} at the table
         </p>
       </div>
+      {scene && (
+        <div className="panel flex flex-col gap-2 p-4">
+          <p className="eyebrow">Current scene</p>
+          <h2 className="text-xl font-bold">{scene.name}</h2>
+          {scene.imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={scene.imageUrl} alt={`Scene: ${scene.name}`} referrerPolicy="no-referrer" className="max-h-72 w-full rounded border border-border object-contain" />
+          )}
+          {scene.description && <p className="whitespace-pre-wrap text-sm">{scene.description}</p>}
+        </div>
+      )}
       <TableClient
         campaignId={id}
         userId={user.id}
