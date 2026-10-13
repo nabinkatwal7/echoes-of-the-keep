@@ -21,6 +21,7 @@
     "@prisma/client": "^6.19.3",
     "@tabler/icons-react": "^3.30.0",
     "clsx": "^2.1.1",
+    "framer-motion": "^14.1.0",
     "motion": "^12.4.2",
     "next": "15.1.7",
     "react": "^19.0.0",

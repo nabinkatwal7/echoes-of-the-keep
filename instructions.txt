@@ -1,0 +1,127 @@
+D&D PROJECT TO-DO LIST (one line per feature, in build order)
+Details for each phase: docs/phases/*.md
+
+=== PHASE 0: FOUNDATION ===
+f1, Authentication (email magic link + Google/Discord)
+f2, Database schema baseline and migrations
+f3, Design system and layout shells
+f4, Tooling and CI (Vitest, Playwright, lint, GitHub Actions)
+f5, Env config with validation
+f6, Content pipeline skeleton (seed from extracted data)
+f7, README and architecture decision records
+
+=== PHASE 1: RULES CONTENT AND WIKI ===
+f8, Import reference data (abilities, skills, languages, alignments, damage types)
+f9, Import races and subraces (incl. Variant Human)
+f10, Import classes, level tables and subclasses
+f11, Import backgrounds and personality tables
+f12, Import equipment, packs, tools, mounts, trade goods, trinkets
+f13, Import feats with machine-checkable prerequisites
+f14, Import spells and class spell lists (fill the 2 missing spells)
+f15, Import creatures and SRD monsters
+f16, Rules text sections (chapters 7-10, gods, planes)
+f17, Wiki list and detail pages for every content type
+f18, Global search (command palette)
+f19, Replace external API calls with database reads
+f20, Encode mechanics (effects, handlers, automation tier)
+f21, Content QA gates in CI (counts, schemas, links)
+
+=== PHASE 2: RULES ENGINE ===
+f22, Dice parser and roller (advantage/disadvantage)
+f23, Ability modifiers, checks, saves, passive scores
+f24, Ability score generation (standard array, point buy, roll)
+f25, Character stat derivation with "why" breakdown
+f26, XP, leveling and multiclass math
+f27, Resources and rests (short/long, hit dice)
+f28, Conditions and exhaustion effects
+f29, Damage, healing, resistances, death saves
+f30, Environment math (travel, falling, suffocation, light)
+f31, Character validation (legal build checker)
+
+=== PHASE 3: CHARACTER CREATOR AND SHEET ===
+f32, Character list and management
+f33, Creation wizard (race, class, abilities, background, equipment, review)
+f34, Character sheet (desktop and mobile)
+f35, Inventory, equipping and currency
+f36, Level-up flow (HP, features, subclass, ASI or feat)
+f37, Multiclassing
+f38, Feat selection
+f39, Spell preparation, spellbook and slot tracker
+f40, Class resource trackers (rage, ki, channel divinity, etc.)
+f41, Companions, familiars and wild shape forms
+f42, Print/PDF and JSON export-import
+f43, Character rules audit
+
+=== PHASE 4: CAMPAIGNS AND LIVE SESSIONS ===
+f44, Campaign creation and house-rule settings
+f45, Invites, roles and membership
+f46, Campaign hub
+f47, Live session table with presence
+f48, Realtime event log (SSE, reconnect, replay)
+f49, Dice roller and roll log (secret rolls)
+f50, Chat, whispers and slash commands
+f51, Journal, notes and handouts
+f52, Hidden-information filtering (DM vs player views)
+f53, DM screen basics
+f54, Session save and resume
+f55, Live sheet edits with audit log
+
+=== PHASE 5: COMBAT ===
+f56, Encounter setup
+f57, Initiative and turn tracker
+f58, Action economy (actions, bonus actions, reactions)
+f59, Attack resolution (advantage sources, cover, crits)
+f60, Grapple, shove and two-weapon fighting
+f61, Damage, healing and death saves in play
+f62, Conditions applied in combat with durations
+f63, Movement, positions, grid map and opportunity attacks
+f64, Ready action and reactions
+f65, Mounted and underwater combat
+f66, Combat log with DM undo
+f67, Monster actions (multiattack, recharge, legendary)
+f68, Mobile-friendly player turn panel
+f69, Encounter end and rewards hand-off
+
+=== PHASE 6: SPELLCASTING ===
+f70, Casting flow (slots, upcasting, components, casting time)
+f71, Rituals, Pact Magic and sorcery points
+f72, Targeting and area-of-effect templates
+f73, Spell attacks and saving throws
+f74, Damage, healing and scaling
+f75, Concentration tracking
+f76, Timed spell effects and buffs
+f77, Summons and polymorph
+f78, Utility, exploration and social spells
+f79, Reaction spells (Shield, Counterspell)
+f80, Class spell features (Metamagic, invocations, smite, domains)
+f81, Spell browser in play
+f82, Spell automation coverage report
+
+=== PHASE 7: EXPLORATION AND DM TOOLKIT ===
+f83, In-game clock
+f84, Travel, pace and special movement
+f85, Hazards, light sources and objects
+f86, Skill check helpers (group, contested, passive)
+f87, Social interaction and NPC attitudes
+f88, Rest management for the party
+f89, Downtime activities
+f90, Monster library and encounter difficulty builder
+f91, XP, milestones and inspiration
+f92, Treasure, custom items and party stash
+f93, NPCs, locations and quests
+f94, Maps and scenes
+f95, Death, resurrection and recovery
+f96, High-level (5/10/15/20) scenario tests
+
+=== PHASE 8: POLISH AND LAUNCH ===
+f97, Rules verification and playtests
+f98, Onboarding, tutorial and learn-to-play page
+f99, Mobile and PWA polish
+f100, Accessibility audit (WCAG 2.2 AA)
+f101, Performance and load testing
+f102, Homebrew content support
+f103, Backups, data export and account deletion
+f104, Security and privacy review
+f105, Monitoring, logging and runbooks
+f106, Licensing and attribution (SRD-only mode)
+f107, User docs and release checklist
