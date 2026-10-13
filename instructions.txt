@@ -34,7 +34,7 @@ Details for each phase: docs/phases/*.md
 [ ] f25, Character stat derivation with "why" breakdown
 [x] f26, XP, leveling and multiclass math
 [x] f27, Resources and rests (short/long, hit dice)
-[ ] f28, Conditions and exhaustion effects
+[x] f28, Conditions and exhaustion effects
 [ ] f29, Damage, healing, resistances, death saves
 [ ] f30, Environment math (travel, falling, suffocation, light)
 [ ] f31, Character validation (legal build checker)
