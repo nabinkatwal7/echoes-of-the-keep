@@ -9,15 +9,16 @@ datasource db {
 
 // Auth.js models (Prisma adapter)
 model User {
-  id            String    @id @default(cuid())
+  id            String      @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?     @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  characters    Character[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Account {
@@ -168,4 +169,42 @@ model EquipmentItem {
   details             String   @default("")
   source              String   @default("PHB")
   pdfPage             Int
+}
+
+model Character {
+  id                 String   @id @default(cuid())
+  ownerId            String
+  owner              User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name               String
+  raceIndex          String
+  subraceIndex       String?
+  backgroundIndex    String
+  alignment          String?
+  /// [{ classIndex, level, subclassIndex? }]
+  classes            Json
+  baseScores         Json
+  abilityMethod      String
+  /// racial bonuses plus ability score improvements, per ability
+  scoreBonuses       Json     @default("{}")
+  skillProficiencies Json     @default("[]")
+  skillExpertise     Json     @default("[]")
+  feats              Json     @default("[]")
+  speed              Int      @default(30)
+  xp                 Int      @default(0)
+  inspiration        Boolean  @default(false)
+  currentHp          Int
+  tempHp             Int      @default(0)
+  hitDiceSpent       Json     @default("{}")
+  deathSaves         Json     @default("{\"successes\":0,\"failures\":0}")
+  conditions         Json     @default("[]")
+  exhaustion         Int      @default(0)
+  currency           Json     @default("{\"cp\":0,\"sp\":0,\"ep\":0,\"gp\":0,\"pp\":0}")
+  equipment          Json     @default("[]")
+  spellSlotsUsed     Json     @default("[]")
+  resources          Json     @default("[]")
+  personality        Json     @default("{}")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([ownerId])
 }
