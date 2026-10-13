@@ -73,46 +73,46 @@ Details for each phase: docs/phases/*.md
 [x] f58, Action economy (actions, bonus actions, reactions)
 [x] f59, Attack resolution (advantage sources, cover, crits)
 [x] f60, Grapple, shove and two-weapon fighting
-[x]  Damage, healing and death saves in play
+[x] f61, Damage, healing and death saves in play
 [x] f62, Conditions applied in combat with durations
 [x] f63, Movement, positions, grid map and opportunity attacks
 [~] f64, Ready action and reactions
-[ ] f65, Mounted and underwater combat
+[~] f65, Mounted and underwater combat
 [x] f66, Combat log with DM undo
-[ ] f67, Monster actions (multiattack, recharge, legendary)
+[~] f67, Monster actions (multiattack, recharge, legendary)
 [x] f68, Mobile-friendly player turn panel
 [x] f69, Encounter end and rewards hand-off
 
 === PHASE 6: SPELLCASTING ===
 [x] f70, Casting flow (slots, upcasting, components, casting time)
 [~] f71, Rituals, Pact Magic and sorcery points
-[x]  Targeting and area-of-effect templates
-[x]  Spell attacks and saving throws
-[x]  Damage, healing and scaling
-[x]  Concentration tracking
-[~]  Timed spell effects and buffs
-[~]  Summons and polymorph
-[~]  Utility, exploration and social spells
-[x]  Reaction spells (Shield, Counterspell)
-[~]  Class spell features (Metamagic, invocations, smite, domains)
-[x]  Spell browser in play
-[x]  Spell automation coverage report
+[x] f72, Targeting and area-of-effect templates
+[x] f73, Spell attacks and saving throws
+[x] f74, Damage, healing and scaling
+[x] f75, Concentration tracking
+[~] f76, Timed spell effects and buffs
+[~] f77, Summons and polymorph
+[~] f78, Utility, exploration and social spells
+[x] f79, Reaction spells (Shield, Counterspell)
+[~] f80, Class spell features (Metamagic, invocations, smite, domains)
+[x] f81, Spell browser in play
+[x] f82, Spell automation coverage report
 
 === PHASE 7: EXPLORATION AND DM TOOLKIT ===
-[x]  In-game clock
-[x]  Travel, pace and special movement
-[~]  Hazards, light sources and objects
-[x]  Skill check helpers (group, contested, passive)
-[x]  Social interaction and NPC attitudes
-[x]  Rest management for the party
-[x]  Downtime activities
-[~]  Monster library and encounter difficulty builder
-[x]  XP, milestones and inspiration
-[x]  Treasure, custom items and party stash
-[x]  NPCs, locations and quests
-[~]  Maps and scenes
-[x]  Death, resurrection and recovery
-[x]  High-level (5/10/15/20) scenario tests
+[x] f83, In-game clock
+[x] f84, Travel, pace and special movement
+[~] f85, Hazards, light sources and objects
+[x] f86, Skill check helpers (group, contested, passive)
+[x] f87, Social interaction and NPC attitudes
+[x] f88, Rest management for the party
+[x] f89, Downtime activities
+[~] f90, Monster library and encounter difficulty builder
+[x] f91, XP, milestones and inspiration
+[x] f92, Treasure, custom items and party stash
+[x] f93, NPCs, locations and quests
+[~] f94, Maps and scenes
+[x] f95, Death, resurrection and recovery
+[x] f96, High-level (5/10/15/20) scenario tests
 
 === PHASE 8: POLISH AND LAUNCH ===
 [ ] f97, Rules verification and playtests
