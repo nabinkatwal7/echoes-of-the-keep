@@ -16,6 +16,8 @@ export type InventoryItem = {
   notes?: string;
   // weapons
   damage?: string;
+  /** slashing, piercing or bludgeoning */
+  damageType?: string;
   melee?: boolean;
   finesse?: boolean;
   twoHanded?: boolean;
@@ -75,6 +77,7 @@ export function itemFromCatalog(row: CatalogRow, quantity = 1, equipped = false)
       ...base,
       kind: "weapon",
       damage: row.damage.split(" ")[0],
+      damageType: row.damage.split(" ")[1],
       melee: !/Ranged/.test(category),
       finesse: /finesse/i.test(props),
       twoHanded: /two-handed/i.test(props),

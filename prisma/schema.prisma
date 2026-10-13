@@ -178,6 +178,7 @@ model Character {
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   campaigns          CampaignCharacter[]
+  combatants         Combatant[]
 
   @@index([ownerId])
 }
@@ -195,6 +196,7 @@ model Campaign {
   members     CampaignMember[]
   characters  CampaignCharacter[]
   events      CampaignEvent[]
+  encounters  Encounter[]
 }
 
 model CampaignMember {
@@ -269,4 +271,67 @@ model Subclass {
   pdfPage    Int?
 
   @@index([classIndex])
+}
+
+/// A fight at the table. State changes are logged as CampaignEvent rows (type "combat") with undo snapshots.
+model Encounter {
+  id          String      @id @default(cuid())
+  campaignId  String
+  campaign    Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name        String
+  /// PLANNED | ACTIVE | DONE
+  state       String      @default("PLANNED")
+  round       Int         @default(0)
+  /// index into the initiative order of the creature whose turn it is
+  activeIndex Int         @default(0)
+  /// environment toggles: { underwater?: boolean }
+  environment Json        @default("{}")
+  /// grid size in 5 ft squares
+  gridWidth   Int         @default(20)
+  gridHeight  Int         @default(14)
+  createdAt   DateTime    @default(now())
+  combatants  Combatant[]
+
+  @@index([campaignId])
+}
+
+model Combatant {
+  id            String     @id @default(cuid())
+  encounterId   String
+  encounter     Encounter  @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  /// character | monster | npc
+  kind          String
+  characterId   String?
+  character     Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  creatureIndex String?
+  name          String
+  initiative    Int?
+  /// position in the turn order (0 = first)
+  turnOrder     Int        @default(0)
+  dexMod        Int        @default(0)
+  ac            Int        @default(10)
+  hp            Int        @default(1)
+  maxHp         Int        @default(1)
+  tempHp        Int        @default(0)
+  speed         Int        @default(30)
+  /// [{ condition, rounds?, source? }]
+  conditions    Json       @default("[]")
+  hidden        Boolean    @default(false)
+  surprised     Boolean    @default(false)
+  defeated      Boolean    @default(false)
+  /// { successes, failures } for creatures making death saves
+  deathSaves    Json       @default("{\"successes\":0,\"failures\":0}")
+  /// resources for the current turn: action, bonus action, reaction, movement left, flags
+  turn          Json       @default("{}")
+  x             Int?
+  y             Int?
+  /// parsed attacks for monsters: [{ name, toHit, damage, damageType, reach, ranged }]
+  attacks       Json       @default("[]")
+  /// damage resistances / vulnerabilities / immunities
+  defenses      Json       @default("{}")
+  /// "Ready" action: free text trigger, cleared when used
+  readied       String?
+  createdAt     DateTime   @default(now())
+
+  @@index([encounterId])
 }
