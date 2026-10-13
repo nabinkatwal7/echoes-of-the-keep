@@ -29,8 +29,8 @@ Details for each phase: docs/phases/*.md
 
 === PHASE 2: RULES ENGINE ===
 [x] f22, Dice parser and roller (advantage/disadvantage)
-[ ] f23, Ability modifiers, checks, saves, passive scores
-[ ] f24, Ability score generation (standard array, point buy, roll)
+[x] f23, Ability modifiers, checks, saves, passive scores
+[x] f24, Ability score generation (standard array, point buy, roll)
 [ ] f25, Character stat derivation with "why" breakdown
 [ ] f26, XP, leveling and multiclass math
 [ ] f27, Resources and rests (short/long, hit dice)
