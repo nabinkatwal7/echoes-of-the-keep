@@ -46,7 +46,7 @@ Details for each phase: docs/phases/*.md
 [x] f35, Inventory, equipping and currency
 [x] f36, Level-up flow (HP, features, subclass, ASI or feat)
 [~] f37, Multiclassing
-[ ] f38, Feat selection
+[x] f38, Feat selection
 [x] f39, Spell preparation, spellbook and slot tracker
 [x] f40, Class resource trackers (rage, ki, channel divinity, etc.)
 [x] f41, Companions, familiars and wild shape forms
