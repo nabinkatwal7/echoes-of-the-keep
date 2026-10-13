@@ -1,15 +1,3 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-async function main() {
-  const users = [
-    { name: "John Doe", email: "john@example.com" },
-    { name: "Jane Smith", email: "jane@example.com" },
-  ];
-  for (const user of users) {
-    await prisma.user.upsert({ where: { email: user.email }, update: user, create: user });
-  }
-}
-
-main().finally(() => prisma.$disconnect());
+// Content seeding lives in content/build/seed.ts (added with the content pipeline).
+// Keep this entry point so `prisma db seed` always works.
+import "../content/build/seed";
