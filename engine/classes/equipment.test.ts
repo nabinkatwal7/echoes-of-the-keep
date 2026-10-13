@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { importers } from "../../content/build/importers";
 import { CLASS_RULES } from "./rules";
-import { STARTING_GOLD, STARTING_KITS, WEAPON_PROFICIENCIES, weaponProficient } from "./equipment";
+import { STARTING_GOLD, STARTING_KITS, WEAPON_PROFICIENCIES, armorProficiencies, weaponProficient } from "./equipment";
 
 describe("weapon proficiency", () => {
   it("categories and specific weapons", () => {
@@ -12,8 +12,17 @@ describe("weapon proficiency", () => {
     expect(weaponProficient(["rogue"], "Crossbow, hand", "Martial Ranged Weapons")).toBe(true);
     expect(weaponProficient(["cleric"], "Rapier", "Martial Melee Weapons")).toBe(false);
   });
-  it("multiclass characters are proficient if any class is", () => {
-    expect(weaponProficient(["wizard", "fighter"], "Longsword", "Martial Melee Weapons")).toBe(true);
+  it("a second class grants only the multiclass subset (PHB p.164)", () => {
+    expect(weaponProficient(["wizard", "fighter"], "Longsword", "Martial Melee Weapons")).toBe(true); // fighter grants martial
+    expect(weaponProficient(["wizard", "rogue"], "Rapier", "Martial Melee Weapons")).toBe(false); // rogue grants none as a second class
+    expect(weaponProficient(["rogue", "wizard"], "Rapier", "Martial Melee Weapons")).toBe(true); // but the starting rogue has it
+    expect(weaponProficient(["fighter", "monk"], "Shortsword", "Martial Melee Weapons")).toBe(true);
+  });
+  it("armor training across classes", () => {
+    const full = { wizard: [] as string[], fighter: ["light", "medium", "heavy", "shields"], cleric: ["light", "medium", "shields"] };
+    expect(armorProficiencies(["wizard", "fighter"], full).sort()).toEqual(["light", "medium", "shields"]); // no heavy as a second class
+    expect(armorProficiencies(["fighter", "cleric"], full).sort()).toEqual(["heavy", "light", "medium", "shields"]);
+    expect(armorProficiencies(["wizard"], full)).toEqual([]);
   });
 });
 

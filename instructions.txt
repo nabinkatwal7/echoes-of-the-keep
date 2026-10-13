@@ -42,10 +42,10 @@ Details for each phase: docs/phases/*.md
 === PHASE 3: CHARACTER CREATOR AND SHEET ===
 [x] f32, Character list and management
 [x] f33, Creation wizard (race, class, abilities, background, equipment, review)
-[~] f34, Character sheet (desktop and mobile)
+[x] f34, Character sheet (desktop and mobile)
 [x] f35, Inventory, equipping and currency
 [x] f36, Level-up flow (HP, features, subclass, ASI or feat)
-[~] f37, Multiclassing
+[x] f37, Multiclassing
 [x] f38, Feat selection
 [x] f39, Spell preparation, spellbook and slot tracker
 [x] f40, Class resource trackers (rage, ki, channel divinity, etc.)
@@ -131,12 +131,10 @@ PARTIAL NOTES
 f4: Playwright e2e not set up yet
 f15: only the 31 Appendix D creatures; SRD monsters still to import
 f36: level-up is generic (HP average, ASI or feat, multiclass); subclass choice and new class features per level not applied yet
-f37: multiclass prerequisites enforced on level-up; combined proficiencies not applied yet
 f44: campaign name and premise only; house-rule settings not built yet
 f47: table page with chat and dice log; presence list and shared scene not built yet
 f48: SSE stream polls the database every second with Last-Event-ID resume (verified over HTTP); LISTEN/NOTIFY not used yet
 f50: chat, emotes and whispers to the DM; player-to-player whispers not built
 f10: subclass level tables per subclass (domain spells, etc.) are not split out; subclass text is shown as written
 f33: wizard covers race, subclass, class, abilities, background, skills, equipment (kit or gold) and details; racial effects like Hill Dwarf HP are not applied
-f34: sheet has vitals, abilities, saves, skills, attacks, inventory, level-up; spells and class resources panels come with f39 and f40
 f20: effects registry covers racial HP/speed/darkvision/resistances, feats Tough/Alert/Mobile/Observant, bard Jack of All Trades, barbarian Fast Movement, monk Unarmored Movement; other features are shown as noted traits

@@ -14,11 +14,51 @@ export const WEAPON_PROFICIENCIES: Record<string, string[]> = {
   wizard: ["dagger", "dart", "sling", "quarterstaff", "crossbow, light"],
 };
 
-/** Is a character with these classes proficient with a weapon? `category` is e.g. "Simple Melee Weapons". */
+/**
+ * Proficiencies gained when a class is taken as a *second or later* class (PHB p.164). The first class gives its full list.
+ */
+export const MULTICLASS_WEAPONS: Record<string, string[]> = {
+  barbarian: ["simple", "martial"],
+  bard: [],
+  cleric: [],
+  druid: [],
+  fighter: ["simple", "martial"],
+  monk: ["simple", "shortsword"],
+  paladin: ["simple", "martial"],
+  ranger: ["simple", "martial"],
+  rogue: [],
+  sorcerer: [],
+  warlock: ["simple"],
+  wizard: [],
+};
+
+export const MULTICLASS_ARMOR: Record<string, string[]> = {
+  barbarian: ["shields"],
+  bard: ["light"],
+  cleric: ["light", "medium", "shields"],
+  druid: ["light", "medium", "shields"],
+  fighter: ["light", "medium", "shields"],
+  monk: [],
+  paladin: ["light", "medium", "shields"],
+  ranger: ["light", "medium", "shields"],
+  rogue: ["light"],
+  sorcerer: [],
+  warlock: ["light"],
+  wizard: [],
+};
+
+/** Armor training across classes: the first class gives all of its training, later classes only the multiclass subset. */
+export function armorProficiencies(classIndexes: string[], full: Record<string, readonly string[]>): string[] {
+  const out = new Set<string>();
+  classIndexes.forEach((c, i) => (i === 0 ? full[c] ?? [] : MULTICLASS_ARMOR[c] ?? []).forEach((a) => out.add(a)));
+  return [...out];
+}
+
+/** Is a character with these classes proficient with a weapon? The first class listed is the starting class. */
 export function weaponProficient(classIndexes: string[], weaponName: string, category: string | null): boolean {
   const kind = category?.toLowerCase().startsWith("martial") ? "martial" : category?.toLowerCase().startsWith("simple") ? "simple" : null;
-  return classIndexes.some((c) => {
-    const profs = WEAPON_PROFICIENCIES[c] ?? [];
+  return classIndexes.some((c, i) => {
+    const profs = (i === 0 ? WEAPON_PROFICIENCIES[c] : MULTICLASS_WEAPONS[c]) ?? [];
     return (kind !== null && profs.includes(kind)) || profs.includes(weaponName.toLowerCase());
   });
 }
