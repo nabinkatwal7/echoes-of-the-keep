@@ -69,14 +69,14 @@ Details for each phase: docs/phases/*.md
 
 === PHASE 5: COMBAT ===
 [ ] f56, Encounter setup
-[ ] f57, Initiative and turn tracker
-[ ] f58, Action economy (actions, bonus actions, reactions)
+[~] f57, Initiative and turn tracker
+[~] f58, Action economy (actions, bonus actions, reactions)
 [ ] f59, Attack resolution (advantage sources, cover, crits)
 [ ] f60, Grapple, shove and two-weapon fighting
 [ ] f61, Damage, healing and death saves in play
 [ ] f62, Conditions applied in combat with durations
 [ ] f63, Movement, positions, grid map and opportunity attacks
-[ ] f64, Ready action and reactions
+[~] f64, Ready action and reactions
 [ ] f65, Mounted and underwater combat
 [ ] f66, Combat log with DM undo
 [ ] f67, Monster actions (multiattack, recharge, legendary)
