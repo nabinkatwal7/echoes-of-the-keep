@@ -37,7 +37,7 @@ Details for each phase: docs/phases/*.md
 [x] f28, Conditions and exhaustion effects
 [x] f29, Damage, healing, resistances, death saves
 [x] f30, Environment math (travel, falling, suffocation, light)
-[ ] f31, Character validation (legal build checker)
+[x] f31, Character validation (legal build checker)
 
 === PHASE 3: CHARACTER CREATOR AND SHEET ===
 [ ] f32, Character list and management
