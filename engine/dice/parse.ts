@@ -6,7 +6,11 @@ export type DiceTerm = {
   keep?: { mode: "h" | "l"; n: number };
 };
 
-export type DiceExpression = { terms: DiceTerm[]; modifier: number; source: string };
+export type DiceExpression = {
+  terms: DiceTerm[];
+  modifier: number;
+  source: string;
+};
 
 const TERM = /^([+-]?)(?:(\d*)d(\d+|%)(?:k([hl])(\d+))?|(\d+))/i;
 
@@ -19,19 +23,23 @@ export function parseDice(input: string): DiceExpression {
   let rest = source;
   while (rest) {
     const m = TERM.exec(rest);
-    if (!m || (m[1] === "" && rest !== source)) throw new Error(`Invalid dice expression: "${input}"`);
+    if (!m || (m[1] === "" && rest !== source))
+      throw new Error(`Invalid dice expression: "${input}"`);
     const sign = m[1] === "-" ? -1 : 1;
     if (m[6] !== undefined) {
       modifier += sign * Number(m[6]);
     } else {
       const count = m[2] === "" ? 1 : Number(m[2]);
       const sides = m[3] === "%" ? 100 : Number(m[3]);
-      if (count < 1 || count > 100) throw new Error(`Dice count out of range in "${input}"`);
-      if (sides < 2 || sides > 1000) throw new Error(`Dice sides out of range in "${input}"`);
+      if (count < 1 || count > 100)
+        throw new Error(`Dice count out of range in "${input}"`);
+      if (sides < 2 || sides > 1000)
+        throw new Error(`Dice sides out of range in "${input}"`);
       const term: DiceTerm = { sign, count, sides };
       if (m[4]) {
         const n = Number(m[5]);
-        if (n < 1 || n > count) throw new Error(`Invalid keep count in "${input}"`);
+        if (n < 1 || n > count)
+          throw new Error(`Invalid keep count in "${input}"`);
         term.keep = { mode: m[4].toLowerCase() as "h" | "l", n };
       }
       terms.push(term);

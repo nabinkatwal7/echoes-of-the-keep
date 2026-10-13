@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { parseDice, resolveRollMode, rollD20, rollExpression, seededRng } from "./index";
+import {
+  parseDice,
+  resolveRollMode,
+  rollD20,
+  rollExpression,
+  seededRng,
+} from "./index";
 
 describe("parseDice", () => {
   it("parses dice with modifiers", () => {
@@ -17,14 +23,19 @@ describe("parseDice", () => {
     expect(e.terms[1].count).toBe(1);
     expect(e.modifier).toBe(-2);
   });
-  it.each(["", "abc", "2d", "d1", "0d6", "2d6++3", "4d6kh5", "2d6x"])("rejects %j", (bad) => {
-    expect(() => parseDice(bad)).toThrow();
-  });
+  it.each(["", "abc", "2d", "d1", "0d6", "2d6++3", "4d6kh5", "2d6x"])(
+    "rejects %j",
+    (bad) => {
+      expect(() => parseDice(bad)).toThrow();
+    },
+  );
 });
 
 describe("rollExpression", () => {
   it("is deterministic with a seeded RNG", () => {
-    expect(rollExpression("3d8+2", seededRng(7))).toEqual(rollExpression("3d8+2", seededRng(7)));
+    expect(rollExpression("3d8+2", seededRng(7))).toEqual(
+      rollExpression("3d8+2", seededRng(7)),
+    );
   });
   it("stays within bounds", () => {
     const rng = seededRng(1);
@@ -52,8 +63,12 @@ describe("advantage and disadvantage (PHB p.173)", () => {
     expect(resolveRollMode({ advantage: 1, disadvantage: 4 })).toBe("normal");
   });
   it("resolves single-sided modes", () => {
-    expect(resolveRollMode({ advantage: 2, disadvantage: 0 })).toBe("advantage");
-    expect(resolveRollMode({ advantage: 0, disadvantage: 1 })).toBe("disadvantage");
+    expect(resolveRollMode({ advantage: 2, disadvantage: 0 })).toBe(
+      "advantage",
+    );
+    expect(resolveRollMode({ advantage: 0, disadvantage: 1 })).toBe(
+      "disadvantage",
+    );
     expect(resolveRollMode({ advantage: 0, disadvantage: 0 })).toBe("normal");
   });
   it("takes the higher/lower d20", () => {
@@ -68,6 +83,10 @@ describe("advantage and disadvantage (PHB p.173)", () => {
   it("flags natural 20 and 1 and adds the modifier", () => {
     const r = rollD20(5, "normal", () => 0.999);
     expect(r).toMatchObject({ natural: 20, critical: true, total: 25 });
-    expect(rollD20(5, "normal", () => 0)).toMatchObject({ natural: 1, fumble: true, total: 6 });
+    expect(rollD20(5, "normal", () => 0)).toMatchObject({
+      natural: 1,
+      fumble: true,
+      total: 6,
+    });
   });
 });
