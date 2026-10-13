@@ -2,8 +2,10 @@
 import { cn } from "@/utils/cn";
 import { useState } from "react";
 import { FaDiceD20, FaPlay } from "react-icons/fa";
-import { GiCrestedHelmet, GiSwordwoman } from "react-icons/gi";
+import { GiSwordwoman } from "react-icons/gi";
 import { IoHome } from "react-icons/io5";
+import { GiSpellBook } from "react-icons/gi";
+import { wikiSections } from "@/data/wikiSections";
 import { Sidebar, SidebarBody, SidebarLink } from "../ui/Sidebar";
 
 const WikiSidebar = ({ children }: { children: React.ReactNode }) => {
@@ -23,13 +25,11 @@ const WikiSidebar = ({ children }: { children: React.ReactNode }) => {
       href: "/wiki/character",
       icon: <GiSwordwoman className="text-accentColor h-5 w-5 flex-shrink-0" />,
     },
-    {
-      label: "Class",
-      href: "/wiki/character",
-      icon: (
-        <GiCrestedHelmet className="text-accentColor h-5 w-5 flex-shrink-0" />
-      ),
-    },
+    ...wikiSections.map((section) => ({
+      label: section.label,
+      href: section.href,
+      icon: <GiSpellBook className="text-accentColor h-5 w-5 flex-shrink-0" />,
+    })),
   ];
   const [open, setOpen] = useState(false);
   return (
