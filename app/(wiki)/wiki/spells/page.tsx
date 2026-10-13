@@ -1,6 +1,11 @@
 import Link from "next/link";
-import ReusableTitle from "@/app/components/ReusableTitle";
+import { GiSpellBook } from "react-icons/gi";
+import { schoolStyle } from "@/app/components/icons";
 import { Badge } from "@/app/components/ui/Badge";
+import { Button } from "@/app/components/ui/Button";
+import { Card } from "@/app/components/ui/Card";
+import { Input, Select } from "@/app/components/ui/Input";
+import { PageHeader } from "@/app/components/ui/PageHeader";
 import { getSpells, spellLevelLabel } from "@/lib/content/spells";
 
 export const dynamic = "force-dynamic";
@@ -22,39 +27,65 @@ export default async function SpellsPage({ searchParams }: { searchParams: Promi
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <ReusableTitle title="Spells" />
-      <form className="flex flex-wrap items-end gap-3 text-sm">
-        <input name="q" defaultValue={p.q} placeholder="Search name" className="rounded-md border border-border bg-surface px-3 py-2" />
-        <select name="level" defaultValue={p.level ?? ""} className="rounded-md border border-border bg-surface px-3 py-2">
-          <option value="">Any level</option>
-          <option value="0">Cantrip</option>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-            <option key={n} value={n}>Level {n}</option>
-          ))}
-        </select>
-        <select name="class" defaultValue={p.class ?? ""} className="rounded-md border border-border bg-surface px-3 py-2">
-          <option value="">Any class</option>
-          {CLASSES.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
-        <label className="flex items-center gap-1"><input type="checkbox" name="ritual" defaultChecked={p.ritual === "on"} /> Ritual</label>
-        <label className="flex items-center gap-1"><input type="checkbox" name="concentration" defaultChecked={p.concentration === "on"} /> Concentration</label>
-        <button className="rounded-md bg-accent px-4 py-2 text-white">Filter</button>
-      </form>
-      <p className="text-sm text-muted">{spells.length} spells</p>
-      <ul className="flex flex-col divide-y divide-border">
-        {spells.map((s) => (
-          <li key={s.index} className="flex flex-wrap items-center gap-2 py-2">
-            <Link href={`/wiki/spells/${s.index}`} className="font-medium hover:underline">{s.name}</Link>
-            <span className="text-sm text-muted">{spellLevelLabel(s.level, s.school)}</span>
-            {s.concentration && <Badge>Concentration</Badge>}
-            {s.ritual && <Badge>Ritual</Badge>}
-            <span className="ml-auto text-xs text-muted">{s.classes.join(", ")}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <>
+      <PageHeader eyebrow="The Tome" title="Spells" subtitle={`${spells.length} incantations`} icon={<GiSpellBook />} />
+
+      <Card flat className="mb-6">
+        <form className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_auto_auto_auto] lg:items-center">
+          <Input name="q" defaultValue={p.q} placeholder="Search by name" aria-label="Search by name" />
+          <Select name="level" defaultValue={p.level ?? ""} aria-label="Level">
+            <option value="">Any level</option>
+            <option value="0">Cantrip</option>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+              <option key={n} value={n}>
+                Level {n}
+              </option>
+            ))}
+          </Select>
+          <Select name="class" defaultValue={p.class ?? ""} aria-label="Class">
+            <option value="">Any class</option>
+            {CLASSES.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </Select>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="ritual" defaultChecked={p.ritual === "on"} className="accent-[var(--gold)]" /> Ritual
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="concentration" defaultChecked={p.concentration === "on"} className="accent-[var(--gold)]" /> Concentration
+          </label>
+          <Button>Filter</Button>
+        </form>
+      </Card>
+
+      {spells.length === 0 ? (
+        <Card className="text-center text-muted">Nothing matched. Try a different name, level or class.</Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {spells.map((s) => {
+            const school = schoolStyle(s.school);
+            return (
+              <Link key={s.index} href={`/wiki/spells/${s.index}`} className="block">
+                <Card flat interactive className={`flex h-full flex-col gap-2 border-l-4 ${school.border}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className={`font-display text-base uppercase tracking-[0.08em] ${school.text}`}>{s.name}</h2>
+                    <span className="font-display text-lg text-goldBright">{s.level === 0 ? "∘" : s.level}</span>
+                  </div>
+                  <p className="text-sm italic text-muted">{spellLevelLabel(s.level, s.school)}</p>
+                  <div className="mt-auto flex flex-wrap gap-1.5 pt-1">
+                    {s.concentration && <Badge tone="gold">Conc.</Badge>}
+                    {s.ritual && <Badge tone="emerald">Ritual</Badge>}
+                    {s.classes.slice(0, 3).map((c) => (
+                      <Badge key={c}>{c}</Badge>
+                    ))}
+                    {s.classes.length > 3 && <Badge>+{s.classes.length - 3}</Badge>}
+                  </div>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }

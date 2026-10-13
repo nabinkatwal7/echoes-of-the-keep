@@ -1,27 +1,24 @@
 import Link from "next/link";
-import ReusableTitle, { ReusableDescription } from "@/app/components/ReusableTitle";
+import { Card } from "@/app/components/ui/Card";
 import { getBackgrounds } from "@/lib/content/reference";
 
-const Background = async () => {
+export default async function Background() {
   const backgrounds = await getBackgrounds();
   return (
-    <div className="flex flex-col gap-6">
-      <ReusableTitle title="Background" />
-      <ReusableDescription description="Every story has a beginning. Your character's background reveals where you came from, how you became an adventurer, and your place in the world." />
-      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    <section id="backgrounds">
+      <h2 className="eyebrow mb-2">Backgrounds</h2>
+      <p className="mb-4 max-w-2xl text-foreground/80">
+        Every story has a beginning. Your background reveals where you came from, how you became an adventurer, and your place in the world.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {backgrounds.map((b) => (
-          <li key={b.index}>
-            <Link
-              href={`/wiki/backgrounds/${b.index}`}
-              className="block rounded-lg border border-border bg-surface p-3 hover:border-accent"
-            >
-              {b.name}
-            </Link>
-          </li>
+          <Link key={b.index} href={`/wiki/backgrounds/${b.index}`}>
+            <Card flat interactive className="py-3">
+              <span className="font-display uppercase tracking-[0.1em]">{b.name}</span>
+            </Card>
+          </Link>
         ))}
-      </ul>
-    </div>
+      </div>
+    </section>
   );
-};
-
-export default Background;
+}

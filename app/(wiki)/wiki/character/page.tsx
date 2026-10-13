@@ -1,23 +1,19 @@
-import { TabNav } from "@/app/components/layout/TabNav";
-import { characterTabData } from "@/data/pageTabData/CharacterTabData";
+import { PageHeader } from "@/app/components/ui/PageHeader";
+import { GiBrain } from "react-icons/gi";
 import Ability from "./components/Ability/Ability";
 import Alignment from "./components/Alignment/Alignment";
 import Background from "./components/Background/Background";
 
-const Wiki = async ({
-  searchParams,
-}: {
-  searchParams: Promise<{ tab: string }>;
-}) => {
-  const { tab } = (await searchParams) || "ability";
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Core Rules" };
+
+export default function CoreRulesPage() {
   return (
-    <div className="flex flex-col gap-8">
-      <TabNav data={characterTabData} />
-      {tab === "ability" && <Ability />}
-      {tab === "alignment" && <Alignment />}
-      {tab === "background" && <Background />}
+    <div className="flex flex-col gap-14">
+      <PageHeader eyebrow="The Tome" title="Core Rules" subtitle="Abilities, alignments and backgrounds at a glance." icon={<GiBrain />} />
+      <Ability />
+      <Alignment />
+      <Background />
     </div>
   );
-};
-
-export default Wiki;
+}

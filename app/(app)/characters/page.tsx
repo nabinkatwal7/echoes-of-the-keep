@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { GiCrossedSwords } from "react-icons/gi";
+import { classIcon } from "@/app/components/icons";
 import { Card } from "@/app/components/ui/Card";
+import { LinkButton } from "@/app/components/ui/Button";
+import { PageHeader } from "@/app/components/ui/PageHeader";
 import { requireUser } from "@/lib/auth";
 import { listCharacters } from "@/lib/characters/queries";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Characters" };
+export const metadata = { title: "Heroes" };
 
 const titleCase = (s: string) => s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -12,32 +16,43 @@ export default async function CharactersPage() {
   const user = await requireUser();
   const characters = await listCharacters(user.id);
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Your characters</h1>
-        <Link href="/characters/new" className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white">
-          New character
-        </Link>
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Your roster"
+        title="Heroes"
+        subtitle="The adventurers you have forged."
+        icon={<GiCrossedSwords />}
+        actions={<LinkButton href="/characters/new">Forge a hero</LinkButton>}
+      />
       {characters.length === 0 ? (
-        <p className="text-muted">No adventurers yet. Create your first one in a few minutes.</p>
+        <Card className="flex flex-col items-center gap-4 py-14 text-center">
+          <GiCrossedSwords className="h-14 w-14 text-gold/60" />
+          <p className="max-w-md text-muted">No adventurers yet. Forge your first hero. It takes a few minutes, and every number is explained.</p>
+          <LinkButton href="/characters/new">Forge a hero</LinkButton>
+        </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {characters.map((c) => {
             const classes = c.classes as { classIndex: string; level: number }[];
+            const Icon = classIcon(classes[0]?.classIndex);
             return (
-              <Link key={c.id} href={`/characters/${c.id}`}>
-                <Card className="hover:border-accent">
-                  <h2 className="text-lg font-semibold">{c.name}</h2>
-                  <p className="text-sm text-muted">
-                    {titleCase(c.subraceIndex ?? c.raceIndex)} {classes.map((k) => `${titleCase(k.classIndex)} ${k.level}`).join(" / ")}
-                  </p>
+              <Link key={c.id} href={`/characters/${c.id}`} className="block">
+                <Card interactive className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-gold/50 bg-black/30 text-4xl text-gold">
+                    <Icon />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="truncate font-display text-lg uppercase tracking-[0.1em]">{c.name}</h2>
+                    <p className="text-sm text-muted">
+                      {titleCase(c.subraceIndex ?? c.raceIndex)} {classes.map((k) => `${titleCase(k.classIndex)} ${k.level}`).join(" / ")}
+                    </p>
+                  </div>
                 </Card>
               </Link>
             );
           })}
         </div>
       )}
-    </div>
+    </>
   );
 }

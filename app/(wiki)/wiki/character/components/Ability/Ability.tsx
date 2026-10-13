@@ -1,38 +1,40 @@
-import ReusableTitle, { ReusableDescription, ReusableSubtitle } from "@/app/components/ReusableTitle";
+import { Badge } from "@/app/components/ui/Badge";
+import { Card } from "@/app/components/ui/Card";
 import { ABILITIES, SKILLS, type Ability as AbilityKey } from "@/engine/abilities";
 
-const ABILITY_INFO: Record<AbilityKey, { name: string; summary: string }> = {
-  str: { name: "Strength", summary: "Physical power. Used for lifting, climbing, jumping and melee attacks." },
-  dex: { name: "Dexterity", summary: "Agility, reflexes and balance. Used for stealth, ranged attacks and dodging." },
-  con: { name: "Constitution", summary: "Health and stamina. Determines hit points and resistance to harm." },
-  int: { name: "Intelligence", summary: "Reasoning and memory. Used for knowledge, investigation and wizard spellcasting." },
-  wis: { name: "Wisdom", summary: "Awareness and insight. Used for perception, survival and divine or nature magic." },
-  cha: { name: "Charisma", summary: "Force of personality. Used for persuasion, performance and some spellcasting." },
+const INFO: Record<AbilityKey, { name: string; summary: string }> = {
+  str: { name: "Strength", summary: "Physical power. Lifting, climbing, jumping and melee attacks." },
+  dex: { name: "Dexterity", summary: "Agility, reflexes and balance. Stealth, ranged attacks and dodging." },
+  con: { name: "Constitution", summary: "Health and stamina. Sets your hit points and resilience." },
+  int: { name: "Intelligence", summary: "Reasoning and memory. Knowledge, investigation and wizard magic." },
+  wis: { name: "Wisdom", summary: "Awareness and insight. Perception, survival and divine or nature magic." },
+  cha: { name: "Charisma", summary: "Force of personality. Persuasion, performance and some spellcasting." },
 };
 
 const titleCase = (s: string) => s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-const Ability = () => {
+export default function Ability() {
   return (
-    <div className="flex flex-col gap-6">
-      <ReusableTitle title="Player Abilities" />
-      {ABILITIES.map((key) => (
-        <div key={key} className="flex flex-col gap-3">
-          <ReusableSubtitle title={ABILITY_INFO[key].name} subtitle={key.toUpperCase()} />
-          <ReusableDescription description={ABILITY_INFO[key].summary} />
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(SKILLS)
-              .filter(([, ability]) => ability === key)
-              .map(([skill]) => (
-                <span key={skill} className="rounded-full border border-border bg-surface px-3 py-1 text-sm">
-                  {titleCase(skill)}
-                </span>
-              ))}
-          </div>
-        </div>
-      ))}
-    </div>
+    <section id="abilities">
+      <h2 className="eyebrow mb-4">The six abilities</h2>
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {ABILITIES.map((key) => (
+          <Card key={key} className="flex flex-col gap-3">
+            <div className="flex items-baseline justify-between">
+              <h3 className="font-display text-lg uppercase tracking-[0.12em] text-goldBright">{INFO[key].name}</h3>
+              <span className="font-display text-sm text-muted">{key.toUpperCase()}</span>
+            </div>
+            <p className="text-foreground/85">{INFO[key].summary}</p>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(SKILLS)
+                .filter(([, a]) => a === key)
+                .map(([skill]) => (
+                  <Badge key={skill}>{titleCase(skill)}</Badge>
+                ))}
+            </div>
+          </Card>
+        ))}
+      </div>
+    </section>
   );
-};
-
-export default Ability;
+}

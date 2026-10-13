@@ -1,5 +1,8 @@
-import ReusableTitle from "@/app/components/ReusableTitle";
+import { GiAnvil } from "react-icons/gi";
 import { Prose } from "@/app/components/Prose";
+import { Badge } from "@/app/components/ui/Badge";
+import { Card } from "@/app/components/ui/Card";
+import { PageHeader } from "@/app/components/ui/PageHeader";
 import { getFeats } from "@/lib/content/reference";
 
 export const dynamic = "force-dynamic";
@@ -8,15 +11,19 @@ export const metadata = { title: "Feats" };
 export default async function FeatsPage() {
   const feats = await getFeats();
   return (
-    <div className="flex flex-col gap-6">
-      <ReusableTitle title="Feats" />
-      {feats.map((f) => (
-        <section key={f.index} id={f.index} className="flex flex-col gap-2">
-          <h2 className="text-xl font-semibold">{f.name}</h2>
-          {f.prerequisite && <p className="text-sm text-muted">Prerequisite: {f.prerequisite}</p>}
-          <Prose text={f.description} />
-        </section>
-      ))}
-    </div>
+    <>
+      <PageHeader eyebrow="The Tome" title="Feats" subtitle="Special talents that set a character apart." icon={<GiAnvil />} />
+      <div className="grid gap-5 lg:grid-cols-2">
+        {feats.map((f) => (
+          <Card key={f.index} id={f.index} className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-lg uppercase tracking-[0.12em] text-goldBright">{f.name}</h2>
+              {f.prerequisite && <Badge tone="crimson">Requires {f.prerequisite}</Badge>}
+            </div>
+            <Prose text={f.description.replace(/^Prerequisite:.*\n?/, "")} className="text-sm" />
+          </Card>
+        ))}
+      </div>
+    </>
   );
 }

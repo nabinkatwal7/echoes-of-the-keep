@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import ReusableTitle from "@/app/components/ReusableTitle";
+import { GiQuillInk } from "react-icons/gi";
 import { Prose } from "@/app/components/Prose";
+import { Card } from "@/app/components/ui/Card";
+import { PageHeader } from "@/app/components/ui/PageHeader";
 import { getBackground } from "@/lib/content/reference";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ index: string }> }) {
+  const b = await getBackground((await params).index);
+  return { title: b?.name ?? "Background" };
+}
 
 export default async function BackgroundPage({ params }: { params: Promise<{ index: string }> }) {
   const b = await getBackground((await params).index);
@@ -17,22 +24,26 @@ export default async function BackgroundPage({ params }: { params: Promise<{ ind
     ["Feature", b.featureName],
   ];
   return (
-    <article className="flex max-w-3xl flex-col gap-4">
-      <Link href="/wiki/backgrounds" className="text-sm text-muted hover:underline">
-        &larr; All backgrounds
+    <article className="max-w-3xl">
+      <Link href="/wiki/backgrounds" className="eyebrow hover:text-goldBright">
+        ← All backgrounds
       </Link>
-      <ReusableTitle title={b.name} />
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+      <div className="mt-4">
+        <PageHeader eyebrow="Background" title={b.name} icon={<GiQuillInk />} />
+      </div>
+      <div className="mb-8 grid gap-3 sm:grid-cols-2">
         {facts.map(([k, v]) =>
           v ? (
-            <div key={k} className="contents">
-              <dt className="font-semibold">{k}</dt>
-              <dd>{v}</dd>
-            </div>
+            <Card key={k} flat className="p-4">
+              <p className="rune-label">{k}</p>
+              <p>{v}</p>
+            </Card>
           ) : null,
         )}
-      </dl>
-      <Prose text={b.text} />
+      </div>
+      <Card className="p-7">
+        <Prose text={b.text} />
+      </Card>
     </article>
   );
 }

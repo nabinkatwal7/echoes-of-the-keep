@@ -1,5 +1,8 @@
 import Link from "next/link";
-import ReusableTitle from "@/app/components/ReusableTitle";
+import { GiQuillInk } from "react-icons/gi";
+import { Badge } from "@/app/components/ui/Badge";
+import { Card } from "@/app/components/ui/Card";
+import { PageHeader } from "@/app/components/ui/PageHeader";
 import { getBackgrounds } from "@/lib/content/reference";
 
 export const dynamic = "force-dynamic";
@@ -8,21 +11,25 @@ export const metadata = { title: "Backgrounds" };
 export default async function BackgroundsPage() {
   const backgrounds = await getBackgrounds();
   return (
-    <div className="flex flex-col gap-6">
-      <ReusableTitle title="Backgrounds" />
-      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    <>
+      <PageHeader eyebrow="The Tome" title="Backgrounds" subtitle="Where your hero came from." icon={<GiQuillInk />} />
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {backgrounds.map((b) => (
-          <li key={b.index}>
-            <Link
-              href={`/wiki/backgrounds/${b.index}`}
-              className="block rounded-lg border border-border bg-surface p-3 hover:border-accent"
-            >
-              <span className="font-medium">{b.name}</span>
-              {b.skillProficiencies && <span className="block text-sm text-muted">{b.skillProficiencies}</span>}
-            </Link>
-          </li>
+          <Link key={b.index} href={`/wiki/backgrounds/${b.index}`} className="block">
+            <Card interactive className="flex h-full flex-col gap-3">
+              <h2 className="font-display text-xl uppercase tracking-[0.12em]">{b.name}</h2>
+              {b.featureName && <p className="text-sm italic text-muted">{b.featureName}</p>}
+              <div className="mt-auto flex flex-wrap gap-1.5">
+                {b.skillProficiencies?.split(",").map((s) => (
+                  <Badge key={s} tone="gold">
+                    {s.trim()}
+                  </Badge>
+                ))}
+              </div>
+            </Card>
+          </Link>
         ))}
-      </ul>
-    </div>
+      </div>
+    </>
   );
 }
