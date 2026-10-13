@@ -54,15 +54,15 @@ Details for each phase: docs/phases/*.md
 [ ] f43, Character rules audit
 
 === PHASE 4: CAMPAIGNS AND LIVE SESSIONS ===
-[ ] f44, Campaign creation and house-rule settings
-[ ] f45, Invites, roles and membership
-[ ] f46, Campaign hub
-[ ] f47, Live session table with presence
-[ ] f48, Realtime event log (SSE, reconnect, replay)
-[ ] f49, Dice roller and roll log (secret rolls)
-[ ] f50, Chat, whispers and slash commands
+[x] f44, Campaign creation and house-rule settings
+[x] f45, Invites, roles and membership
+[x] f46, Campaign hub
+[~] f47, Live session table with presence
+[~] f48, Realtime event log (SSE, reconnect, replay)
+[~] f49, Dice roller and roll log (secret rolls)
+[~] f50, Chat, whispers and slash commands
 [ ] f51, Journal, notes and handouts
-[ ] f52, Hidden-information filtering (DM vs player views)
+[x] f52, Hidden-information filtering (DM vs player views)
 [ ] f53, DM screen basics
 [ ] f54, Session save and resume
 [ ] f55, Live sheet edits with audit log
@@ -140,3 +140,8 @@ f34: sheet shows stats, saves, skills; no attacks, inventory, spells or HP editi
 f36: level-up is generic (HP average, ASI or feat, multiclass); subclass choice and new class features per level not applied yet
 f37: multiclass prerequisites enforced on level-up; combined proficiencies not applied yet
 f38: feats can be chosen at ASI levels; feat effects not applied to stats yet
+f44: campaign name and premise only; house-rule settings not built yet
+f47: table page with chat and dice log; presence list and shared scene not built yet
+f48: SSE stream polls the database every second with Last-Event-ID resume (verified over HTTP); LISTEN/NOTIFY not used yet
+f49: server-side rolls, /roll and /gmroll commands, quick dice buttons; the send action is not yet verified in a browser
+f50: chat, emotes and whispers to the DM; player-to-player whispers not built
