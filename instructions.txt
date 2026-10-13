@@ -84,12 +84,12 @@ Details for each phase: docs/phases/*.md
 [ ] f69, Encounter end and rewards hand-off
 
 === PHASE 6: SPELLCASTING ===
-[ ] f70, Casting flow (slots, upcasting, components, casting time)
-[ ] f71, Rituals, Pact Magic and sorcery points
+[~] f70, Casting flow (slots, upcasting, components, casting time)
+[~] f71, Rituals, Pact Magic and sorcery points
 [ ] f72, Targeting and area-of-effect templates
-[ ] f73, Spell attacks and saving throws
+[~] f73, Spell attacks and saving throws
 [ ] f74, Damage, healing and scaling
-[ ] f75, Concentration tracking
+[~] f75, Concentration tracking
 [ ] f76, Timed spell effects and buffs
 [ ] f77, Summons and polymorph
 [ ] f78, Utility, exploration and social spells
