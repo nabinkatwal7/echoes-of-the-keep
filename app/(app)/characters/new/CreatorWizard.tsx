@@ -13,7 +13,8 @@ import { POINT_BUY_BUDGET, POINT_BUY_COSTS, STANDARD_ARRAY, pointBuyCost, rollAb
 import { deriveCharacter, explain } from "@/engine/character";
 import { CLASS_RULES, skillOptions } from "@/engine/classes/rules";
 import { subclassDueAt, subclassesFor } from "@/engine/classes/subclasses";
-import { createCharacter } from "@/lib/characters/actions";
+import { createCharacter, type StartingEquipment } from "@/lib/characters/actions";
+import { STARTING_GOLD, STARTING_KITS } from "@/engine/classes/equipment";
 import { buildCharacter, type AbilityMethod, type BuildContent } from "@/lib/characters/build";
 import { OPTIONAL_SUBRACE, VARIANT_HUMAN, parseAbilityIncrease } from "@/lib/rules/race";
 import { checkPrerequisites } from "@/engine/feats";
@@ -27,7 +28,7 @@ export type WizardData = {
   feats: { index: string; name: string; prerequisite: string | null }[];
 };
 
-const STEPS = ["Race", "Class", "Abilities", "Background", "Skills", "Details", "Review"] as const;
+const STEPS = ["Race", "Class", "Abilities", "Background", "Skills", "Equipment", "Details", "Review"] as const;
 const titleCase = (s: string) => s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const signed = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
 const blank = (): Record<Ability, number> => ({ str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 });
@@ -68,6 +69,7 @@ export function CreatorWizard({ data }: { data: WizardData }) {
   const [classSkills, setClassSkills] = useState<Skill[]>([]);
   const [variantSkill, setVariantSkill] = useState<Skill | "">("");
   const [variantFeat, setVariantFeat] = useState("");
+  const [equipmentMode, setEquipmentMode] = useState<StartingEquipment>("kit");
   const [name, setName] = useState("");
   const [alignment, setAlignment] = useState("");
   const [traits, setTraits] = useState("");
@@ -145,13 +147,14 @@ export function CreatorWizard({ data }: { data: WizardData }) {
     method === "pointbuy" ? pointBuyCost(scores) <= POINT_BUY_BUDGET : ABILITIES.every((a) => scores[a] > 0),
     !!background,
     !!classIndex && classSkills.length === CLASS_RULES[classIndex].skillChoices.count && (!variant || (!!variantSkill && !!variantFeat)),
+    true,
     name.trim().length > 0,
     !!built?.ok,
   ];
 
   function submit() {
     start(async () => {
-      const result = await createCharacter(choices);
+      const result = await createCharacter(choices, equipmentMode);
       if (result.ok) router.push(`/characters/${result.id}`);
       else setServerErrors(result.errors);
     });
@@ -405,7 +408,41 @@ export function CreatorWizard({ data }: { data: WizardData }) {
           </section>
         )}
 
-        {step === 5 && (
+        {step === 5 && classIndex && (
+          <section className="flex flex-col gap-5">
+            <h2 className="eyebrow">Starting equipment</h2>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Choice selected={equipmentMode === "kit"} onClick={() => setEquipmentMode("kit")}>
+                <div className="font-display uppercase tracking-[0.1em]">Class kit</div>
+                <div className="mt-1 text-sm text-muted">Ready to play: armor, weapons and a backpack.</div>
+              </Choice>
+              <Choice selected={equipmentMode === "gold"} onClick={() => setEquipmentMode("gold")}>
+                <div className="font-display uppercase tracking-[0.1em]">Starting gold</div>
+                <div className="mt-1 text-sm text-muted">
+                  Roll {STARTING_GOLD[classIndex].dice}
+                  {STARTING_GOLD[classIndex].multiplier > 1 ? ` × ${STARTING_GOLD[classIndex].multiplier}` : ""} gp and shop yourself.
+                </div>
+              </Choice>
+              <Choice selected={equipmentMode === "none"} onClick={() => setEquipmentMode("none")}>
+                <div className="font-display uppercase tracking-[0.1em]">Nothing yet</div>
+                <div className="mt-1 text-sm text-muted">Your DM will hand things out.</div>
+              </Choice>
+            </div>
+            {equipmentMode === "kit" && (
+              <ul className="grid gap-1 text-sm sm:grid-cols-2">
+                {STARTING_KITS[classIndex].map((k) => (
+                  <li key={k.index} className="flex gap-2">
+                    <span className="mt-[0.55em] h-1.5 w-1.5 shrink-0 rotate-45 bg-gold" aria-hidden />
+                    {titleCase(k.index)}
+                    {k.quantity && k.quantity > 1 ? ` × ${k.quantity}` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {step === 6 && (
           <section className="flex flex-col gap-5">
             <h2 className="eyebrow">Who are they?</h2>
             <Field label="Name">
@@ -430,7 +467,7 @@ export function CreatorWizard({ data }: { data: WizardData }) {
           </section>
         )}
 
-        {step === 6 && (
+        {step === 7 && (
           <section className="flex flex-col gap-5">
             <h2 className="eyebrow">Review</h2>
             {built && !built.ok && (

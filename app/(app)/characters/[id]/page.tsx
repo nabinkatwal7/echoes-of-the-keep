@@ -15,7 +15,11 @@ import { deleteCharacter } from "@/lib/characters/actions";
 import { deriveStored, prereqContext } from "@/lib/characters/derive";
 import { getOwnedCharacter } from "@/lib/characters/queries";
 import { prisma } from "@/lib/prisma";
+import { InventoryPanel } from "./InventoryPanel";
 import { LevelUpPanel } from "./LevelUpPanel";
+import { VitalsPanel } from "./VitalsPanel";
+import type { InventoryItem } from "@/lib/characters/inventory";
+import type { Purse } from "@/engine/economy";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +39,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
   if (!c) notFound();
 
   const d = deriveStored(c);
+  const catalog = await prisma.equipmentItem.findMany({ select: { index: true, name: true, cost: true, category: true }, orderBy: { name: "asc" } });
   const feats = await prisma.feat.findMany({ select: { index: true, name: true, prerequisite: true }, orderBy: { name: "asc" } });
   const classes = c.classes as { classIndex: string; level: number; subclassIndex?: string }[];
   const subclassNames = classes.map((k) => SUBCLASSES.find((s) => s.index === k.subclassIndex)?.name).filter(Boolean);
@@ -79,6 +84,15 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
           </div>
         </div>
       </header>
+
+      <VitalsPanel
+        id={c.id}
+        hp={c.currentHp}
+        maxHp={d.maxHp}
+        tempHp={c.tempHp}
+        deathSaves={c.deathSaves as { successes: number; failures: number }}
+        conditions={c.conditions as string[]}
+      />
 
       {/* quick stats */}
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -137,6 +151,34 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
           </Card>
         </section>
       </div>
+
+      {d.attacks.length > 0 && (
+        <section>
+          <h2 className="eyebrow mb-3">Attacks</h2>
+          <Card flat className="overflow-x-auto p-0">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-border bg-black/30 font-display text-xs uppercase tracking-[0.14em] text-gold">
+                  <th className="px-4 py-2.5">Weapon</th>
+                  <th className="px-4 py-2.5">Attack</th>
+                  <th className="px-4 py-2.5">Damage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.attacks.map((a) => (
+                  <tr key={a.name} className="border-b border-borderSoft last:border-0" title={explain(a.attackBonus)}>
+                    <td className="px-4 py-2">{a.name}</td>
+                    <td className="px-4 py-2 font-display text-goldBright">{signed(a.attackBonus.total)}</td>
+                    <td className="px-4 py-2">{a.damage}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        </section>
+      )}
+
+      <InventoryPanel id={c.id} items={c.equipment as unknown as InventoryItem[]} purse={c.currency as unknown as Purse} catalog={catalog} strength={d.abilities.str.score} />
 
       <Ornament />
 

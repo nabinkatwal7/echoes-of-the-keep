@@ -5,13 +5,18 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { buildCharacter, type CreatorChoices } from "./build";
 import { checkPrerequisites } from "@/engine/feats";
+import { STARTING_GOLD, STARTING_KITS } from "@/engine/classes/equipment";
+import { rollExpression } from "@/engine/dice";
+import { itemFromCatalog } from "./inventory";
 import { prereqContext } from "./derive";
 import { applyLevelUp, type LevelUpChoices } from "./levelup";
 
 export type CreateResult = { ok: true; id: string } | { ok: false; errors: string[] };
 
 /** Validates the creator's choices against the rules and content, then stores the character for the signed-in user. */
-export async function createCharacter(choices: CreatorChoices): Promise<CreateResult> {
+export type StartingEquipment = "kit" | "gold" | "none";
+
+export async function createCharacter(choices: CreatorChoices, startingEquipment: StartingEquipment = "kit"): Promise<CreateResult> {
   const user = await requireUser();
 
   const [race, subrace, background] = await Promise.all([
@@ -40,6 +45,20 @@ export async function createCharacter(choices: CreatorChoices): Promise<CreateRe
     );
     if (!check.met) return { ok: false, errors: [`${feat.name} requires ${check.unmet.join(", ")}`] };
   }
+  // starting equipment: the class kit, or gold rolled on the server
+  let equipment: object = [];
+  let currency: object = { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+  if (startingEquipment === "kit") {
+    const kit = STARTING_KITS[choices.classIndex] ?? [];
+    const rows = await prisma.equipmentItem.findMany({ where: { index: { in: kit.map((k) => k.index) } } });
+    equipment = kit.flatMap((k) => {
+      const r = rows.find((x) => x.index === k.index);
+      return r ? [itemFromCatalog(r, k.quantity ?? 1, !!k.equipped)] : [];
+    });
+  } else if (startingEquipment === "gold") {
+    const g = STARTING_GOLD[choices.classIndex];
+    if (g) currency = { cp: 0, sp: 0, ep: 0, gp: rollExpression(g.dice).total * g.multiplier, pp: 0 };
+  }
   const row = await prisma.character.create({
     data: {
       ownerId: user.id,
@@ -54,6 +73,8 @@ export async function createCharacter(choices: CreatorChoices): Promise<CreateRe
       scoreBonuses: c.scoreBonuses,
       skillProficiencies: c.skillProficiencies,
       feats: c.feats,
+      equipment,
+      currency,
       speed: c.speed,
       currentHp: c.currentHp,
       hitDiceSpent: c.hitDiceSpent,

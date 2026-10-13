@@ -43,7 +43,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         try {
           const { events, lastId } = await scanEvents(id, viewer, last);
           for (const e of events) {
-            send(`id: ${e.id}\nevent: ${e.type}\ndata: ${JSON.stringify({ ...e, createdAt: e.createdAt.toISOString() })}\n\n`);
+            send(`id: ${e.id}\ndata: ${JSON.stringify({ ...e, createdAt: e.createdAt.toISOString() })}\n\n`);
           }
           // advance past hidden events too, otherwise they would be re-scanned on every poll
           last = lastId;

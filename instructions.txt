@@ -6,7 +6,7 @@ Details for each phase: docs/phases/*.md
 [x] f1, Authentication (username + password, no third-party sign-in)
 [x] f2, Database schema baseline and migrations
 [x] f3, Design system and layout shells
-[~] f4, Tooling and CI (Vitest, Playwright, lint, GitHub Actions)
+[ ] f4, Tooling and CI (Vitest, Playwright, lint, GitHub Actions)
 [x] f5, Env config with validation
 [x] f6, Content pipeline skeleton (seed from extracted data)
 [x] f7, README and architecture decision records
@@ -41,9 +41,9 @@ Details for each phase: docs/phases/*.md
 
 === PHASE 3: CHARACTER CREATOR AND SHEET ===
 [x] f32, Character list and management
-[~] f33, Creation wizard (race, class, abilities, background, equipment, review)
+[ ] f33, Creation wizard (race, class, abilities, background, equipment, review)
 [~] f34, Character sheet (desktop and mobile)
-[ ] f35, Inventory, equipping and currency
+[x] f35, Inventory, equipping and currency
 [x] f36, Level-up flow (HP, features, subclass, ASI or feat)
 [~] f37, Multiclassing
 [~] f38, Feat selection
@@ -59,13 +59,13 @@ Details for each phase: docs/phases/*.md
 [x] f46, Campaign hub
 [~] f47, Live session table with presence
 [~] f48, Realtime event log (SSE, reconnect, replay)
-[~] f49, Dice roller and roll log (secret rolls)
+[ ] f49, Dice roller and roll log (secret rolls)
 [~] f50, Chat, whispers and slash commands
 [ ] f51, Journal, notes and handouts
 [x] f52, Hidden-information filtering (DM vs player views)
 [ ] f53, DM screen basics
 [ ] f54, Session save and resume
-[ ] f55, Live sheet edits with audit log
+[x] f55, Live sheet edits with audit log
 
 === PHASE 5: COMBAT ===
 [ ] f56, Encounter setup
@@ -73,7 +73,7 @@ Details for each phase: docs/phases/*.md
 [~] f58, Action economy (actions, bonus actions, reactions)
 [~] f59, Attack resolution (advantage sources, cover, crits)
 [~] f60, Grapple, shove and two-weapon fighting
-[ ] f61, Damage, healing and death saves in play
+[~] f61, Damage, healing and death saves in play
 [ ] f62, Conditions applied in combat with durations
 [ ] f63, Movement, positions, grid map and opportunity attacks
 [~] f64, Ready action and reactions
@@ -130,14 +130,13 @@ Details for each phase: docs/phases/*.md
 PARTIAL NOTES
 f4: Playwright e2e not set up yet
 f15: only the 31 Appendix D creatures; SRD monsters still to import
-f33: wizard has race, class, abilities (3 methods), background, skills, details, review; equipment step and racial/class effects (e.g. Hill Dwarf HP) still to do
-f34: sheet shows stats, saves, skills; no attacks, inventory, spells or HP editing yet
 f36: level-up is generic (HP average, ASI or feat, multiclass); subclass choice and new class features per level not applied yet
 f37: multiclass prerequisites enforced on level-up; combined proficiencies not applied yet
 f38: feats can be chosen at ASI levels; feat effects not applied to stats yet
 f44: campaign name and premise only; house-rule settings not built yet
 f47: table page with chat and dice log; presence list and shared scene not built yet
 f48: SSE stream polls the database every second with Last-Event-ID resume (verified over HTTP); LISTEN/NOTIFY not used yet
-f49: server-side rolls, /roll and /gmroll commands, quick dice buttons; the send action is not yet verified in a browser
 f50: chat, emotes and whispers to the DM; player-to-player whispers not built
 f10: subclass level tables per subclass (domain spells, etc.) are not split out; subclass text is shown as written
+f33: wizard covers race, subclass, class, abilities, background, skills, equipment (kit or gold) and details; racial effects like Hill Dwarf HP are not applied
+f34: sheet has vitals, abilities, saves, skills, attacks, inventory, level-up; spells and class resources panels come with f39 and f40

@@ -18,7 +18,6 @@ export type TableEvent = {
 };
 
 const DICE = ["d4", "d6", "d8", "d10", "d12", "d20", "d100"] as const;
-const EVENT_TYPES = ["chat", "roll", "system"] as const;
 
 type Connection = "connecting" | "live" | "reconnecting";
 
@@ -36,12 +35,11 @@ export function TableClient({ campaignId, userId, isDm, initial }: { campaignId:
     const source = new EventSource(`/api/campaigns/${campaignId}/stream?after=${lastId.current}`);
     source.onopen = () => setConnection("live");
     source.onerror = () => setConnection("reconnecting");
-    const onEvent = (msg: MessageEvent) => {
+    source.onmessage = (msg: MessageEvent) => {
       const event = JSON.parse(msg.data) as TableEvent;
       lastId.current = Math.max(lastId.current, event.id);
       setEvents((prev) => (prev.some((e) => e.id === event.id) ? prev : [...prev, event]));
     };
-    for (const t of EVENT_TYPES) source.addEventListener(t, onEvent as EventListener);
     return () => source.close();
   }, [campaignId]);
 
@@ -130,6 +128,15 @@ function EventLine({ event, mine }: { event: TableEvent; mine: boolean }) {
   const p = event.payload;
   const who = String(p.actorName ?? "Someone");
   const time = new Date(event.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  if (event.type === "sheet") {
+    return (
+      <li className="rounded border border-borderSoft bg-black/20 px-3 py-1.5 text-sm text-foreground/80">
+        <span className="rune-label mr-2 text-gold">Sheet</span>
+        {String(p.text)} <span className="text-xs text-muted">· {who} · {time}</span>
+      </li>
+    );
+  }
 
   if (event.type === "system") {
     return (
