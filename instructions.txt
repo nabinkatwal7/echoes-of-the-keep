@@ -68,20 +68,20 @@ Details for each phase: docs/phases/*.md
 [x] f55, Live sheet edits with audit log
 
 === PHASE 5: COMBAT ===
-[ ] f56, Encounter setup
-[~] f57, Initiative and turn tracker
-[~] f58, Action economy (actions, bonus actions, reactions)
-[~] f59, Attack resolution (advantage sources, cover, crits)
-[~] f60, Grapple, shove and two-weapon fighting
+[x] f56, Encounter setup
+[x] f57, Initiative and turn tracker
+[x] f58, Action economy (actions, bonus actions, reactions)
+[x] f59, Attack resolution (advantage sources, cover, crits)
+[x] f60, Grapple, shove and two-weapon fighting
 [~] f61, Damage, healing and death saves in play
-[ ] f62, Conditions applied in combat with durations
-[ ] f63, Movement, positions, grid map and opportunity attacks
+[x] f62, Conditions applied in combat with durations
+[x] f63, Movement, positions, grid map and opportunity attacks
 [~] f64, Ready action and reactions
 [ ] f65, Mounted and underwater combat
-[ ] f66, Combat log with DM undo
+[x] f66, Combat log with DM undo
 [ ] f67, Monster actions (multiattack, recharge, legendary)
-[ ] f68, Mobile-friendly player turn panel
-[ ] f69, Encounter end and rewards hand-off
+[x] f68, Mobile-friendly player turn panel
+[x] f69, Encounter end and rewards hand-off
 
 === PHASE 6: SPELLCASTING ===
 [x] f70, Casting flow (slots, upcasting, components, casting time)
@@ -128,6 +128,11 @@ Details for each phase: docs/phases/*.md
 [ ] f107, User docs and release checklist
 
 PARTIAL NOTES
+f61: combat damage drops heroes to 0 and mirrors HP to the sheet; death saves are rolled on the sheet, not yet prompted at the start of the downed hero's combat turn
+f64: Ready records the trigger and spends the reaction on use; the DM decides when a trigger fires
+f65: underwater rules apply (melee/ranged penalties, fire resistance handled in rules); mounted combat is not built
+f67: multiattack and flat/dice attacks are read from stat blocks; recharge and legendary actions are not built
+f63: opportunity attackers are reported on movement; the attack itself is made by the player or DM with the Opportunity button
 f4: Playwright e2e not set up yet
 f15: only the 31 Appendix D creatures; SRD monsters still to import
 f36: level-up is generic (HP average, ASI or feat, multiclass); subclass choice and new class features per level not applied yet

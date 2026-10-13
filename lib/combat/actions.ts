@@ -242,7 +242,7 @@ export async function takeAction(combatantId: string, action: SimpleAction, trig
 }
 
 /** Use your reaction, e.g. to carry out a readied action. */
-export async function useReaction(combatantId: string, note?: string): Promise<Result> {
+export async function takeReaction(combatantId: string, note?: string): Promise<Result> {
   const a = await loadActing(combatantId);
   if (a.error) return a.error;
   const { row, ctx } = a;
