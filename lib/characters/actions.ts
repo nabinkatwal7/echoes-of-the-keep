@@ -31,6 +31,15 @@ export async function createCharacter(choices: CreatorChoices): Promise<CreateRe
   if (!built.ok) return built;
 
   const c = built.character;
+  if (c.feats.length) {
+    const feat = await prisma.feat.findUnique({ where: { index: c.feats[0] } });
+    if (!feat) return { ok: false, errors: ["Unknown feat"] };
+    const check = checkPrerequisites(
+      feat.prerequisite,
+      prereqContext({ ...c, scoreBonuses: c.scoreBonuses, skillExpertise: [] }),
+    );
+    if (!check.met) return { ok: false, errors: [`${feat.name} requires ${check.unmet.join(", ")}`] };
+  }
   const row = await prisma.character.create({
     data: {
       ownerId: user.id,
@@ -44,6 +53,7 @@ export async function createCharacter(choices: CreatorChoices): Promise<CreateRe
       abilityMethod: c.abilityMethod,
       scoreBonuses: c.scoreBonuses,
       skillProficiencies: c.skillProficiencies,
+      feats: c.feats,
       speed: c.speed,
       currentHp: c.currentHp,
       hitDiceSpent: c.hitDiceSpent,

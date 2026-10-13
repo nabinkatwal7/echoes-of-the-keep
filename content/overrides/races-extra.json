@@ -1,0 +1,14 @@
+[
+  {
+    "index": "variant-human",
+    "name": "Human (Variant)",
+    "traits": [
+      { "name": "Ability Score Increase", "description": "Two different ability scores of your choice increase by 1." },
+      { "name": "Skills", "description": "You gain proficiency in one skill of your choice." },
+      { "name": "Feat", "description": "You gain one feat of your choice." }
+    ],
+    "text": "An optional version of the human that replaces the standard ability score increase with two chosen increases, one extra skill and a feat at first level. Uses the human's other traits: speed 30 feet, Medium size, and one extra language.",
+    "pdfPages": [],
+    "source": "PHB"
+  }
+]

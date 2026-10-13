@@ -21,7 +21,7 @@ export function parseAbilityIncrease(text: string): AbilityIncrease {
   for (const m of text.matchAll(/(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) score increases by (\d+)/gi)) {
     fixed[NAMES[m[1].toLowerCase()]] = Number(m[2]);
   }
-  const choose = /(two|three|one) other ability scores? of your choice increases? by (\d+)/i.exec(text);
+  const choose = /(two|three|one)(?: different| other) ability scores? of your choice increases? by (\d+)/i.exec(text);
   return {
     fixed,
     ...(choose && { choose: { count: { one: 1, two: 2, three: 3 }[choose[1].toLowerCase() as "one"], amount: Number(choose[2]) } }),
@@ -39,6 +39,13 @@ export const SUBRACES: Record<string, string[]> = {
   elf: ["high-elf", "wood-elf", "dark-elf-drow"],
   halfling: ["lightfoot", "stout"],
   gnome: ["forest-gnome", "rock-gnome"],
+  human: ["variant-human"],
 };
+
+/** Races where choosing a subrace is optional (the standard human is the default). */
+export const OPTIONAL_SUBRACE = ["human"];
+
+/** The variant human replaces the human's standard ability score increase. */
+export const VARIANT_HUMAN = "variant-human";
 
 export const BASE_RACES = ["dwarf", "elf", "halfling", "human", "dragonborn", "gnome", "half-elf", "half-orc", "tiefling"] as const;

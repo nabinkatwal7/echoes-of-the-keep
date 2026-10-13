@@ -3,6 +3,7 @@ import { GiBrain } from "react-icons/gi";
 import Ability from "./components/Ability/Ability";
 import Alignment from "./components/Alignment/Alignment";
 import Background from "./components/Background/Background";
+import Language from "./components/Language/Language";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Core Rules" };
@@ -14,6 +15,7 @@ export default function CoreRulesPage() {
       <Ability />
       <Alignment />
       <Background />
+      <Language />
     </div>
   );
 }

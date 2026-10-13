@@ -88,4 +88,23 @@ describe("buildCharacter", () => {
     const r = buildCharacter(choices({ raceIndex: "human", subraceIndex: undefined }), human);
     expect(r.ok && Object.keys(r.character.scoreBonuses)).toHaveLength(6);
   });
+
+  it("builds a variant human with a free skill and a starting feat", () => {
+    const human: BuildContent = {
+      race: { index: "human", traits: [{ name: "Ability Score Increase", description: "Your ability scores each increase by 1." }] },
+      subrace: { index: "variant-human", traits: [{ name: "Ability Score Increase", description: "Two different ability scores of your choice increase by 1." }] },
+      background: hillDwarf.background,
+    };
+    const base = choices({ raceIndex: "human", subraceIndex: "variant-human", flexibleBonuses: ["str", "con"], variantSkill: "stealth", variantFeat: "tough" });
+    const r = buildCharacter(base, human);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.character.scoreBonuses).toEqual({ str: 1, con: 1 }); // not +1 to everything
+      expect(r.character.skillProficiencies).toContain("stealth");
+      expect(r.character.feats).toEqual(["tough"]);
+    }
+    expect(buildCharacter({ ...base, variantFeat: undefined }, human).ok).toBe(false);
+    expect(buildCharacter({ ...base, variantSkill: "insight" }, human).ok).toBe(false); // already from background
+    expect(buildCharacter({ ...base, flexibleBonuses: ["str"] }, human).ok).toBe(false);
+  });
 });

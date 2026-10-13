@@ -1,0 +1,18 @@
+[
+  { "index": "common", "name": "Common", "type": "Standard", "script": "Common" },
+  { "index": "dwarvish", "name": "Dwarvish", "type": "Standard", "script": "Dwarvish" },
+  { "index": "elvish", "name": "Elvish", "type": "Standard", "script": "Elvish" },
+  { "index": "giant", "name": "Giant", "type": "Standard", "script": "Dwarvish" },
+  { "index": "gnomish", "name": "Gnomish", "type": "Standard", "script": "Dwarvish" },
+  { "index": "goblin", "name": "Goblin", "type": "Standard", "script": "Dwarvish" },
+  { "index": "halfling", "name": "Halfling", "type": "Standard", "script": "Common" },
+  { "index": "orc", "name": "Orc", "type": "Standard", "script": "Dwarvish" },
+  { "index": "abyssal", "name": "Abyssal", "type": "Exotic", "script": "Infernal" },
+  { "index": "celestial", "name": "Celestial", "type": "Exotic", "script": "Celestial" },
+  { "index": "draconic", "name": "Draconic", "type": "Exotic", "script": "Draconic" },
+  { "index": "deep-speech", "name": "Deep Speech", "type": "Exotic", "script": "None" },
+  { "index": "infernal", "name": "Infernal", "type": "Exotic", "script": "Infernal" },
+  { "index": "primordial", "name": "Primordial", "type": "Exotic", "script": "Dwarvish" },
+  { "index": "sylvan", "name": "Sylvan", "type": "Exotic", "script": "Elvish" },
+  { "index": "undercommon", "name": "Undercommon", "type": "Exotic", "script": "Elvish" }
+]

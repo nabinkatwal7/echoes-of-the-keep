@@ -1,4 +1,4 @@
-import { ABILITIES, type Ability, type AbilityScores, type Skill } from "@/engine/abilities";
+import { ABILITIES, SKILLS, type Ability, type AbilityScores, type Skill } from "@/engine/abilities";
 import {
   validatePointBuy,
   validateRolledAssignment,
@@ -6,7 +6,7 @@ import {
 } from "@/engine/abilities/generation";
 import { CLASS_RULES, parseSkillList, skillOptions } from "@/engine/classes/rules";
 import { deriveCharacter } from "@/engine/character";
-import { parseAbilityIncrease, parseSpeed } from "@/lib/rules/race";
+import { VARIANT_HUMAN, parseAbilityIncrease, parseSpeed } from "@/lib/rules/race";
 
 export type AbilityMethod = "standard" | "pointbuy" | "roll";
 
@@ -26,6 +26,9 @@ export type CreatorChoices = {
   flexibleBonuses?: Ability[];
   /** skills chosen from the class list */
   classSkills: Skill[];
+  /** Variant Human: one extra skill and a feat at 1st level */
+  variantSkill?: Skill;
+  variantFeat?: string;
   personality?: { traits?: string; ideals?: string; bonds?: string; flaws?: string; backstory?: string };
 };
 
@@ -47,6 +50,7 @@ export type NewCharacter = {
   abilityMethod: AbilityMethod;
   scoreBonuses: Partial<AbilityScores>;
   skillProficiencies: Skill[];
+  feats: string[];
   speed: number;
   currentHp: number;
   hitDiceSpent: Record<string, { total: number; spent: number }>;
@@ -74,20 +78,23 @@ export function buildCharacter(choices: CreatorChoices, content: BuildContent): 
   // racial bonuses: race plus subrace
   const bonuses: Partial<AbilityScores> = {};
   const add = (a: Ability, n: number) => (bonuses[a] = (bonuses[a] ?? 0) + n);
-  const raceAsi = parseAbilityIncrease(trait(content.race.traits, "Ability Score Increase") ?? "");
+  const variant = content.subrace?.index === VARIANT_HUMAN;
+  // the variant human replaces the human's standard increase
+  const raceAsi = variant ? { fixed: {} } : parseAbilityIncrease(trait(content.race.traits, "Ability Score Increase") ?? "");
   const subAsi = parseAbilityIncrease(trait(content.subrace?.traits, "Ability Score Increase") ?? "");
   for (const asi of [raceAsi, subAsi]) for (const [a, n] of Object.entries(asi.fixed)) add(a as Ability, n!);
-  if (raceAsi.choose) {
+  const chooseRule = variant ? subAsi.choose : (raceAsi as ReturnType<typeof parseAbilityIncrease>).choose;
+  if (chooseRule) {
     const picks = choices.flexibleBonuses ?? [];
     const fixedKeys = Object.keys(raceAsi.fixed);
-    if (picks.length !== raceAsi.choose.count || new Set(picks).size !== picks.length) {
-      errors.push(`Choose ${raceAsi.choose.count} different abilities for your racial bonus`);
+    if (picks.length !== chooseRule.count || new Set(picks).size !== picks.length) {
+      errors.push(`Choose ${chooseRule.count} different abilities for your racial bonus`);
     } else if (picks.some((a) => fixedKeys.includes(a))) {
       errors.push("Racial bonus choices must differ from the ability that already increases");
     } else if (picks.some((a) => !ABILITIES.includes(a))) {
       errors.push("Unknown ability in racial bonus");
     } else {
-      for (const a of picks) add(a, raceAsi.choose.amount);
+      for (const a of picks) add(a, chooseRule.amount);
     }
   }
 
@@ -107,6 +114,15 @@ export function buildCharacter(choices: CreatorChoices, content: BuildContent): 
   if (errors.length || !rules) return { ok: false, errors };
 
   const skillProficiencies = [...backgroundSkills, ...choices.classSkills];
+  const feats: string[] = [];
+  if (variant) {
+    if (!choices.variantSkill || !(choices.variantSkill in SKILLS)) errors.push("Choose a skill for your variant human trait");
+    else if (skillProficiencies.includes(choices.variantSkill)) errors.push(`${choices.variantSkill} is already a proficiency; pick another skill`);
+    else skillProficiencies.push(choices.variantSkill);
+    if (!choices.variantFeat) errors.push("Choose a feat for your variant human trait");
+    else feats.push(choices.variantFeat);
+    if (errors.length) return { ok: false, errors };
+  }
   const speed = parseSpeed(trait(content.race.traits, "Speed"));
   const derived = deriveCharacter({
     classes: [{ classIndex: choices.classIndex, level: 1 }],
@@ -128,6 +144,7 @@ export function buildCharacter(choices: CreatorChoices, content: BuildContent): 
       abilityMethod: choices.abilityMethod,
       scoreBonuses: bonuses,
       skillProficiencies,
+      feats,
       speed,
       currentHp: derived.maxHp,
       hitDiceSpent: { [rules.hitDie]: { total: 1, spent: 0 } },

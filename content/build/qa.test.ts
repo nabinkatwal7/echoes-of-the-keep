@@ -13,9 +13,10 @@ describe("content counts (regression gates)", () => {
     expect(rows("conditions")).toHaveLength(15);
     expect(rows("feats")).toHaveLength(42);
     expect(rows("backgrounds")).toHaveLength(13);
-    expect(rows("races")).toHaveLength(18);
+    expect(rows("races")).toHaveLength(19); // 18 from the PDF plus the variant human override
+    expect(rows("languages")).toHaveLength(16);
     expect(rows("classes")).toHaveLength(12);
-    expect(rows("spells").length).toBeGreaterThanOrEqual(360);
+    expect(rows("spells")).toHaveLength(362);
     expect(rows("creatures").length).toBeGreaterThanOrEqual(31);
     expect(rows("equipment").length).toBeGreaterThanOrEqual(230);
     expect(rows("rule-sections").length).toBeGreaterThanOrEqual(90);
@@ -24,7 +25,7 @@ describe("content counts (regression gates)", () => {
   it("has the handbook's spells per level", () => {
     const byLevel: Record<number, number> = {};
     for (const s of rows("spells")) byLevel[s.level] = (byLevel[s.level] ?? 0) + 1;
-    expect(byLevel).toMatchObject({ 0: 27, 1: 62, 2: 59, 3: 50, 4: 35, 5: 42, 6: 32, 7: 20, 8: 17, 9: 16 });
+    expect(byLevel).toMatchObject({ 0: 27, 1: 62, 2: 59, 3: 50, 4: 35, 5: 42, 6: 32, 7: 20, 8: 19, 9: 16 });
   });
 });
 

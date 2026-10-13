@@ -93,3 +93,11 @@ export const equipmentSchema = z.object({
   source: base.source,
   pdfPage: z.number().int(),
 });
+
+export const languageSchema = z.object({
+  index: base.index,
+  name: base.name,
+  type: z.enum(["Standard", "Exotic"]),
+  script: z.string().min(1),
+  source: base.source,
+});

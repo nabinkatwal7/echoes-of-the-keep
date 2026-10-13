@@ -20,11 +20,12 @@ describe("importers", () => {
 
   it("imports spells with class lists and sensible per-level counts", () => {
     const spells = importers.find((i) => i.name === "spells")!.load() as { name: string; level: number; classes: string[] }[];
-    expect(spells.length).toBeGreaterThanOrEqual(360);
+    expect(spells.length).toBe(362);
     const fireball = spells.find((s) => s.name === "Fireball")!;
     expect(fireball.level).toBe(3);
     expect(fireball.classes).toEqual(["Sorcerer", "Wizard"]);
     expect(spells.filter((s) => s.level === 9)).toHaveLength(16);
+    expect(spells.find((s) => s.name === "Trap the Soul")).toBeDefined();
   });
 
   it("imports 12 classes with 20-row level tables and correct hit dice", () => {
@@ -36,7 +37,7 @@ describe("importers", () => {
 
   it("imports races and subraces with traits", () => {
     const races = importers.find((i) => i.name === "races")!.load() as { index: string; traits: unknown[] }[];
-    expect(races).toHaveLength(18);
+    expect(races).toHaveLength(19);
     expect(races.find((r) => r.index === "hill-dwarf")!.traits.length).toBeGreaterThan(0);
   });
 

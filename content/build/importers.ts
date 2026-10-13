@@ -12,6 +12,7 @@ import {
   creatureSchema,
   equipmentSchema,
   featSchema,
+  languageSchema,
   raceSchema,
   spellSchema,
 } from "../schemas/phb";
@@ -73,12 +74,12 @@ export const importers: Importer[] = [
   },
   {
     name: "spells",
-    load: () => z.array(spellSchema).parse(extracted("spells.json")),
+    load: () => z.array(spellSchema).parse([...extracted("spells.json"), ...overrides("spells-extra.json")]),
     write: (prisma, rows) => upsertAll(prisma.spell, rows),
   },
   {
     name: "races",
-    load: () => z.array(raceSchema).parse(extracted("races.json")),
+    load: () => z.array(raceSchema).parse([...extracted("races.json"), ...overrides("races-extra.json")]),
     write: (prisma, rows) => upsertAll(prisma.race, rows),
   },
   {
@@ -102,5 +103,10 @@ export const importers: Importer[] = [
     write: async (prisma, rows) => {
       for (const row of rows) await prisma.ruleSection.upsert({ where: { id: row.id }, update: row, create: row });
     },
+  },
+  {
+    name: "languages",
+    load: () => z.array(languageSchema).parse(overrides("languages.json")),
+    write: (prisma, rows) => upsertAll(prisma.language, rows),
   },
 ];

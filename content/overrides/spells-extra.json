@@ -1,0 +1,20 @@
+[
+  {
+    "index": "control-weather", "name": "Control Weather", "level": 8, "school": "transmutation",
+    "ritual": false, "concentration": true,
+    "castingTime": "10 minutes", "range": "Self (5-mile radius)",
+    "components": "V, S, M (burning incense and bits of earth and wood mixed in water)",
+    "duration": "Concentration, up to 8 hours",
+    "description": "You take control of the weather within 5 miles of you for the duration. You must be outdoors to cast this spell. Moving to a place where you don't have a clear path to the sky ends the spell early. The full table of weather stages is on this spell's page in the Player's Handbook; the text layer of the supplied PDF does not include it.",
+    "higherLevels": "", "classes": ["Cleric", "Druid", "Wizard"], "source": "PHB"
+  },
+  {
+    "index": "trap-the-soul", "name": "Trap the Soul", "level": 8, "school": "conjuration",
+    "ritual": false, "concentration": false,
+    "castingTime": "1 action", "range": "60 feet",
+    "components": "V, S, M (a gem or crystal prison; see the Player's Handbook for its cost)",
+    "duration": "Instantaneous",
+    "description": "You imprison a creature's soul in a gem. The full rules (the two ways to cast it, the saving throw and the gem's cost) are on this spell's page in the Player's Handbook; the text layer of the supplied PDF does not include them.",
+    "higherLevels": "", "classes": ["Wizard"], "source": "PHB"
+  }
+]

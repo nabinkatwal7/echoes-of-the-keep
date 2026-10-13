@@ -245,3 +245,12 @@ model RuleSection {
   @@unique([chapter, slug])
   @@index([chapter, position])
 }
+
+model Language {
+  index  String @id
+  name   String
+  /// Standard or Exotic (PHB p.123)
+  type   String
+  script String
+  source String @default("PHB")
+}

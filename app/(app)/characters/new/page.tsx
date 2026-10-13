@@ -14,10 +14,12 @@ const slim = (traits: Traits) => traits.filter((t) => t.name === "Ability Score 
 
 export default async function NewCharacterPage() {
   await requireUser();
-  const [races, backgrounds, alignments] = await Promise.all([
+  const [races, backgrounds, alignments, feats] = await Promise.all([
+
     prisma.race.findMany(),
     prisma.background.findMany({ orderBy: { name: "asc" } }),
     prisma.alignment.findMany({ orderBy: { name: "asc" } }),
+    prisma.feat.findMany({ orderBy: { name: "asc" }, select: { index: true, name: true, prerequisite: true } }),
   ]);
   const byIndex = new Map(races.map((r) => [r.index, r]));
 
@@ -42,6 +44,7 @@ export default async function NewCharacterPage() {
       skills: parseSkillList(b.skillProficiencies ?? ""),
     })),
     alignments: alignments.map((a) => ({ index: a.index, name: a.name })),
+    feats,
   };
 
   return <CreatorWizard data={data} />;

@@ -8,13 +8,14 @@ import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Field, Input, Select, Textarea } from "@/app/components/ui/Input";
 import { PageHeader } from "@/app/components/ui/PageHeader";
-import { ABILITIES, abilityModifier, type Ability, type AbilityScores, type Skill } from "@/engine/abilities";
+import { ABILITIES, SKILLS, abilityModifier, type Ability, type AbilityScores, type Skill } from "@/engine/abilities";
 import { POINT_BUY_BUDGET, POINT_BUY_COSTS, STANDARD_ARRAY, pointBuyCost, rollAbilityScores } from "@/engine/abilities/generation";
 import { deriveCharacter, explain } from "@/engine/character";
 import { CLASS_RULES, skillOptions } from "@/engine/classes/rules";
 import { createCharacter } from "@/lib/characters/actions";
 import { buildCharacter, type AbilityMethod, type BuildContent } from "@/lib/characters/build";
-import { parseAbilityIncrease } from "@/lib/rules/race";
+import { OPTIONAL_SUBRACE, VARIANT_HUMAN, parseAbilityIncrease } from "@/lib/rules/race";
+import { checkPrerequisites } from "@/engine/feats";
 import { GiCrossedSwords } from "react-icons/gi";
 
 type Traits = { name: string; description: string }[];
@@ -22,6 +23,7 @@ export type WizardData = {
   races: { index: string; name: string; traits: Traits; subraces: { index: string; name: string; traits: Traits }[] }[];
   backgrounds: { index: string; name: string; skillProficiencies: string | null; skills: Skill[] }[];
   alignments: { index: string; name: string }[];
+  feats: { index: string; name: string; prerequisite: string | null }[];
 };
 
 const STEPS = ["Race", "Class", "Abilities", "Background", "Skills", "Details", "Review"] as const;
@@ -62,6 +64,8 @@ export function CreatorWizard({ data }: { data: WizardData }) {
   const [rolled, setRolled] = useState<number[]>([]);
   const [backgroundIndex, setBackgroundIndex] = useState("");
   const [classSkills, setClassSkills] = useState<Skill[]>([]);
+  const [variantSkill, setVariantSkill] = useState<Skill | "">("");
+  const [variantFeat, setVariantFeat] = useState("");
   const [name, setName] = useState("");
   const [alignment, setAlignment] = useState("");
   const [traits, setTraits] = useState("");
@@ -73,6 +77,9 @@ export function CreatorWizard({ data }: { data: WizardData }) {
   const asiText = (t?: Traits) => t?.find((x) => x.name === "Ability Score Increase")?.description ?? "";
   const raceAsi = parseAbilityIncrease(asiText(race?.traits));
   const subAsi = parseAbilityIncrease(asiText(subrace?.traits));
+  const variant = subraceIndex === VARIANT_HUMAN;
+  const chooseRule = variant ? subAsi.choose : raceAsi.choose;
+  const fixedRaceKeys = variant ? [] : Object.keys(raceAsi.fixed);
 
   const content: BuildContent | null =
     race && background
@@ -95,6 +102,8 @@ export function CreatorWizard({ data }: { data: WizardData }) {
     rolled: method === "roll" ? rolled : undefined,
     flexibleBonuses: flexible,
     classSkills,
+    variantSkill: variant && variantSkill ? variantSkill : undefined,
+    variantFeat: variant && variantFeat ? variantFeat : undefined,
     personality: { traits, backstory },
   };
 
@@ -128,11 +137,11 @@ export function CreatorWizard({ data }: { data: WizardData }) {
   };
 
   const stepReady = [
-    !!race && (race.subraces.length === 0 || !!subrace) && (!raceAsi.choose || flexible.length === raceAsi.choose.count),
+    !!race && (race.subraces.length === 0 || !!subrace || OPTIONAL_SUBRACE.includes(race.index)) && (!chooseRule || flexible.length === chooseRule.count),
     !!classIndex,
     method === "pointbuy" ? pointBuyCost(scores) <= POINT_BUY_BUDGET : ABILITIES.every((a) => scores[a] > 0),
     !!background,
-    !!classIndex && classSkills.length === CLASS_RULES[classIndex].skillChoices.count,
+    !!classIndex && classSkills.length === CLASS_RULES[classIndex].skillChoices.count && (!variant || (!!variantSkill && !!variantFeat)),
     name.trim().length > 0,
     !!built?.ok,
   ];
@@ -189,25 +198,30 @@ export function CreatorWizard({ data }: { data: WizardData }) {
               <div>
                 <p className="rune-label mb-2">Subrace</p>
                 <div className="flex flex-wrap gap-2">
+                  {OPTIONAL_SUBRACE.includes(race.index) && (
+                    <Button variant={!subraceIndex ? "primary" : "secondary"} onClick={() => { setSubraceIndex(""); setFlexible([]); }}>
+                      Standard
+                    </Button>
+                  )}
                   {race.subraces.map((s) => (
-                    <Button key={s.index} variant={subraceIndex === s.index ? "primary" : "secondary"} onClick={() => setSubraceIndex(s.index)}>
+                    <Button key={s.index} variant={subraceIndex === s.index ? "primary" : "secondary"} onClick={() => { setSubraceIndex(s.index); setFlexible([]); }}>
                       {s.name}
                     </Button>
                   ))}
                 </div>
               </div>
             )}
-            {raceAsi.choose && (
+            {chooseRule && (
               <div className="rounded border border-gold/40 bg-gold/5 p-4">
                 <p className="mb-3 text-sm">
-                  Choose {raceAsi.choose.count} abilities (other than Charisma) to increase by {raceAsi.choose.amount}:
+                  Choose {chooseRule.count} different abilities{fixedRaceKeys.length ? " (other than Charisma)" : ""} to increase by {chooseRule.amount}:
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {ABILITIES.filter((a) => !(a in raceAsi.fixed)).map((a) => (
+                  {ABILITIES.filter((a) => !fixedRaceKeys.includes(a)).map((a) => (
                     <Button
                       key={a}
                       variant={flexible.includes(a) ? "primary" : "secondary"}
-                      onClick={() => setFlexible((f) => (f.includes(a) ? f.filter((x) => x !== a) : f.length < raceAsi.choose!.count ? [...f, a] : f))}
+                      onClick={() => setFlexible((f) => (f.includes(a) ? f.filter((x) => x !== a) : f.length < chooseRule.count ? [...f, a] : f))}
                     >
                       {a.toUpperCase()}
                     </Button>
@@ -258,7 +272,7 @@ export function CreatorWizard({ data }: { data: WizardData }) {
             )}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {ABILITIES.map((a) => {
-                const bonus = (raceAsi.fixed[a] ?? 0) + (subAsi.fixed[a] ?? 0) + (flexible.includes(a) ? (raceAsi.choose?.amount ?? 0) : 0);
+                const bonus = (variant ? 0 : (raceAsi.fixed[a] ?? 0)) + (subAsi.fixed[a] ?? 0) + (flexible.includes(a) ? (chooseRule?.amount ?? 0) : 0);
                 return (
                   <Card key={a} flat className="flex flex-col items-center gap-3 p-4 text-center">
                     <span className="rune-label">{FULL[a]}</span>
@@ -323,6 +337,40 @@ export function CreatorWizard({ data }: { data: WizardData }) {
               Choose <strong className="text-goldBright">{CLASS_RULES[classIndex].skillChoices.count}</strong> skills ({classSkills.length} chosen). Your background already gives{" "}
               <strong>{background?.skills.map(titleCase).join(" and ") || "no skills"}</strong>.
             </p>
+            {variant && (
+              <div className="grid gap-4 rounded border border-gold/40 bg-gold/5 p-4 sm:grid-cols-2">
+                <Field label="Variant human skill">
+                  <Select value={variantSkill} onChange={(e) => setVariantSkill(e.target.value as Skill)}>
+                    <option value="">Choose a skill</option>
+                    {(Object.keys(SKILLS) as Skill[])
+                      .filter((s) => !background?.skills.includes(s) && !classSkills.includes(s))
+                      .map((s) => (
+                        <option key={s} value={s}>
+                          {titleCase(s)}
+                        </option>
+                      ))}
+                  </Select>
+                </Field>
+                <Field label="Starting feat">
+                  <Select value={variantFeat} onChange={(e) => setVariantFeat(e.target.value)}>
+                    <option value="">Choose a feat</option>
+                    {data.feats.map((f) => {
+                      const ok = checkPrerequisites(f.prerequisite, {
+                        scores: { ...blank(), ...scores },
+                        armorProficiencies: CLASS_RULES[classIndex].armor as string[],
+                        canCastSpells: !!CLASS_RULES[classIndex].spellcasting,
+                      }).met;
+                      return (
+                        <option key={f.index} value={f.index} disabled={!ok}>
+                          {f.name}
+                          {f.prerequisite ? ` (requires ${f.prerequisite.toLowerCase()})` : ""}
+                        </option>
+                      );
+                    })}
+                  </Select>
+                </Field>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               {skillOptions(classIndex).map((s) => {
                 const fromBackground = background?.skills.includes(s);

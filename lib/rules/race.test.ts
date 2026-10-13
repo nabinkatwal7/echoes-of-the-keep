@@ -21,6 +21,14 @@ describe("parseAbilityIncrease", () => {
   });
 });
 
+describe("variant human", () => {
+  it("parses two different abilities of your choice", () => {
+    const r = parseAbilityIncrease("Two different ability scores of your choice increase by 1.");
+    expect(r.fixed).toEqual({});
+    expect(r.choose).toEqual({ count: 2, amount: 1 });
+  });
+});
+
 describe("parseSpeed", () => {
   it("reads the walking speed", () => {
     expect(parseSpeed("Your base walking speed is 25 feet. Your speed is not reduced by wearing heavy armor.")).toBe(25);
@@ -32,6 +40,6 @@ describe("parseSpeed", () => {
 describe("race lists", () => {
   it("has nine base races and subraces for four of them", () => {
     expect(BASE_RACES).toHaveLength(9);
-    expect(Object.values(SUBRACES).flat()).toHaveLength(9);
+    expect(Object.values(SUBRACES).flat()).toHaveLength(10); // includes the variant human
   });
 });
