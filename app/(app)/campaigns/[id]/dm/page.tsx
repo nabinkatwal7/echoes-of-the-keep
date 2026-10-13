@@ -41,7 +41,7 @@ export default async function DmScreen({ params }: { params: Promise<{ id: strin
     };
   });
   const camp = await prisma.campaign.findUniqueOrThrow({ where: { id } });
-  const creatures = await prisma.creature.findMany({ select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } });
+  const creatures = await prisma.creature.findMany({ where: { OR: [{ campaignId: null }, { campaignId: id }] }, select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } });
   const world = (camp.world ?? {}) as { lights?: { id: string; kind: string; remainingMinutes: number; lit: boolean }[] };
   const [{ active, last }, conditions, encounter] = await Promise.all([
     sessionState(id),

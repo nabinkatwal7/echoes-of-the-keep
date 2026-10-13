@@ -45,7 +45,7 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
       .map((r) => ({ id: r.id, text: String((r.payload as { text?: string }).text ?? "") }));
   }
 
-  const creatures = isDm ? await prisma.creature.findMany({ select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } }) : [];
+  const creatures = isDm ? await prisma.creature.findMany({ where: { OR: [{ campaignId: null }, { campaignId: id }] }, select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } }) : [];
 
   return (
     <div className="flex flex-col gap-4">

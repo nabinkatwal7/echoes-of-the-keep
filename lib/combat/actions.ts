@@ -62,7 +62,7 @@ export async function addMonster(encounterId: string, creatureIndex: string, cou
   if (!isCtx(ctx)) return ctx;
   if (!ctx.isDm) return fail("Only the DM can add combatants");
   if (!Number.isInteger(count) || count < 1 || count > 20) return fail("Add between 1 and 20 creatures");
-  const m = await prisma.creature.findUnique({ where: { index: creatureIndex } });
+  const m = await prisma.creature.findFirst({ where: { index: creatureIndex, OR: [{ campaignId: null }, { campaignId: ctx.enc.campaignId }] } });
   if (!m) return fail("Unknown creature");
   const s = monsterStats(m);
   const existing = ctx.enc.combatants.filter((c) => c.creatureIndex === creatureIndex).length;

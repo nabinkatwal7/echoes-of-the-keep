@@ -199,7 +199,7 @@ export async function summonCreature(encounterId: string, casterId: string, crea
   if (!row) return fail("Caster not found");
   if (!(await canControl(ctx, row))) return fail("Not allowed");
   if (!Number.isInteger(count) || count < 1 || count > 8) return fail("Summon between 1 and 8 creatures");
-  const m = await prisma.creature.findUnique({ where: { index: creatureIndex } });
+  const m = await prisma.creature.findFirst({ where: { index: creatureIndex, OR: [{ campaignId: null }, { campaignId: ctx.enc.campaignId }] } });
   if (!m) return fail("Unknown creature");
   const s = monsterStats(m);
   const existing = ctx.enc.combatants.filter((c) => c.creatureIndex === creatureIndex && (c.extra as { ally?: boolean } | null)?.ally).length;
@@ -223,7 +223,7 @@ export async function polymorphCombatant(targetId: string, creatureIndex: string
   if (!ctx.isDm) return fail("Only the DM can polymorph a creature");
   const extra = (row.extra ?? {}) as Record<string, unknown>;
   if (extra.polymorph) return fail("Already transformed; revert first");
-  const m = await prisma.creature.findUnique({ where: { index: creatureIndex } });
+  const m = await prisma.creature.findFirst({ where: { index: creatureIndex, OR: [{ campaignId: null }, { campaignId: ctx.enc.campaignId }] } });
   if (!m || !/beast/i.test(m.type ?? "")) return fail("Polymorph needs a beast");
   const s = monsterStats(m);
   const saved = { name: row.name, ac: row.ac, hp: row.hp, maxHp: row.maxHp, speed: row.speed, attacks: row.attacks, defenses: row.defenses, attacksPerAction: extra.attacksPerAction, size: extra.size };

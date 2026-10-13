@@ -121,6 +121,11 @@ model Creature {
   text              String
   source            String  @default("PHB")
   pdfPages          Int[]
+  /// set for homebrew monsters, which only that campaign can see
+  campaignId        String?
+  campaign          Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
 }
 
 model EquipmentItem {
@@ -206,6 +211,7 @@ model Campaign {
   places      Location[]
   quests      Quest[]
   stash       StashItem[]
+  homebrew    Creature[]
   /// in-game time: minutes since midnight of day 1 (starts at 8:00)
   clockMinutes Int                @default(480)
   /// light sources burning, party funds and other world state

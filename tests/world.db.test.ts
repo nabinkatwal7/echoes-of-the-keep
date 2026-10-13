@@ -3,7 +3,10 @@ import { cleanup, makeUser, RUN_DB, signInAs } from "./db";
 import { attachCharacter, createCampaign, joinCampaign } from "@/lib/campaigns/actions";
 import { createCharacter } from "@/lib/characters/actions";
 import { addStashItem, advanceTime, applyHazard, awardMilestone, awardPartyXp, callForCheck, lightSource, partyRest, raiseHero, setInspiration, socialCheck, splitCoin, takeFromStash, travel } from "@/lib/world/playActions";
-import { deleteWorldItem, saveLocation, saveNpc, saveQuest, setQuestStatus, setRevealed, setScene, spendDowntime } from "@/lib/world/worldActions";
+import { addMonster, createEncounter } from "@/lib/combat/actions";
+import { monsterStats } from "@/lib/combat/profiles";
+import { getCreatures } from "@/lib/content/gear";
+import { deleteHomebrewMonster, deleteWorldItem, saveHomebrewMonster, saveLocation, saveNpc, saveQuest, setQuestStatus, setRevealed, setScene, spendDowntime } from "@/lib/world/worldActions";
 import { purseValueCp, type Purse } from "@/engine/economy";
 import { prisma } from "@/lib/prisma";
 
@@ -160,6 +163,40 @@ describe.skipIf(!RUN_DB)("the world around the party (database)", () => {
     signInAs(alice);
     expect((await applyHazard(cid, { characterIds: [heroId], kind: "damage", dice: "1d4" })).ok).toBe(false);
     signInAs(dm);
+  });
+
+  it("homebrew monsters read back into combat stats and stay inside their campaign", async () => {
+    const made = await saveHomebrewMonster(cid, {
+      name: "Crypt Ghoulling", size: "Small", type: "undead", armorClass: 13, hitPoints: 22, speed: 30, challenge: "1/2",
+      abilities: { str: 12, dex: 14, con: 12, int: 6, wis: 10, cha: 6 }, attacksPerAction: 2,
+      attacks: [{ name: "Claw", melee: true, toHit: 4, dice: "1d6", bonus: 2, damageType: "slashing" }, { name: "Spit", melee: false, toHit: 3, dice: "1d4", bonus: 0, damageType: "acid", range: { normal: 20, long: 40 } }],
+    });
+    if (!made.ok) throw new Error(made.errors.join());
+    const row = await prisma.creature.findUniqueOrThrow({ where: { index: made.index } });
+    const stats = monsterStats(row);
+    expect(stats).toMatchObject({ ac: 13, hp: 22, speed: 30, attacksPerAction: 2 });
+    expect(stats.attacks.map((a) => a.name)).toEqual(["Claw", "Spit"]);
+    expect(stats.attacks[0]).toMatchObject({ toHit: 4, dice: "1d6", modifier: 2, damageType: "slashing", melee: true });
+    expect(stats.attacks[1]).toMatchObject({ melee: false, range: { normal: 20, long: 40 } });
+    expect(row.challenge).toContain("100 XP");
+
+    // usable in this campaign's encounter, hidden from the public lists
+    const enc = await createEncounter(cid, "Crypt");
+    if (!enc.ok || !enc.id) throw new Error("setup");
+    expect((await addMonster(enc.id, made.index)).ok).toBe(true);
+    expect((await getCreatures()).some((c) => c.index === made.index)).toBe(false);
+    const other = await makeUser("otherdm");
+    signInAs(other);
+    const c2 = await createCampaign("Itest Other");
+    if (!c2.ok) throw new Error("setup");
+    const e2 = await createEncounter(c2.id, "Elsewhere");
+    if (!e2.ok || !e2.id) throw new Error("setup");
+    expect((await addMonster(e2.id, made.index)).ok).toBe(false); // another campaign's homebrew
+    signInAs(dm);
+
+    expect((await saveHomebrewMonster(cid, { name: "X", size: "Small", type: "t", armorClass: 13, hitPoints: 5, speed: 30, challenge: "1/2", abilities: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 }, attacks: [] })).ok).toBe(false);
+    expect((await saveHomebrewMonster(cid, { name: "Bad Dice", size: "Small", type: "t", armorClass: 13, hitPoints: 5, speed: 30, challenge: "1/2", abilities: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 }, attacks: [{ name: "Bite", melee: true, toHit: 3, dice: "lots", bonus: 0, damageType: "piercing" }] })).ok).toBe(false);
+    expect((await deleteHomebrewMonster(cid, made.index)).ok).toBe(true);
   });
 
   it("downtime charges the purse", async () => {

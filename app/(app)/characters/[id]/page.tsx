@@ -76,7 +76,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
     options: options.filter((o) => o.classes.includes(CLASS_NAME[k.classIndex]) && o.level <= maxSpellLevel(k.classIndex, k.level)),
   }));
   const slots = slotViews(c);
-  const creatures = await prisma.creature.findMany({ select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } });
+  const creatures = await prisma.creature.findMany({ where: { campaignId: null }, select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } });
   const companionKinds: CompanionKind[] = [];
   if (classes.some((k) => k.classIndex === "druid")) companionKinds.push("wild-shape");
   if (classes.some((k) => k.classIndex === "ranger" && k.subclassIndex === "beast-master")) companionKinds.push("beast-companion");

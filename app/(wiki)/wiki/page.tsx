@@ -17,7 +17,7 @@ export default async function WikiHome() {
     prisma.equipmentItem.count(),
     prisma.spell.count(),
     prisma.condition.count(),
-    prisma.creature.count(),
+    prisma.creature.count({ where: { campaignId: null } }),
     prisma.ruleSection.count(),
   ]);
   const counts: Record<string, number | undefined> = { races, classes, backgrounds, feats, equipment, spells, conditions, creatures, rules };

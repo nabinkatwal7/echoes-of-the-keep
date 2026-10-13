@@ -3,6 +3,8 @@
 import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { pay, purseValueCp, type Purse } from "@/engine/economy";
+import { parseDice } from "@/engine/dice";
+import { XP_BY_CR } from "@/engine/xp";
 import { ATTITUDES, downtime, type Attitude, type DowntimeKind } from "@/engine/world";
 import { requireUser } from "@/lib/auth";
 import { audit, editable } from "@/lib/characters/access";
@@ -145,4 +147,80 @@ export async function spendDowntime(characterId: string, kind: DowntimeKind, day
   const summary = `${c.name} spends ${r.days} days on ${kind === "craft" && opts.itemName ? `crafting ${opts.itemName}` : kind}: ${r.summary}${r.costCp ? ` (-${(r.costCp / 100).toFixed(2)} gp)` : ""}`;
   await audit(characterId, c.name, user.id, user.name ?? "Someone", summary);
   return { ok: true, summary };
+}
+
+// ---------------------------------------------------------------- homebrew monsters
+
+export type HomebrewAttack = { name: string; melee: boolean; toHit: number; dice: string; bonus: number; damageType: string; reach?: number; range?: { normal: number; long: number } };
+export type HomebrewMonster = {
+  name: string;
+  size: string;
+  type: string;
+  armorClass: number;
+  hitPoints: number;
+  speed: number;
+  abilities: { str: number; dex: number; con: number; int: number; wis: number; cha: number };
+  challenge: string;
+  attacks: HomebrewAttack[];
+  /** how many attacks one Attack action makes */
+  attacksPerAction?: number;
+  resistances?: string;
+};
+
+const SIZES = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"];
+const DAMAGE_WORDS = ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"];
+
+/** One attack in the handbook's stat block wording, so the combat parser reads it back exactly. */
+export function attackLine(a: HomebrewAttack): string {
+  const p = parseDice(a.dice);
+  const avg = p.terms.reduce((s, t) => s + Math.floor((t.count * (t.sides + 1)) / 2), 0) + a.bonus;
+  const how = a.melee ? `reach ${a.reach ?? 5} ft.` : `range ${a.range?.normal ?? 30}/${a.range?.long ?? 120} ft.`;
+  const sign = a.bonus >= 0 ? `+ ${a.bonus}` : `- ${Math.abs(a.bonus)}`;
+  return `${a.name}. ${a.melee ? "Melee" : "Ranged"} Weapon Attack: +${a.toHit} to hit, ${how}, one target. Hit: ${avg} (${a.dice}${a.bonus ? ` ${sign}` : ""}) ${a.damageType} damage.`;
+}
+
+export async function saveHomebrewMonster(campaignId: string, input: HomebrewMonster): Promise<Result<{ index: string }>> {
+  const d = await dm(campaignId);
+  if (d.error) return d.error;
+  const name = input.name.trim();
+  if (name.length < 2 || name.length > 60) return fail("Give the monster a name (2-60 characters)");
+  if (!SIZES.includes(input.size)) return fail("Choose a size");
+  if (!(input.armorClass >= 1 && input.armorClass <= 30)) return fail("Armor class must be 1-30");
+  if (!(input.hitPoints >= 1 && input.hitPoints <= 1000)) return fail("Hit points must be 1-1000");
+  if (!(input.speed >= 0 && input.speed <= 200)) return fail("Speed must be 0-200 ft");
+  if (!(input.challenge in XP_BY_CR)) return fail("Challenge rating must be 0, 1/8, 1/4, 1/2 or a whole number up to 30");
+  for (const k of Object.values(input.abilities)) if (!Number.isInteger(k) || k < 1 || k > 30) return fail("Ability scores must be 1-30");
+  if (input.attacks.length > 8) return fail("Give at most 8 attacks");
+  const lines: string[] = [];
+  for (const a of input.attacks) {
+    if (a.name.trim().length < 2 || !/^[A-Z]/.test(a.name.trim())) return fail("Attack names start with a capital letter");
+    if (!DAMAGE_WORDS.includes(a.damageType)) return fail(`Unknown damage type: ${a.damageType}`);
+    if (!Number.isInteger(a.toHit) || a.toHit < -5 || a.toHit > 20 || !Number.isInteger(a.bonus) || a.bonus < -5 || a.bonus > 30) return fail("Attack bonuses are out of range");
+    try {
+      parseDice(a.dice);
+    } catch {
+      return fail(`"${a.dice}" is not a dice expression`);
+    }
+    lines.push(attackLine({ ...a, name: a.name.trim() }));
+  }
+  const per = input.attacksPerAction ?? 1;
+  if (per > 1 && input.attacks.length) lines.unshift(`Multiattack. The ${name} makes ${["", "", "two", "three", "four"][Math.min(4, per)]} attacks.`);
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const index = `hb-${campaignId.slice(-6).toLowerCase()}-${slug}`;
+  const data = {
+    name, size: input.size, type: text(input.type || "monster", 40), alignment: "unaligned", armorClass: String(input.armorClass), hitPoints: String(input.hitPoints),
+    speed: `${input.speed} ft.`, abilities: input.abilities as unknown as Prisma.InputJsonValue, challenge: `${input.challenge} (${XP_BY_CR[input.challenge]} XP)`,
+    damageResistances: text(input.resistances ?? "", 120) || null, text: lines.join("\n"), source: "HOMEBREW", pdfPages: [] as number[], campaignId,
+  };
+  await prisma.creature.upsert({ where: { index }, update: data, create: { index, ...data } });
+  touchWorld(campaignId);
+  return { ok: true, index };
+}
+
+export async function deleteHomebrewMonster(campaignId: string, index: string): Promise<Result> {
+  const d = await dm(campaignId);
+  if (d.error) return d.error;
+  await prisma.creature.deleteMany({ where: { index, campaignId } });
+  touchWorld(campaignId);
+  return { ok: true };
 }

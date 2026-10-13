@@ -17,7 +17,7 @@ export default async function Home() {
     getUser(),
     prisma.spell.count(),
     prisma.class.count(),
-    prisma.creature.count(),
+    prisma.creature.count({ where: { campaignId: null } }),
     prisma.feat.count(),
   ]);
 

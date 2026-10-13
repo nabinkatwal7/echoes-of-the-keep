@@ -19,7 +19,7 @@ export async function addCompanion(characterId: string, creatureIndex: string, k
   const user = await requireUser();
   const c = await editable(characterId, user.id);
   if (!c) return fail("Character not found");
-  const creature = await prisma.creature.findUnique({ where: { index: creatureIndex } });
+  const creature = await prisma.creature.findFirst({ where: { index: creatureIndex, campaignId: null } });
   if (!creature) return fail("Unknown creature");
   const classes = c.classes as ClassLevel[];
 

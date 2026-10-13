@@ -29,7 +29,7 @@ export async function searchAll(raw: string): Promise<SearchHit[]> {
     prisma.race.findMany({ where: { name }, select: { index: true, name: true }, take }),
     prisma.feat.findMany({ where: { name }, select: { index: true, name: true }, take }),
     prisma.background.findMany({ where: { name }, select: { index: true, name: true }, take }),
-    prisma.creature.findMany({ where: { name }, select: { index: true, name: true, size: true, type: true }, take }),
+    prisma.creature.findMany({ where: { name, campaignId: null }, select: { index: true, name: true, size: true, type: true }, take }),
     prisma.equipmentItem.findMany({ where: { name }, select: { index: true, name: true, cost: true }, take }),
     prisma.condition.findMany({ where: { name }, select: { index: true, name: true }, take }),
     prisma.ruleSection.findMany({
