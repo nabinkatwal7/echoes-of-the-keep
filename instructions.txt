@@ -1,25 +1,25 @@
 D&D PROJECT TO-DO LIST (one line per feature, in build order)
-[x] = done, [ ] = to do
+[x] = done, [~] = partly done, [ ] = to do
 Details for each phase: docs/phases/*.md
 
 === PHASE 0: FOUNDATION ===
 [x] f1, Authentication (email magic link + Google/Discord)
 [x] f2, Database schema baseline and migrations
 [x] f3, Design system and layout shells
-[x] f4, Tooling and CI (Vitest, Playwright, lint, GitHub Actions)
+[~] f4, Tooling and CI (Vitest, Playwright, lint, GitHub Actions)
 [x] f5, Env config with validation
 [x] f6, Content pipeline skeleton (seed from extracted data)
 [x] f7, README and architecture decision records
 
 === PHASE 1: RULES CONTENT AND WIKI ===
-[x] f8, Import reference data (abilities, skills, languages, alignments, damage types)
+[~] f8, Import reference data (abilities, skills, languages, alignments, damage types)
 [x] f9, Import races and subraces (incl. Variant Human)
-[x] f10, Import classes, level tables and subclasses
+[~] f10, Import classes, level tables and subclasses
 [x] f11, Import backgrounds and personality tables
 [x] f12, Import equipment, packs, tools, mounts, trade goods, trinkets
-[x] f13, Import feats with machine-checkable prerequisites
-[x] f14, Import spells and class spell lists (fill the 2 missing spells)
-[x] f15, Import creatures and SRD monsters
+[~] f13, Import feats with machine-checkable prerequisites
+[~] f14, Import spells and class spell lists (fill the 2 missing spells)
+[~] f15, Import creatures and SRD monsters
 [ ] f16, Rules text sections (chapters 7-10, gods, planes)
 [ ] f17, Wiki list and detail pages for every content type
 [ ] f18, Global search (command palette)
@@ -126,3 +126,11 @@ Details for each phase: docs/phases/*.md
 [ ] f105, Monitoring, logging and runbooks
 [ ] f106, Licensing and attribution (SRD-only mode)
 [ ] f107, User docs and release checklist
+
+PARTIAL NOTES
+f4: Playwright e2e not set up yet
+f8: only alignments and conditions imported; abilities, skills, languages, damage types still to do
+f10: subclasses not split out of class text; level table columns are raw text
+f13: feat prerequisites stored as text, not machine-checkable yet
+f14: Control Weather and Trap the Soul descriptions missing from the PDF
+f15: only the 31 Appendix D creatures; SRD monsters still to import
