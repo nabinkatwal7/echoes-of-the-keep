@@ -33,6 +33,17 @@ export type EventRow = {
   createdAt: Date;
 };
 
+/** Undo snapshots hold full combatant rows (monster HP, AC, hidden creatures), so they never leave the server. */
+function stripPrivate<T extends { payload: unknown }>(e: T): T {
+  const p = e.payload;
+  if (p && typeof p === "object" && !Array.isArray(p) && "undo" in p) {
+    const { undo: _undo, ...rest } = p as Record<string, unknown>;
+    void _undo;
+    return { ...e, payload: rest };
+  }
+  return e;
+}
+
 /**
  * Scan events after `afterId`. Returns the ones the viewer may see (oldest first) and `lastId`, the id of the last row
  * examined, so a stream can advance past hidden events without ever skipping unexamined ones.
@@ -43,11 +54,11 @@ export async function scanEvents(campaignId: string, viewer: Viewer, afterId = 0
     orderBy: { id: "asc" },
     take: limit,
   });
-  return { events: rows.filter((e) => canSee(e, viewer)), lastId: rows.length ? rows[rows.length - 1].id : afterId };
+  return { events: rows.filter((e) => canSee(e, viewer)).map(stripPrivate), lastId: rows.length ? rows[rows.length - 1].id : afterId };
 }
 
 /** Latest events for the first load (the last `limit` visible ones), oldest first. */
 export async function getRecentVisibleEvents(campaignId: string, viewer: Viewer, limit = 100): Promise<EventRow[]> {
   const rows = await prisma.campaignEvent.findMany({ where: { campaignId }, orderBy: { id: "desc" }, take: limit * 3 });
-  return rows.filter((e) => canSee(e, viewer)).slice(0, limit).reverse();
+  return rows.filter((e) => canSee(e, viewer)).slice(0, limit).reverse().map(stripPrivate);
 }

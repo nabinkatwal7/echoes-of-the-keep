@@ -9,6 +9,7 @@ import {
 import { buildEncounterView } from "@/lib/combat/view";
 import { loadEncounter } from "@/lib/combat/store";
 import { prisma } from "@/lib/prisma";
+import { getVisibleEventsForTest } from "./helpers";
 
 const fighter = {
   name: "Itest Brawler",
@@ -124,6 +125,9 @@ describe.skipIf(!RUN_DB)("combat (database)", () => {
     expect((mid.turn as { action: boolean }).action).toBe(false);
     const ev = await prisma.campaignEvent.findFirst({ where: { campaignId: (await rows()).campaignId, type: "combat" }, orderBy: { id: "desc" } });
     expect((ev!.payload as { text: string }).text).toContain("Wolf 1");
+    // the undo snapshot (monster stats) never reaches players or the DM's stream
+    const visible = await getVisibleEventsForTest((await rows()).campaignId, { userId: alice.id, isDm: false });
+    expect(visible.filter((e) => e.type === "combat").every((e) => !("undo" in (e.payload as object)))).toBe(true);
     // after an attack the player cannot take a second Dodge action
     expect((await takeAction(hero.id, "dodge")).ok).toBe(false);
 
