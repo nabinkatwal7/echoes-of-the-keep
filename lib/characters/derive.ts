@@ -22,6 +22,7 @@ export type StoredCharacter = {
   raceIndex?: string;
   subraceIndex?: string | null;
   feats?: unknown;
+  rezPenalty?: number;
 };
 
 export function toEngineInput(c: StoredCharacter): CharacterInput {
@@ -53,6 +54,7 @@ export function toEngineInput(c: StoredCharacter): CharacterInput {
     shield: gear.shield,
     weapons: gear.weapons,
     acBonus: (gear.acBonus + fx.acBonus) || undefined,
+    d20Penalty: c.rezPenalty || undefined,
   };
 }
 

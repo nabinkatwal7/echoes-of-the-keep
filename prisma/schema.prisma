@@ -160,6 +160,8 @@ model Character {
   speed              Int                 @default(30)
   xp                 Int                 @default(0)
   inspiration        Boolean             @default(false)
+  /// penalty to d20 tests after being raised from the dead; fades by 1 per long rest
+  rezPenalty         Int                 @default(0)
   currentHp          Int
   tempHp             Int                 @default(0)
   hitDiceSpent       Json                @default("{}")
@@ -200,6 +202,14 @@ model Campaign {
   encounters  Encounter[]
   notes       JournalEntry[]
   sessions    GameSession[]
+  npcs        Npc[]
+  places      Location[]
+  quests      Quest[]
+  stash       StashItem[]
+  /// in-game time: minutes since midnight of day 1 (starts at 8:00)
+  clockMinutes Int                @default(480)
+  /// light sources burning, party funds and other world state
+  world       Json                @default("{}")
 }
 
 model CampaignMember {
@@ -377,4 +387,66 @@ model GameSession {
   endedAt    DateTime?
 
   @@unique([campaignId, number])
+}
+
+model Npc {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name       String
+  role       String   @default("")
+  /// friendly | indifferent | hostile (PHB p.185)
+  attitude   String   @default("indifferent")
+  notes      String   @default("")
+  /// hidden from players until the DM reveals them
+  revealed   Boolean  @default(false)
+  locationId String?
+  creatureIndex String?
+  createdAt  DateTime @default(now())
+
+  @@index([campaignId])
+}
+
+model Location {
+  id          String   @id @default(cuid())
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  /// https image shown as the scene backdrop
+  imageUrl    String   @default("")
+  revealed    Boolean  @default(false)
+  /// the scene currently shown to the table
+  current     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([campaignId])
+}
+
+model Quest {
+  id          String   @id @default(cuid())
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title       String
+  description String   @default("")
+  reward      String   @default("")
+  /// ACTIVE | DONE | FAILED
+  status      String   @default("ACTIVE")
+  revealed    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([campaignId])
+}
+
+model StashItem {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name       String
+  quantity   Int      @default(1)
+  notes      String   @default("")
+  valueCp    Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([campaignId])
 }

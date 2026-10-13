@@ -6,6 +6,7 @@ import { CASTER_KIND, CLASS_NAME, validateSpellSelection, type SpellMeta, type S
 import { CASTING_ABILITY, beginConcentration, canCastAsRitual, checkCasting, lowestAvailableSlot, spendSlot } from "@/engine/spells";
 import { canLongRest, longRest, shortRest, spendResource } from "@/engine/rest";
 import type { ClassLevel } from "@/engine/progression";
+import { fadePenalty } from "@/engine/world";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { audit, editable } from "./access";
@@ -73,7 +74,7 @@ export async function takeLongRest(characterId: string, force = false): Promise<
   if (!force && !canLongRest(new Date(), last)) return fail("You can only benefit from one long rest in 24 hours");
   const data = fromRestState(longRest(toRestState(c)), c);
   const resources = { ...(data.resources as Record<string, unknown>), _lastLongRest: new Date().toISOString() };
-  await prisma.character.update({ where: { id: characterId }, data: { ...data, resources: resources as object, spells: { ...spellState(c), concentration: null } as object } });
+  await prisma.character.update({ where: { id: characterId }, data: { ...data, resources: resources as object, rezPenalty: fadePenalty(c.rezPenalty ?? 0), spells: { ...spellState(c), concentration: null } as object } });
   await audit(characterId, c.name, user.id, user.name ?? "Someone", `${c.name} takes a long rest`);
   touch(characterId);
   return { ok: true };

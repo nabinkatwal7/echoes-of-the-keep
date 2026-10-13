@@ -52,6 +52,8 @@ export type CharacterInput = {
   initiativeBonus?: number;
   /** extra to passive Perception (e.g. Observant feat +5) */
   passivePerceptionBonus?: number;
+  /** penalty to every d20 test (attacks, saves, checks) after being raised from the dead */
+  d20Penalty?: number;
 };
 
 export type Part = { label: string; value: number };
@@ -133,6 +135,7 @@ export function deriveCharacter(input: CharacterInput): DerivedCharacter {
       const parts: Part[] = [{ label: ability.toUpperCase(), value: mod(ability) }];
       const p = proficiencyContribution(prof, level);
       if (p) parts.push({ label: level === "expertise" ? "Expertise" : level === "half" ? "Half proficiency" : "Proficiency", value: p });
+      if (input.d20Penalty) parts.push({ label: "Returned from death", value: -input.d20Penalty });
       return [skill, total(parts)];
     }),
   ) as Record<Skill, Breakdown>;
@@ -141,6 +144,7 @@ export function deriveCharacter(input: CharacterInput): DerivedCharacter {
     ABILITIES.map((a) => {
       const parts: Part[] = [{ label: a.toUpperCase(), value: mod(a) }];
       if (input.saveProficiencies?.includes(a)) parts.push({ label: "Proficiency", value: prof });
+      if (input.d20Penalty) parts.push({ label: "Returned from death", value: -input.d20Penalty });
       return [a, total(parts)];
     }),
   ) as Record<Ability, Breakdown>;
@@ -150,6 +154,7 @@ export function deriveCharacter(input: CharacterInput): DerivedCharacter {
     const parts: Part[] = [{ label: ability.toUpperCase(), value: mod(ability) }];
     if (w.proficient) parts.push({ label: "Proficiency", value: prof });
     if (w.magicBonus) parts.push({ label: "Magic", value: w.magicBonus });
+    if (input.d20Penalty) parts.push({ label: "Returned from death", value: -input.d20Penalty });
     const dmgMod = mod(ability) + (w.magicBonus ?? 0);
     return { name: w.name, attackBonus: total(parts), damage: dmgMod === 0 ? w.damage : `${w.damage}${sign(dmgMod)}` };
   });
