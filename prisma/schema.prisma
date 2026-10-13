@@ -20,6 +20,7 @@ model User {
   characters   Character[]
   memberships  CampaignMember[]
   campaignsDm  Campaign[]
+  journal      JournalEntry[]
 }
 
 // Rules content (seeded from content/, read-only at runtime)
@@ -197,6 +198,8 @@ model Campaign {
   characters  CampaignCharacter[]
   events      CampaignEvent[]
   encounters  Encounter[]
+  notes       JournalEntry[]
+  sessions    GameSession[]
 }
 
 model CampaignMember {
@@ -336,4 +339,42 @@ model Combatant {
   createdAt     DateTime   @default(now())
 
   @@index([encounterId])
+}
+
+/// Journal: private notes, shared handouts and session write-ups for a campaign.
+model JournalEntry {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  /// NOTE | HANDOUT | RECAP
+  kind       String   @default("NOTE")
+  title      String
+  body       String   @default("")
+  /// PRIVATE (author, plus the DM for handout drafts) or PARTY (everyone in the campaign)
+  visibility String   @default("PRIVATE")
+  pinned     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([campaignId, kind])
+}
+
+/// A play session. Ending one saves a recap; the next session opens with it.
+model GameSession {
+  id         String    @id @default(cuid())
+  campaignId String
+  campaign   Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  number     Int
+  title      String    @default("")
+  /// ACTIVE | ENDED
+  status     String    @default("ACTIVE")
+  summary    String    @default("")
+  /// where the party left off: location/hook for the next session
+  nextUp     String    @default("")
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+
+  @@unique([campaignId, number])
 }

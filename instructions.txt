@@ -61,10 +61,10 @@ Details for each phase: docs/phases/*.md
 [~] f48, Realtime event log (SSE, reconnect, replay)
 [x] f49, Dice roller and roll log (secret rolls)
 [~] f50, Chat, whispers and slash commands
-[ ] f51, Journal, notes and handouts
+[x] f51, Journal, notes and handouts
 [x] f52, Hidden-information filtering (DM vs player views)
-[ ] f53, DM screen basics
-[ ] f54, Session save and resume
+[x] f53, DM screen basics
+[x] f54, Session save and resume
 [x] f55, Live sheet edits with audit log
 
 === PHASE 5: COMBAT ===

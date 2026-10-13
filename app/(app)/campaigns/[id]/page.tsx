@@ -45,6 +45,8 @@ export default async function CampaignHub({ params }: { params: Promise<{ id: st
         icon={<GiCastle />}
         actions={
           <div className="flex gap-2">
+            {isDm && <LinkButton variant="secondary" href={`/campaigns/${campaign.id}/dm`}>DM screen</LinkButton>}
+            <LinkButton variant="secondary" href={`/campaigns/${campaign.id}/journal`}>Journal</LinkButton>
             <LinkButton variant="secondary" href={`/campaigns/${campaign.id}/combat`}>Combat</LinkButton>
             <LinkButton href={`/campaigns/${campaign.id}/table`}>Enter the table</LinkButton>
           </div>
