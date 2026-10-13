@@ -1,0 +1,11 @@
+[
+  { "index": "lawful-good", "name": "Lawful Good", "abbreviation": "LG", "description": "Acts with compassion and honor, trusting law and duty to protect others.", "page": 122 },
+  { "index": "neutral-good", "name": "Neutral Good", "abbreviation": "NG", "description": "Does the best good it can without being bound to, or opposed to, rules and order.", "page": 122 },
+  { "index": "chaotic-good", "name": "Chaotic Good", "abbreviation": "CG", "description": "Follows its conscience and values freedom, with little regard for what others expect.", "page": 122 },
+  { "index": "lawful-neutral", "name": "Lawful Neutral", "abbreviation": "LN", "description": "Is guided by law, tradition or a personal code rather than by good or evil.", "page": 122 },
+  { "index": "neutral", "name": "Neutral", "abbreviation": "N", "description": "Avoids taking sides and does what seems best in the moment.", "page": 122 },
+  { "index": "chaotic-neutral", "name": "Chaotic Neutral", "abbreviation": "CN", "description": "Follows its whims and values personal freedom above everything else.", "page": 122 },
+  { "index": "lawful-evil", "name": "Lawful Evil", "abbreviation": "LE", "description": "Takes what it wants methodically, within the limits of a code, tradition or order.", "page": 122 },
+  { "index": "neutral-evil", "name": "Neutral Evil", "abbreviation": "NE", "description": "Does whatever it can get away with, without compassion or qualms.", "page": 122 },
+  { "index": "chaotic-evil", "name": "Chaotic Evil", "abbreviation": "CE", "description": "Acts with arbitrary violence, driven by greed, hatred or bloodlust.", "page": 122 }
+]

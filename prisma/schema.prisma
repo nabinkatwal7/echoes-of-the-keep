@@ -53,3 +53,13 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+// Rules content (seeded from content/, read-only at runtime)
+model Alignment {
+  index        String @id
+  name         String
+  abbreviation String
+  description  String
+  source       String @default("PHB")
+  page         Int?
+}
