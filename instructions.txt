@@ -6,7 +6,7 @@ Details for each phase: docs/phases/*.md
 [x] f1, Authentication (username + password, no third-party sign-in)
 [x] f2, Database schema baseline and migrations
 [x] f3, Design system and layout shells
-[ ] f4, Tooling and CI (Vitest, Playwright, lint, GitHub Actions)
+[~] f4, Tooling and CI (Vitest, Playwright, lint, GitHub Actions)
 [x] f5, Env config with validation
 [x] f6, Content pipeline skeleton (seed from extracted data)
 [x] f7, README and architecture decision records
@@ -41,7 +41,7 @@ Details for each phase: docs/phases/*.md
 
 === PHASE 3: CHARACTER CREATOR AND SHEET ===
 [x] f32, Character list and management
-[ ] f33, Creation wizard (race, class, abilities, background, equipment, review)
+[x] f33, Creation wizard (race, class, abilities, background, equipment, review)
 [~] f34, Character sheet (desktop and mobile)
 [x] f35, Inventory, equipping and currency
 [x] f36, Level-up flow (HP, features, subclass, ASI or feat)
@@ -59,7 +59,7 @@ Details for each phase: docs/phases/*.md
 [x] f46, Campaign hub
 [~] f47, Live session table with presence
 [~] f48, Realtime event log (SSE, reconnect, replay)
-[ ] f49, Dice roller and roll log (secret rolls)
+[x] f49, Dice roller and roll log (secret rolls)
 [~] f50, Chat, whispers and slash commands
 [ ] f51, Journal, notes and handouts
 [x] f52, Hidden-information filtering (DM vs player views)
