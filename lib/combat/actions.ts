@@ -16,7 +16,7 @@ import {
   advance, beginTurn, finishTurn, fromVitals, resolveAttackAction, resolveGrappleAction, spendReaction, spendSimpleAction,
   toVitals, type AttackProfile, type Cmb, type SimpleAction,
 } from "./rules";
-import { cmbToData, loadEncounter, profilesOf, roleIn, rowToCmb } from "./store";
+import { loadEncounter, profilesOf, roleIn, rowToCmb } from "./store";
 
 type Result = { ok: true; id?: string } | { ok: false; errors: string[] };
 const fail = (m: string): Result => ({ ok: false, errors: [m] });
@@ -300,7 +300,7 @@ export async function attack(req: AttackRequest): Promise<Result> {
   }
 
   let lines = out.lines;
-  let hitTarget = out.target;
+  const hitTarget = out.target;
   if (out.concentrationDc && targetRow.characterId) {
     const ch = await prisma.character.findUnique({ where: { id: targetRow.characterId } });
     const conBonus = ch ? characterCombatStats(ch as never) && (await import("@/lib/characters/derive")).deriveStored(ch).saves.con.total : 0;
@@ -349,7 +349,7 @@ export async function moveCombatant(combatantId: string, x: number, y: number): 
   if (!ctx.isDm || (enc.state === "ACTIVE" && enc.combatants[enc.activeIndex]?.id === row.id && from)) {
     if (enc.state === "ACTIVE" && enc.combatants[enc.activeIndex]?.id !== row.id) return fail("It is not that creature's turn");
   }
-  let lines: string[] = [];
+  const lines: string[] = [];
   let provokes: string[] = [];
   let next = { ...c, x, y };
   if (from && enc.state === "ACTIVE") {

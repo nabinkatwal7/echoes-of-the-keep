@@ -227,7 +227,7 @@ export function resolveAttackAction(attacker: Cmb, target: Cmb, profile: AttackP
   // sources of advantage and disadvantage
   const adjacent = ctx.withinFiveFeet ?? true;
   const mods = attackModifiers({ attacker: aSet, target: conditionSet(target.conditions), withinFiveFeet: adjacent, attackerExhaustion: attacker.exhaustion });
-  let advantage = mods.advantage + (ctx.extraAdvantage ?? 0) + (attacker.turn.helped ? 1 : 0);
+  const advantage = mods.advantage + (ctx.extraAdvantage ?? 0) + (attacker.turn.helped ? 1 : 0);
   let disadvantage = mods.disadvantage + (ctx.extraDisadvantage ?? 0);
   if (target.turn.dodging && !aSet.has("blinded")) disadvantage += 1;
   let autoMiss = false;
