@@ -5,7 +5,6 @@ import { rollInitiative, standUp, type Cover } from "@/engine/combat";
 import { moveCost, opportunityAttackers, distanceFeet, withinFiveFeet as adjacent } from "@/engine/combat/grid";
 import { addCondition, isCondition, removeCondition } from "@/engine/conditions/timers";
 import { applyDamage, heal } from "@/engine/damage";
-import { checkConcentration } from "@/engine/spells";
 import { xpForChallenge } from "@/engine/xp";
 import { requireUser } from "@/lib/auth";
 import { roleIn } from "./store";
@@ -16,6 +15,9 @@ import {
   advance, beginTurn, finishTurn, fromVitals, resolveAttackAction, resolveGrappleAction, spendReaction, spendSimpleAction,
   toVitals, type AttackProfile, type Cmb, type SimpleAction,
 } from "./rules";
+import { changed, clearSheetConcentration, concentrationRolls, dropForDowned } from "./concentration";
+import { adjustSlot } from "@/lib/characters/playActions";
+import { slotViews } from "@/lib/characters/play";
 import { canControl, context, fail, isCtx, loadActing, refresh, type Result } from "./access";
 import { loadEncounter, profilesOf, rowToCmb, sideOf } from "./store";
 
@@ -220,7 +222,13 @@ export async function takeReaction(combatantId: string, note?: string): Promise<
   return { ok: true };
 }
 
-export type AttackRequest = { attackerId: string; targetId: string; attack: string; cover?: Cover; offHand?: boolean; reaction?: boolean; advantage?: boolean; disadvantage?: boolean };
+export type AttackRequest = {
+  attackerId: string; targetId: string; attack: string; cover?: Cover; offHand?: boolean; reaction?: boolean; advantage?: boolean; disadvantage?: boolean;
+  /** Paladin: spend a spell slot of this level on a hit for Divine Smite (2d8, +1d8 per level above 1st, max 5d8) */
+  smiteSlot?: number;
+  /** Rogue: add Sneak Attack damage (once per turn; needs advantage or an ally next to the target) */
+  sneakAttack?: boolean;
+};
 
 export async function attack(req: AttackRequest): Promise<Result> {
   const a = await loadActing(req.attackerId);
@@ -249,30 +257,59 @@ export async function attack(req: AttackRequest): Promise<Result> {
   const near = both ? adjacent({ x: attacker.x!, y: attacker.y! }, { x: target.x!, y: target.y! }) : profile.melee;
   if (profile.melee && both && dist! > (profile.reach ?? 5)) return fail(`${target.name} is out of reach (${dist} ft)`);
 
+  // class features that add damage on a hit
+  const bonusDamage: { dice: string; type?: string; label?: string }[] = [];
+  let smiteLevel = 0;
+  let sneak = false;
+  const sheet = row.kind === "character" && row.characterId ? await prisma.character.findUnique({ where: { id: row.characterId } }) : null;
+  const classLevel = (idx: string) => ((sheet?.classes as { classIndex: string; level: number }[] | undefined) ?? []).find((k) => k.classIndex === idx)?.level ?? 0;
+  if (req.smiteSlot) {
+    if (classLevel("paladin") < 2) return fail("Divine Smite needs a paladin of level 2 or higher");
+    if (!profile.melee) return fail("Divine Smite works on melee weapon attacks");
+    if (!Number.isInteger(req.smiteSlot) || req.smiteSlot < 1 || req.smiteSlot > 5) return fail("Choose a slot from 1st to 5th level");
+    const slots = slotViews(sheet as never).slots.find((x) => x.level === req.smiteSlot);
+    if (!slots || slots.total - slots.used < 1) return fail(`No level ${req.smiteSlot} slot left`);
+    smiteLevel = req.smiteSlot;
+    bonusDamage.push({ dice: `${Math.min(5, 1 + smiteLevel)}d8`, type: "radiant", label: "Divine Smite" });
+  }
+  if (req.sneakAttack) {
+    const rogue = classLevel("rogue");
+    if (!rogue) return fail("Sneak Attack is a rogue feature");
+    if (!profile.finesse && profile.melee) return fail("Sneak Attack needs a finesse or ranged weapon");
+    if (attacker.turn.sneakUsed) return fail("Sneak Attack is already used this turn");
+    const allyNear = enc.combatants.some(
+      (r) => r.id !== row.id && sideOf(r) === sideOf(row) && !r.defeated && target.x !== null && target.y !== null && r.x !== null && r.y !== null && adjacent({ x: r.x, y: r.y }, { x: target.x, y: target.y }),
+    );
+    if (!req.advantage && !allyNear) return fail("Sneak Attack needs advantage on the roll or an ally within 5 feet of the target");
+    if (req.disadvantage && !allyNear) return fail("You have disadvantage on this attack");
+    sneak = true;
+    bonusDamage.push({ dice: `${Math.ceil(rogue / 2)}d6`, label: "Sneak Attack" });
+  }
+
   let out;
   try {
     out = resolveAttackAction(attacker, target, profile, {
       cover: req.cover, withinFiveFeet: near, distanceFeet: dist, offHand: req.offHand, reaction: req.reaction,
       underwater: !!(enc.environment as { underwater?: boolean } | null)?.underwater,
-      extraAdvantage: req.advantage ? 1 : 0, extraDisadvantage: req.disadvantage ? 1 : 0,
+      extraAdvantage: req.advantage ? 1 : 0, extraDisadvantage: req.disadvantage ? 1 : 0, bonusDamage,
     });
   } catch (e) {
     return fail((e as Error).message);
   }
 
-  let lines = out.lines;
-  const hitTarget = out.target;
-  if (out.concentrationDc && targetRow.characterId) {
-    const ch = await prisma.character.findUnique({ where: { id: targetRow.characterId } });
-    const conBonus = ch ? characterCombatStats(ch as never) && (await import("@/lib/characters/derive")).deriveStored(ch).saves.con.total : 0;
-    const check = checkConcentration(out.damage, conBonus);
-    lines = [...lines, `${target.name} makes a Constitution save (DC ${check.dc}): ${check.roll} - ${check.maintained ? "keeps concentrating" : "concentration is lost"}`];
-    if (!check.maintained && ch) {
-      const state = (ch.spells ?? {}) as Record<string, unknown>;
-      await prisma.character.update({ where: { id: ch.id }, data: { spells: { ...state, concentration: null } as object } });
-    }
-  }
-  await commit(enc, ctx.user, { update: [out.attacker, hitTarget], lines, dmOnly: row.hidden || targetRow.hidden });
+  const lines = [...out.lines];
+  const before = enc.combatants.map(rowToCmb);
+  const usedBonus = out.hit && sneak;
+  const attackerAfter = usedBonus ? { ...out.attacker, turn: { ...out.attacker.turn, sneakUsed: true } } : out.attacker;
+  let state = before.map((c) => (c.id === attackerAfter.id ? attackerAfter : c.id === out.target.id ? out.target : c));
+  if (out.concentrationDc) state = concentrationRolls(state, [{ id: target.id, dc: out.concentrationDc }], lines);
+  state = dropForDowned(state, lines);
+  await clearSheetConcentration(enc.combatants, before, state);
+
+  // the slot is spent only if the smite actually landed
+  if (out.hit && smiteLevel && row.characterId) await adjustSlot(row.characterId, smiteLevel, 1);
+
+  await commit(enc, ctx.user, { update: changed(before, state), lines, dmOnly: row.hidden || targetRow.hidden });
   refresh(enc.campaignId);
   return { ok: true };
 }

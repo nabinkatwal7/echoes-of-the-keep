@@ -183,3 +183,21 @@ describe("grapple and shove", () => {
     expect(() => resolveGrappleAction(strong, weak, "grapple", { attacker: "medium", target: "huge" })).toThrow(/too large/);
   });
 });
+
+describe("bonus damage dice (Sneak Attack, Divine Smite)", () => {
+  it("adds each extra die pool on a hit, doubles it on a crit and respects its own damage type", () => {
+    const hit = resolveAttackAction(cmb(), cmb({ id: "t", ac: 10, hp: 100, maxHp: 100 }), sword, { bonusDamage: [{ dice: "2d6", label: "Sneak Attack" }, { dice: "2d8", type: "radiant", label: "Divine Smite" }] }, face(15));
+    expect(hit.hit).toBe(true);
+    expect(hit.lines.join(" ")).toContain("Sneak Attack");
+    expect(hit.lines.join(" ")).toContain("radiant from Divine Smite");
+    const plain = resolveAttackAction(cmb(), cmb({ id: "t", ac: 10, hp: 100, maxHp: 100 }), sword, {}, face(15));
+    expect(hit.damage).toBeGreaterThan(plain.damage);
+  });
+  it("radiant smite ignores slashing resistance and a miss adds nothing", () => {
+    const resistant = cmb({ id: "t", ac: 10, hp: 100, maxHp: 100, defenses: { resistances: ["slashing"] } });
+    const hit = resolveAttackAction(cmb(), resistant, sword, { bonusDamage: [{ dice: "2d8", type: "radiant", label: "Divine Smite" }] }, face(15));
+    expect(hit.lines.join(" ")).toContain("before resistances");
+    const miss = resolveAttackAction(cmb(), cmb({ id: "t", ac: 30 }), sword, { bonusDamage: [{ dice: "2d8", type: "radiant" }] }, face(2));
+    expect(miss.damage).toBe(0);
+  });
+});

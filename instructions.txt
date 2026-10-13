@@ -73,7 +73,7 @@ Details for each phase: docs/phases/*.md
 [x] f58, Action economy (actions, bonus actions, reactions)
 [x] f59, Attack resolution (advantage sources, cover, crits)
 [x] f60, Grapple, shove and two-weapon fighting
-[~] f61, Damage, healing and death saves in play
+[x]  Damage, healing and death saves in play
 [x] f62, Conditions applied in combat with durations
 [x] f63, Movement, positions, grid map and opportunity attacks
 [~] f64, Ready action and reactions
@@ -86,17 +86,17 @@ Details for each phase: docs/phases/*.md
 === PHASE 6: SPELLCASTING ===
 [x] f70, Casting flow (slots, upcasting, components, casting time)
 [~] f71, Rituals, Pact Magic and sorcery points
-[ ] f72, Targeting and area-of-effect templates
-[~] f73, Spell attacks and saving throws
-[ ] f74, Damage, healing and scaling
-[~] f75, Concentration tracking
-[ ] f76, Timed spell effects and buffs
-[ ] f77, Summons and polymorph
-[ ] f78, Utility, exploration and social spells
-[ ] f79, Reaction spells (Shield, Counterspell)
-[ ] f80, Class spell features (Metamagic, invocations, smite, domains)
-[ ] f81, Spell browser in play
-[ ] f82, Spell automation coverage report
+[x]  Targeting and area-of-effect templates
+[x]  Spell attacks and saving throws
+[x]  Damage, healing and scaling
+[x]  Concentration tracking
+[~]  Timed spell effects and buffs
+[~]  Summons and polymorph
+[~]  Utility, exploration and social spells
+[x]  Reaction spells (Shield, Counterspell)
+[~]  Class spell features (Metamagic, invocations, smite, domains)
+[x]  Spell browser in play
+[x]  Spell automation coverage report
 
 === PHASE 7: EXPLORATION AND DM TOOLKIT ===
 [ ] f83, In-game clock
@@ -128,7 +128,11 @@ Details for each phase: docs/phases/*.md
 [ ] f107, User docs and release checklist
 
 PARTIAL NOTES
-f61: combat damage drops heroes to 0 and mirrors HP to the sheet; death saves are rolled on the sheet, not yet prompted at the start of the downed hero's combat turn
+f76: timed effects: conditions from spells carry round timers and drop with concentration; Bless, Shield and Shield of Faith are tracked as buffs; other buff spells are narrated
+f77: summons join the party's side as allies; Polymorph swaps stats and can be reverted by the DM (not part of the undo snapshot, and the form does not revert on its own at 0 HP)
+f78: utility, exploration and social spells spend the slot and are logged; their effects are narrated (see docs/spell-automation.md for the list)
+f80: Divine Smite and Sneak Attack are automated; Metamagic, invocations, domain features and other class features are not
+f82: 32 percent of the 362 spells resolve automatically (run pnpm spells:coverage); the rest are narrated
 f64: Ready records the trigger and spends the reaction on use; the DM decides when a trigger fires
 f65: underwater rules apply (melee/ranged penalties, fire resistance handled in rules); mounted combat is not built
 f67: multiattack and flat/dice attacks are read from stat blocks; recharge and legendary actions are not built

@@ -4,7 +4,6 @@ import type { Prisma } from "@prisma/client";
 import { areaSquares, creaturesInArea } from "@/engine/combat/area";
 import { distanceFeet } from "@/engine/combat/grid";
 import { takeAction, takeBonusAction, takeReaction } from "@/engine/combat";
-import { rollD20 } from "@/engine/dice";
 import { CASTING_ABILITY, castingTimeKind } from "@/engine/spells";
 import { CLASS_NAME } from "@/engine/classes/spellcasting";
 import { maxTargets, parseSpellEffect, projectileCount } from "@/engine/spells/effects";
@@ -14,6 +13,7 @@ import { deriveStored, type StoredCharacter } from "@/lib/characters/derive";
 import { prisma } from "@/lib/prisma";
 import { fail, isCtx, loadActing, refresh, context, canControl, type Result } from "./access";
 import { commit } from "./commit";
+import { changed, clearSheetConcentration, concentrationRolls, dropForDowned } from "./concentration";
 import { monsterStats } from "./profiles";
 import { counterspell, dropConcentration, resolveSpell } from "./spellRules";
 import { rowToCmb, loadEncounter } from "./store";
@@ -28,25 +28,6 @@ export type CombatCast = {
   /** the point (for areas and spheres) or the direction (for cones, lines, self cubes), as grid squares */
   point?: { x: number; y: number };
 };
-
-/** Roll a Constitution save for each concentrating creature that was hurt; failures drop their spell everywhere. */
-function concentrationRolls(all: Cmb[], checks: { id: string; dc: number }[], lines: string[]): Cmb[] {
-  let state = all;
-  for (const { id, dc } of checks) {
-    const c = state.find((x) => x.id === id);
-    if (!c || !c.concentrating) continue;
-    const bonus = c.defenses.saves?.con ?? 0;
-    const roll = rollD20(bonus, "normal");
-    const kept = roll.total >= dc;
-    lines.push(`${c.name} makes a Constitution save (DC ${dc}): ${roll.total} - ${kept ? "keeps concentrating" : "concentration is lost"}`);
-    if (!kept) {
-      const dropped = dropConcentration(state, id);
-      state = dropped.all;
-      lines.push(...dropped.lines);
-    }
-  }
-  return state;
-}
 
 /** Cast a spell as a hero in the middle of a fight: economy, targeting, slot, rolls, effects and concentration. */
 export async function castInCombat(req: CombatCast): Promise<Result> {
@@ -157,24 +138,9 @@ export async function castInCombat(req: CombatCast): Promise<Result> {
   // a target that is also the caster keeps the casting state
   if (includesCaster) merged.set(caster.id, { ...merged.get(caster.id)!, turn: out.caster.turn, concentrating: out.caster.concentrating });
 
-  const settled = concentrationRolls([...merged.values()], out.concentrationChecks, lines);
-  const changedIds = new Set<string>([caster.id, ...out.targets.map((x) => x.id), ...settled.filter((c, i) => c !== [...merged.values()][i]).map((c) => c.id)]);
-  // drop-concentration may touch combatants not directly targeted
-  for (const c of settled) {
-    const before = all.find((x) => x.id === c.id)!;
-    if (JSON.stringify(before) !== JSON.stringify(c)) changedIds.add(c.id);
-  }
-  const update = settled.filter((c) => changedIds.has(c.id));
-
-  // a hero whose concentration was lost in this exchange also loses it on the sheet
-  for (const c of settled) {
-    const r = enc.combatants.find((x) => x.id === c.id);
-    if (r?.characterId && !c.concentrating && all.find((x) => x.id === c.id)?.concentrating && c.id !== caster.id) {
-      const target = await prisma.character.findUnique({ where: { id: r.characterId }, select: { spells: true } });
-      const sp = (target?.spells && typeof target.spells === "object" ? target.spells : {}) as Record<string, unknown>;
-      await prisma.character.update({ where: { id: r.characterId }, data: { spells: { ...sp, concentration: null } as Prisma.InputJsonValue } });
-    }
-  }
+  const settled = dropForDowned(concentrationRolls([...merged.values()], out.concentrationChecks, lines), lines);
+  const update = changed(all, settled);
+  await clearSheetConcentration(enc.combatants, all, settled.filter((c) => c.id !== caster.id));
 
   await commit(enc, ctx.user, { update, lines, dmOnly: row.hidden });
   refresh(enc.campaignId);

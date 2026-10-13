@@ -17,7 +17,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "test:db": "cross-env RUN_DB_TESTS=1 vitest run tests"
+    "test:db": "cross-env RUN_DB_TESTS=1 vitest run tests",
+    "spells:coverage": "tsx scripts/spell-coverage.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

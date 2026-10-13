@@ -36,6 +36,7 @@ export type AttackProfile = {
   /** ability modifier used, so off-hand attacks can drop it (PHB p.195) */
   abilityMod?: number;
   light?: boolean;
+  finesse?: boolean;
   /** weapon name as sold, used for underwater rules */
   weapon?: string;
 };
@@ -95,7 +96,7 @@ export type Cmb = {
   ally?: boolean;
 };
 
-export type Turn = TurnResources & { attacksRemaining?: number; helped?: boolean; /** a bonus-action spell was cast this turn: only cantrips may follow */ bonusSpell?: boolean; /** a leveled action spell was cast this turn */ leveledSpell?: boolean };
+export type Turn = TurnResources & { attacksRemaining?: number; helped?: boolean; /** a bonus-action spell was cast this turn: only cantrips may follow */ bonusSpell?: boolean; /** a leveled action spell was cast this turn */ leveledSpell?: boolean; /** Sneak Attack has been used this turn */ sneakUsed?: boolean };
 
 export const emptyTurn = (speed = 30): Turn => startTurn(speed, false);
 
@@ -213,7 +214,7 @@ export type AttackContext = {
   /** the caller has already paid for this attack (a spell, a smite, a further ray) */
   skipEconomy?: boolean;
   /** extra damage dice added on a hit and doubled on a crit, e.g. Sneak Attack "3d6" or Divine Smite "2d8" */
-  bonusDamage?: { dice: string; type?: string };
+  bonusDamage?: { dice: string; type?: string; label?: string }[];
 };
 
 export type AttackOutcome = {
@@ -307,12 +308,12 @@ export function resolveAttackAction(attacker: Cmb, target: Cmb, profile: AttackP
     const dmg = profile.dice ? rollDamage(profile.dice, modifier, { critical: out.critical, rng }) : { total: Math.max(0, modifier), critical: out.critical, dice: String(modifier) };
     let adjusted = adjustDamage(dmg.total, profile.damageType as DamageType, target.defenses);
     let bonusText = "";
-    if (ctx.bonusDamage) {
-      const bonus = rollDamage(ctx.bonusDamage.dice, 0, { critical: out.critical, rng });
-      const bonusType = (ctx.bonusDamage.type ?? profile.damageType) as DamageType;
+    for (const extra of ctx.bonusDamage ?? []) {
+      const bonus = rollDamage(extra.dice, 0, { critical: out.critical, rng });
+      const bonusType = (extra.type ?? profile.damageType) as DamageType;
       const bonusAdjusted = adjustDamage(bonus.total, bonusType, target.defenses);
       adjusted += bonusAdjusted;
-      bonusText = ` including ${bonusAdjusted} ${bonusType} from ${ctx.bonusDamage.dice}`;
+      bonusText += ` including ${bonusAdjusted} ${bonusType} from ${extra.label ?? extra.dice}`;
     }
     const before = toVitals(target);
     const after = applyDamage(before, adjusted, { critical: out.critical, diesAtZero: diesAtZero(target) });

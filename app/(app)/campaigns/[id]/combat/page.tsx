@@ -5,6 +5,7 @@ import { getCampaignForMember } from "@/lib/campaigns/queries";
 import { buildEncounterView } from "@/lib/combat/view";
 import { loadEncounter } from "@/lib/combat/store";
 import { prisma } from "@/lib/prisma";
+import { spellbookFor, type Spellbook } from "@/lib/combat/spellList";
 import { CombatClient, type LogLine } from "./CombatClient";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,15 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
 
   const mine = await prisma.character.findMany({ where: { ownerId: user.id }, select: { id: true } });
   const view = enc ? buildEncounterView(enc, { userId: user.id, isDm }, new Set(mine.map((c) => c.id))) : null;
+
+  const spellbooks: Record<string, Spellbook> = {};
+  const sheetIds = (view?.combatants ?? []).map((c) => c.characterId).filter((x): x is string => !!x);
+  if (sheetIds.length) {
+    for (const ch of await prisma.character.findMany({ where: { id: { in: sheetIds } } })) {
+      const book = await spellbookFor(ch);
+      if (book) spellbooks[ch.id] = book;
+    }
+  }
 
   let log: LogLine[] = [];
   if (enc) {
@@ -51,6 +61,7 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
         encounters={encounters}
         view={view}
         log={log}
+        spellbooks={spellbooks}
         creatures={creatures.map((c) => ({ index: c.index, label: `${c.name} (CR ${String(c.challenge ?? "?").split(" ")[0]})` }))}
       />
     </div>

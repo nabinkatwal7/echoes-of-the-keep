@@ -35,6 +35,7 @@ export function characterProfiles(c: CharacterRow): AttackProfile[] {
       range: parseRange(item.properties),
       abilityMod: split.modifier - (item.magicBonus ?? 0),
       light: /light/i.test(item.properties ?? ""),
+      finesse: /finesse/i.test(item.properties ?? ""),
     };
   });
   const level = (c.classes as ClassLevel[]).reduce((s, k) => s + k.level, 0);

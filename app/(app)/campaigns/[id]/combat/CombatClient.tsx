@@ -11,6 +11,8 @@ import {
   removeCombatant, removeConditionFrom, setEnvironment, standFromProne, startEncounter, takeAction, undoLast, takeReaction,
 } from "@/lib/combat/actions";
 import type { CombatantView, EncounterView } from "@/lib/combat/view";
+import type { Spellbook } from "@/lib/combat/spellList";
+import { SpellPanel } from "./SpellPanel";
 
 export type LogLine = { id: number; text: string };
 type Props = {
@@ -20,16 +22,19 @@ type Props = {
   view: EncounterView | null;
   log: LogLine[];
   creatures: { index: string; label: string }[];
+  spellbooks: Record<string, Spellbook>;
 };
 
 const CONDITIONS = ["blinded", "charmed", "deafened", "frightened", "grappled", "incapacitated", "invisible", "paralyzed", "petrified", "poisoned", "prone", "restrained", "stunned", "unconscious"];
 const HEALTH_TONE: Record<string, "emerald" | "gold" | "ember" | "crimson" | "neutral"> = { Unhurt: "emerald", Scratched: "emerald", Bloodied: "gold", Wounded: "ember", "Near death": "crimson", Defeated: "neutral" };
 
-export function CombatClient({ campaignId, isDm, encounters, view, log, creatures }: Props) {
+export function CombatClient({ campaignId, isDm, encounters, view, log, creatures, spellbooks }: Props) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
   const [selected, setSelected] = useState<string | null>(null);
+  const [aim, setAim] = useState<{ x: number; y: number } | null>(null);
+  const [aiming, setAiming] = useState(false);
 
   // the fight is shared state: refresh from the server every couple of seconds (visibility is filtered server-side)
   useEffect(() => {
@@ -64,10 +69,10 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
             <Header view={view} isDm={isDm} run={run} pending={pending} />
             {isDm && view.state !== "DONE" && <DmSetup view={view} creatures={creatures} run={run} pending={pending} />}
             <Order view={view} selected={selected} onSelect={setSelected} />
-            <Board view={view} selected={selected} onSelect={setSelected} run={run} />
+            <Board view={view} selected={selected} onSelect={setSelected} run={run} aim={aim} aiming={aiming} onAim={(x, y) => { setAim({ x, y }); setAiming(false); }} />
           </div>
           <div className="flex flex-col gap-4">
-            <Actions view={view} selected={selected} run={run} pending={pending} isDm={isDm} />
+            <Actions view={view} selected={selected} run={run} pending={pending} isDm={isDm} spellbooks={spellbooks} aim={aim} aiming={aiming} setAiming={setAiming} />
             <Card className="p-4">
               <h2 className="eyebrow mb-2">Combat log</h2>
               {log.length === 0 ? <p className="text-sm text-muted">Nothing has happened yet.</p> : (
@@ -179,6 +184,8 @@ function Order({ view, selected, onSelect }: { view: EncounterView; selected: st
                 {c.hidden && <Badge tone="arcane">Hidden</Badge>}
                 {c.surprised && <Badge tone="ember">Surprised</Badge>}
                 {c.conditions.map((k) => <Badge key={k.condition} tone="crimson">{k.condition}{k.rounds ? ` ${k.rounds}` : ""}</Badge>)}
+                {c.buffs.map((b) => <Badge key={b.label} tone="arcane">{b.label}</Badge>)}
+                {c.concentrating && <Badge tone="gold">Concentrating: {c.concentrating}</Badge>}
                 {c.deathSaves && (c.deathSaves.successes > 0 || c.deathSaves.failures > 0) && <Badge>Saves ✓{c.deathSaves.successes} ✗{c.deathSaves.failures}</Badge>}
               </button>
             </li>
@@ -190,7 +197,7 @@ function Order({ view, selected, onSelect }: { view: EncounterView; selected: st
 }
 
 /** A simple grid: tap a creature to select it, tap an empty square to move the selected creature there. */
-function Board({ view, selected, onSelect, run }: { view: EncounterView; selected: string | null; onSelect: (id: string) => void; run: Run }) {
+function Board({ view, selected, onSelect, run, aim, aiming, onAim }: { view: EncounterView; selected: string | null; onSelect: (id: string) => void; run: Run; aim: { x: number; y: number } | null; aiming: boolean; onAim: (x: number, y: number) => void }) {
   const at = new Map(view.combatants.filter((c) => c.x !== null && c.y !== null).map((c) => [`${c.x},${c.y}`, c]));
   const cols = Math.min(view.gridWidth, 30);
   const rows = Math.min(view.gridHeight, 20);
@@ -211,8 +218,8 @@ function Board({ view, selected, onSelect, run }: { view: EncounterView; selecte
               role="gridcell"
               aria-label={c ? c.name : `Square ${x},${y}`}
               title={c?.name}
-              onClick={() => (c ? onSelect(c.id) : canMove && sel && run(() => moveCombatant(sel.id, x, y)))}
-              className={`flex h-7 w-7 items-center justify-center bg-surface text-[0.65rem] font-bold ${c ? (c.kind === "character" ? "text-emerald" : "text-danger") : "text-transparent hover:bg-surface2"} ${c && selected === c.id ? "outline outline-2 outline-goldBright" : ""} ${c?.defeated ? "line-through opacity-50" : ""}`}
+              onClick={() => (aiming ? onAim(x, y) : c ? onSelect(c.id) : canMove && sel && run(() => moveCombatant(sel.id, x, y)))}
+              className={`flex h-7 w-7 items-center justify-center bg-surface text-[0.65rem] font-bold ${c ? (c.kind === "character" ? "text-emerald" : "text-danger") : "text-transparent hover:bg-surface2"} ${c && selected === c.id ? "outline outline-2 outline-goldBright" : ""} ${aim && aim.x === x && aim.y === y ? "bg-arcane/40" : ""} ${c?.defeated ? "line-through opacity-50" : ""}`}
             >
               {c ? c.name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase() : "·"}
             </button>
@@ -223,7 +230,7 @@ function Board({ view, selected, onSelect, run }: { view: EncounterView; selecte
   );
 }
 
-function Actions({ view, selected, run, pending, isDm }: { view: EncounterView; selected: string | null; run: Run; pending: boolean; isDm: boolean }) {
+function Actions({ view, selected, run, pending, isDm, spellbooks, aim, aiming, setAiming }: { view: EncounterView; selected: string | null; run: Run; pending: boolean; isDm: boolean; spellbooks: Record<string, Spellbook>; aim: { x: number; y: number } | null; aiming: boolean; setAiming: (b: boolean) => void }) {
   const me = view.combatants.find((c) => c.id === selected);
   const [target, setTarget] = useState("");
   const [attackName, setAttackName] = useState("");
@@ -231,6 +238,8 @@ function Actions({ view, selected, run, pending, isDm }: { view: EncounterView; 
   const [condition, setCondition] = useState(CONDITIONS[0]);
   const [trigger, setTrigger] = useState("");
   const [advantage, setAdvantage] = useState<"" | "adv" | "dis">("");
+  const [smite, setSmite] = useState(0);
+  const [sneak, setSneak] = useState(false);
 
   if (view.state === "DONE") return null;
   const mineActive = view.combatants.find((c) => c.active && (isDm || c.mine));
@@ -265,8 +274,20 @@ function Actions({ view, selected, run, pending, isDm }: { view: EncounterView; 
                 <option value="adv">Advantage (extra source)</option>
                 <option value="dis">Disadvantage (extra source)</option>
               </Select>
+              {actor.characterId && (
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <label className="flex items-center gap-2">
+                    Smite
+                    <Select aria-label="Divine Smite slot" value={smite} onChange={(e) => setSmite(Number(e.target.value))} className="w-auto">
+                      <option value={0}>none</option>
+                      {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>level {n} slot</option>)}
+                    </Select>
+                  </label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={sneak} onChange={(e) => setSneak(e.target.checked)} /> Sneak Attack</label>
+                </div>
+              )}
               <div className="flex flex-wrap gap-2">
-                <Button disabled={pending || !target} onClick={() => run(() => attack({ attackerId: actor.id, targetId: target, attack: attackName || actor.attacks[0].name, advantage: advantage === "adv", disadvantage: advantage === "dis" }))}>Attack</Button>
+                <Button disabled={pending || !target} onClick={() => run(() => attack({ attackerId: actor.id, targetId: target, attack: attackName || actor.attacks[0].name, advantage: advantage === "adv", disadvantage: advantage === "dis", smiteSlot: smite || undefined, sneakAttack: sneak }))}>Attack</Button>
                 <Button variant="secondary" disabled={pending || !target} onClick={() => run(() => attack({ attackerId: actor.id, targetId: target, attack: attackName || actor.attacks[0].name, offHand: true, advantage: advantage === "adv", disadvantage: advantage === "dis" }))}>Off-hand</Button>
                 <Button variant="secondary" disabled={pending || !target} onClick={() => run(() => attack({ attackerId: actor.id, targetId: target, attack: attackName || actor.attacks[0].name, reaction: true }))}>Opportunity</Button>
               </div>
@@ -276,6 +297,9 @@ function Actions({ view, selected, run, pending, isDm }: { view: EncounterView; 
                 <Button variant="secondary" disabled={pending || !target} onClick={() => run(() => grappleOrShove(actor.id, target, "shove-push"))}>Push</Button>
               </div>
             </div>
+          )}
+          {actor.characterId && spellbooks[actor.characterId] && (
+            <SpellPanel actor={actor} book={spellbooks[actor.characterId]} others={view.combatants} aim={aim} aiming={aiming} setAiming={setAiming} run={run} pending={pending} />
           )}
           <div className="flex flex-wrap gap-2">
             {(["dash", "disengage", "dodge", "help", "hide", "search", "use-object"] as const).map((a) => (

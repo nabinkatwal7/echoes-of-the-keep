@@ -25,6 +25,8 @@ export type CombatantView = {
   y: number | null;
   /** characters controlled by this viewer */
   mine: boolean;
+  /** the character sheet behind a combatant the viewer may act for */
+  characterId: string | null;
   /** present only for combatants the viewer may act for */
   turn: { action: boolean; bonusAction: boolean; reaction: boolean; movement: number; dodging: boolean; disengaged: boolean; attacksRemaining: number } | null;
   attacks: { name: string; melee: boolean; light?: boolean }[];
@@ -81,6 +83,7 @@ export function buildEncounterView(
       x: r.x,
       y: r.y,
       mine,
+      characterId: canAct ? r.characterId : null,
       turn: canAct
         ? { action: c.turn.action, bonusAction: c.turn.bonusAction, reaction: c.turn.reaction, movement: c.turn.movement, dodging: c.turn.dodging, disengaged: c.turn.disengaged, attacksRemaining: c.turn.attacksRemaining ?? 0 }
         : null,
