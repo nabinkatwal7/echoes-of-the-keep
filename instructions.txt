@@ -13,7 +13,7 @@ Details for each phase: docs/phases/*.md
 
 === PHASE 1: RULES CONTENT AND WIKI ===
 [~] f8, Import reference data (abilities, skills, languages, alignments, damage types)
-[x] f9, Import races and subraces (incl. Variant Human)
+[~] f9, Import races and subraces (incl. Variant Human)
 [~] f10, Import classes, level tables and subclasses
 [x] f11, Import backgrounds and personality tables
 [x] f12, Import equipment, packs, tools, mounts, trade goods, trinkets
@@ -21,9 +21,9 @@ Details for each phase: docs/phases/*.md
 [~] f14, Import spells and class spell lists (fill the 2 missing spells)
 [~] f15, Import creatures and SRD monsters
 [ ] f16, Rules text sections (chapters 7-10, gods, planes)
-[ ] f17, Wiki list and detail pages for every content type
+[x] f17, Wiki list and detail pages for every content type
 [ ] f18, Global search (command palette)
-[ ] f19, Replace external API calls with database reads
+[x] f19, Replace external API calls with database reads
 [ ] f20, Encode mechanics (effects, handlers, automation tier)
 [ ] f21, Content QA gates in CI (counts, schemas, links)
 
@@ -130,6 +130,7 @@ Details for each phase: docs/phases/*.md
 PARTIAL NOTES
 f4: Playwright e2e not set up yet
 f8: only alignments and conditions imported; abilities, skills, languages, damage types still to do
+f9: Variant Human traits missing from the PDF text layer
 f10: subclasses not split out of class text; level table columns are raw text
 f13: feat prerequisites stored as text, not machine-checkable yet
 f14: Control Weather and Trap the Soul descriptions missing from the PDF
