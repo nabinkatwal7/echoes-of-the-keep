@@ -21,7 +21,7 @@ export function MobileNav({
   const [open, setOpen] = useState(false);
   const item = "rounded px-3 py-3 font-display uppercase tracking-[0.16em] hover:bg-surface2";
   return (
-    <div className="ml-auto md:hidden">
+    <div className="md:hidden">
       <button
         aria-expanded={open}
         aria-label="Menu"

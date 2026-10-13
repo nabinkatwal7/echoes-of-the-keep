@@ -4,6 +4,7 @@ import { getUser } from "@/lib/auth";
 import { buttonClasses } from "../ui/Button";
 import { D20 } from "../ui/D20";
 import { MobileNav } from "./MobileNav";
+import { SearchPalette } from "./SearchPalette";
 
 export const NAV = [
   { href: "/wiki", label: "The Tome" },
@@ -35,7 +36,10 @@ export async function SiteHeader() {
           ))}
         </nav>
 
-        <div className="ml-auto hidden items-center gap-3 md:flex">
+        <div className="ml-auto flex items-center gap-3">
+          <SearchPalette />
+        </div>
+        <div className="hidden items-center gap-3 md:flex">
           {user ? (
             <>
               <span className="font-display text-xs uppercase tracking-[0.14em] text-muted">{user.name}</span>
