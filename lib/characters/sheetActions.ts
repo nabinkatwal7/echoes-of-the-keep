@@ -6,36 +6,12 @@ import { applyDamage, deathSave, heal, type Vitals } from "@/engine/damage";
 import { fromCopper, parseCostCp, pay, purseValueCp, type Purse } from "@/engine/economy";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { audit, editable } from "./access";
 import { toEngineInput } from "./derive";
 import { customItem, itemFromCatalog, setEquipped, type InventoryItem } from "./inventory";
 
 export type Result = { ok: true } | { ok: false; errors: string[] };
 const fail = (m: string): Result => ({ ok: false, errors: [m] });
-
-/** A character may be edited by its owner, or by the DM of any campaign it belongs to. */
-async function editable(characterId: string, userId: string) {
-  return prisma.character.findFirst({
-    where: {
-      id: characterId,
-      OR: [{ ownerId: userId }, { campaigns: { some: { campaign: { dmId: userId } } } }],
-    },
-  });
-}
-
-/** Record a sheet change in every campaign the character is part of, so the table sees it and the DM can audit it. */
-async function audit(characterId: string, characterName: string, actorId: string, actorName: string, text: string) {
-  const links = await prisma.campaignCharacter.findMany({ where: { characterId }, select: { campaignId: true } });
-  if (!links.length) return;
-  await prisma.campaignEvent.createMany({
-    data: links.map((l) => ({
-      campaignId: l.campaignId,
-      actorId,
-      type: "sheet",
-      payload: { actorName, characterId, characterName, text },
-      audience: "ALL",
-    })),
-  });
-}
 
 const touch = (id: string) => {
   revalidatePath(`/characters/${id}`);
