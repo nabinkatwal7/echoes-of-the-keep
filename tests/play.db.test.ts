@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { cleanup, makeUser, RUN_DB, signInAs } from "./db";
 import { addExperience, createCharacter, levelUpCharacter } from "@/lib/characters/actions";
-import { castSpell, endConcentration, saveSpellSelection, takeLongRest, takeShortRest, useClassResource } from "@/lib/characters/playActions";
+import { castSpell, endConcentration, saveSpellSelection, takeLongRest, takeShortRest, spendClassResource } from "@/lib/characters/playActions";
 import { prisma } from "@/lib/prisma";
 
 const wizard = {
@@ -83,9 +83,9 @@ describe.skipIf(!RUN_DB)("spells, resources and rests (database)", () => {
   });
 
   it("tracks class resources and refreshes them on rest", async () => {
-    expect((await useClassResource(id, "arcane-recovery")).ok).toBe(true);
-    expect((await useClassResource(id, "arcane-recovery")).ok).toBe(false); // only one
-    expect((await useClassResource(id, "nonsense")).ok).toBe(false);
+    expect((await spendClassResource(id, "arcane-recovery")).ok).toBe(true);
+    expect((await spendClassResource(id, "arcane-recovery")).ok).toBe(false); // only one
+    expect((await spendClassResource(id, "nonsense")).ok).toBe(false);
     await takeShortRest(id, []);
     expect(((await row()).resources as Record<string, number>)["arcane-recovery"]).toBe(1); // long-rest feature stays spent
     await takeLongRest(id, true);

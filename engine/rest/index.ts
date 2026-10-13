@@ -117,7 +117,7 @@ export function dawn(state: RestState): RestState {
   };
 }
 
-export function useResource(
+export function spendResource(
   state: RestState,
   key: string,
   amount = 1,

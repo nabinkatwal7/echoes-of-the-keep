@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { AbilityScores } from "@/engine/abilities";
 import { CASTER_KIND, CLASS_NAME, validateSpellSelection, type SpellMeta, type SpellSelection } from "@/engine/classes/spellcasting";
 import { CASTING_ABILITY, beginConcentration, canCastAsRitual, checkCasting, lowestAvailableSlot, spendSlot } from "@/engine/spells";
-import { canLongRest, longRest, shortRest, useResource } from "@/engine/rest";
+import { canLongRest, longRest, shortRest, spendResource } from "@/engine/rest";
 import type { ClassLevel } from "@/engine/progression";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -30,12 +30,12 @@ const finalScores = (c: StoredPlay): AbilityScores => {
 
 // ------------------------------------------------------------------ class resources and rests
 
-export async function useClassResource(characterId: string, key: string, amount = 1): Promise<Result> {
+export async function spendClassResource(characterId: string, key: string, amount = 1): Promise<Result> {
   const user = await requireUser();
   const c = await editable(characterId, user.id);
   if (!c) return fail("Character not found");
   try {
-    const rs = useResource(toRestState(c), key, amount);
+    const rs = spendResource(toRestState(c), key, amount);
     await prisma.character.update({ where: { id: characterId }, data: fromRestState(rs, c) });
     const label = key.replace(/^.*:/, "").replace(/-/g, " ");
     await audit(characterId, c.name, user.id, user.name ?? "Someone", `${c.name} uses ${label}${amount > 1 ? ` (${amount})` : ""}`);

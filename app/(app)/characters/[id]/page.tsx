@@ -17,6 +17,11 @@ import { getOwnedCharacter } from "@/lib/characters/queries";
 import { prisma } from "@/lib/prisma";
 import { InventoryPanel } from "./InventoryPanel";
 import { LevelUpPanel } from "./LevelUpPanel";
+import { ResourcesPanel } from "./ResourcesPanel";
+import { SpellsPanel, type CasterView } from "./SpellsPanel";
+import { CASTER_KIND, CLASS_NAME, maxSpellLevel, spellLimits, type SpellSelection } from "@/engine/classes/spellcasting";
+import { CASTING_ABILITY } from "@/engine/spells";
+import { resourceViews, slotViews } from "@/lib/characters/play";
 import { VitalsPanel } from "./VitalsPanel";
 import type { InventoryItem } from "@/lib/characters/inventory";
 import type { Purse } from "@/engine/economy";
@@ -46,6 +51,26 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
   const proficient = new Set(c.skillProficiencies as Skill[]);
   const saveProf = new Set(CLASS_RULES[classes[0].classIndex]?.saves ?? []);
   const Icon = classIcon(classes[0].classIndex);
+  // spellcasting: one section per caster class, with the spells that class could choose
+  const spellState = (c.spells ?? {}) as { byClass?: Record<string, SpellSelection>; concentration?: { spell: string; name: string } | null };
+  const casterClasses = classes.filter((k) => CASTER_KIND[k.classIndex] && maxSpellLevel(k.classIndex, k.level) > 0);
+  const options = casterClasses.length
+    ? await prisma.spell.findMany({
+        where: { OR: casterClasses.map((k) => ({ classes: { has: CLASS_NAME[k.classIndex] }, level: { lte: maxSpellLevel(k.classIndex, k.level) } })) },
+        select: { index: true, name: true, level: true, school: true, ritual: true, concentration: true, classes: true },
+        orderBy: [{ level: "asc" }, { name: "asc" }],
+      })
+    : [];
+  const casters: CasterView[] = casterClasses.map((k) => ({
+    classIndex: k.classIndex,
+    className: CLASS_NAME[k.classIndex],
+    level: k.level,
+    limits: spellLimits(k.classIndex, k.level, d.abilities[CASTING_ABILITY[k.classIndex]].score)!,
+    maxSpellLevel: maxSpellLevel(k.classIndex, k.level),
+    selection: spellState.byClass?.[k.classIndex] ?? { known: [], prepared: [], spellbook: [] },
+    options: options.filter((o) => o.classes.includes(CLASS_NAME[k.classIndex]) && o.level <= maxSpellLevel(k.classIndex, k.level)),
+  }));
+  const slots = slotViews(c);
   const hpPct = Math.max(0, Math.min(100, Math.round((c.currentHp / d.maxHp) * 100)));
 
   async function remove() {
@@ -177,6 +202,16 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
           </Card>
         </section>
       )}
+
+      {casters.length > 0 && <SpellsPanel id={c.id} casters={casters} slots={slots.slots} pact={slots.pact} concentration={spellState.concentration ?? null} />}
+
+      <ResourcesPanel
+        id={c.id}
+        resources={resourceViews(c)}
+        hitDice={c.hitDiceSpent as Record<string, { total: number; spent: number }>}
+        currentHp={c.currentHp}
+        maxHp={d.maxHp}
+      />
 
       <InventoryPanel id={c.id} items={c.equipment as unknown as InventoryItem[]} purse={c.currency as unknown as Purse} catalog={catalog} strength={d.abilities.str.score} />
 

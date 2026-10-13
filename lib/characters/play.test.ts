@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { longRest, shortRest, useResource } from "@/engine/rest";
+import { longRest, shortRest, spendResource } from "@/engine/rest";
 import { fromRestState, lastLongRest, resourceViews, slotViews, toRestState, type StoredPlay } from "./play";
 
 const wizardFighter = (over: Partial<StoredPlay> = {}): StoredPlay => ({
@@ -58,7 +58,7 @@ describe("rests round-trip through the engine", () => {
   });
   it("spending a use persists", () => {
     const c = wizardFighter({ resources: {} });
-    const after = fromRestState(useResource(toRestState(c), "second-wind"), c);
+    const after = fromRestState(spendResource(toRestState(c), "second-wind"), c);
     expect(after.resources).toMatchObject({ "second-wind": 1 });
   });
   it("reads the last long rest time", () => {

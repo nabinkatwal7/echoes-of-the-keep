@@ -47,8 +47,8 @@ Details for each phase: docs/phases/*.md
 [x] f36, Level-up flow (HP, features, subclass, ASI or feat)
 [~] f37, Multiclassing
 [~] f38, Feat selection
-[ ] f39, Spell preparation, spellbook and slot tracker
-[ ] f40, Class resource trackers (rage, ki, channel divinity, etc.)
+[x] f39, Spell preparation, spellbook and slot tracker
+[x] f40, Class resource trackers (rage, ki, channel divinity, etc.)
 [ ] f41, Companions, familiars and wild shape forms
 [ ] f42, Print/PDF and JSON export-import
 [ ] f43, Character rules audit
@@ -84,7 +84,7 @@ Details for each phase: docs/phases/*.md
 [ ] f69, Encounter end and rewards hand-off
 
 === PHASE 6: SPELLCASTING ===
-[~] f70, Casting flow (slots, upcasting, components, casting time)
+[x] f70, Casting flow (slots, upcasting, components, casting time)
 [~] f71, Rituals, Pact Magic and sorcery points
 [ ] f72, Targeting and area-of-effect templates
 [~] f73, Spell attacks and saving throws

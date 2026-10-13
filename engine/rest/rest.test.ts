@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canLongRest, dawn, longRest, shortRest, useResource, type RestState } from "./index";
+import { canLongRest, dawn, longRest, shortRest, spendResource, type RestState } from "./index";
 
 const base = (): RestState => ({
   hp: 10,
@@ -69,9 +69,9 @@ describe("long rest", () => {
 describe("resources", () => {
   it("tracks uses and recharges at dawn", () => {
     expect(dawn(base()).resources[2].used).toBe(0);
-    const s = useResource(base(), "rage");
+    const s = spendResource(base(), "rage");
     expect(s.resources[1].used).toBe(3);
-    expect(() => useResource(s, "rage")).toThrow(/no uses left/);
-    expect(() => useResource(base(), "nope")).toThrow(/Unknown/);
+    expect(() => spendResource(s, "rage")).toThrow(/no uses left/);
+    expect(() => spendResource(base(), "nope")).toThrow(/Unknown/);
   });
 });
