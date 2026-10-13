@@ -1,5 +1,6 @@
 import { ABILITIES, type Ability, type AbilityScores } from "@/engine/abilities";
 import { CLASS_RULES } from "@/engine/classes/rules";
+import { isSubclassOf, subclassDueAt } from "@/engine/classes/subclasses";
 import { deriveCharacter } from "@/engine/character";
 import { validateCharacter } from "@/engine/character/validate";
 import { asiLevels, levelForXp, type ClassLevel } from "@/engine/progression";
@@ -21,6 +22,8 @@ export type LevelUpChoices = {
   classIndex: string;
   /** required when the new class level grants an ASI or feat */
   improvement?: ImprovementChoice;
+  /** required at the class's subclass level (1st for clerics, sorcerers and warlocks, 2nd druids and wizards, else 3rd) */
+  subclassIndex?: string;
 };
 
 export type LevelUpResult =
@@ -80,8 +83,15 @@ export function applyLevelUp(c: LevelUpStored, choices: LevelUpChoices, ignoreXp
   }
 
   const existing = classes.find((x) => x.classIndex === choices.classIndex);
-  if (existing) existing.level += 1;
-  else classes.push({ classIndex: choices.classIndex, level: 1 });
+  const newClassLevel = (existing?.level ?? 0) + 1;
+  const needsSubclass = subclassDueAt(choices.classIndex, newClassLevel) && !existing?.subclassIndex;
+  if (needsSubclass && !(choices.subclassIndex && isSubclassOf(choices.subclassIndex, choices.classIndex))) {
+    errors.push("Choose a subclass for this level");
+  }
+  if (existing) {
+    existing.level += 1;
+    if (needsSubclass && choices.subclassIndex) existing.subclassIndex = choices.subclassIndex;
+  } else classes.push({ classIndex: choices.classIndex, level: 1, ...(needsSubclass && choices.subclassIndex ? { subclassIndex: choices.subclassIndex } : {}) });
 
   const next = { ...c, classes, scoreBonuses: bonuses };
   const issues = validateCharacter(toEngineInput(next));

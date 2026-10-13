@@ -254,3 +254,14 @@ model Language {
   script String
   source String @default("PHB")
 }
+
+model Subclass {
+  index      String @id
+  classIndex String
+  name       String
+  text       String
+  source     String @default("PHB")
+  pdfPage    Int?
+
+  @@index([classIndex])
+}

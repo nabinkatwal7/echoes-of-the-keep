@@ -5,6 +5,8 @@ import { Prose } from "@/app/components/Prose";
 import { Card } from "@/app/components/ui/Card";
 import { PageHeader } from "@/app/components/ui/PageHeader";
 import { getClass } from "@/lib/content/reference";
+import { SUBCLASS_LEVEL } from "@/engine/classes/subclasses";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,7 @@ export default async function ClassPage({ params }: { params: Promise<{ index: s
   const c = await getClass((await params).index);
   if (!c) notFound();
   const Icon = classIcon(c.index);
+  const subclasses = await prisma.subclass.findMany({ where: { classIndex: c.index }, orderBy: { name: "asc" } });
   const prof = c.proficiencies as Record<string, string | null>;
   const rows = c.levelTable as Row[];
   const facts: [string, string][] = [
@@ -69,6 +72,28 @@ export default async function ClassPage({ params }: { params: Promise<{ index: s
           </table>
         </Card>
       </section>
+
+      {subclasses.length > 0 && (
+        <section className="mb-10">
+          <h2 className="eyebrow mb-1">Subclasses</h2>
+          <p className="mb-3 text-sm text-muted">
+            Chosen at {SUBCLASS_LEVEL[c.index] === 1 ? "1st" : SUBCLASS_LEVEL[c.index] === 2 ? "2nd" : "3rd"} level.
+          </p>
+          <div className="flex flex-col gap-3">
+            {subclasses.map((s) => (
+              <details key={s.index} id={s.index} className="panel-flat group p-0 open:border-gold/60">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 font-display uppercase tracking-[0.1em] hover:text-goldBright">
+                  {s.name}
+                  <span className="text-gold transition group-open:rotate-45" aria-hidden>+</span>
+                </summary>
+                <div className="border-t border-border/60 px-5 py-4">
+                  <Prose text={s.text} />
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="eyebrow mb-3">The {c.name}</h2>

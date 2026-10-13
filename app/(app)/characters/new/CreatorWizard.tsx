@@ -12,6 +12,7 @@ import { ABILITIES, SKILLS, abilityModifier, type Ability, type AbilityScores, t
 import { POINT_BUY_BUDGET, POINT_BUY_COSTS, STANDARD_ARRAY, pointBuyCost, rollAbilityScores } from "@/engine/abilities/generation";
 import { deriveCharacter, explain } from "@/engine/character";
 import { CLASS_RULES, skillOptions } from "@/engine/classes/rules";
+import { subclassDueAt, subclassesFor } from "@/engine/classes/subclasses";
 import { createCharacter } from "@/lib/characters/actions";
 import { buildCharacter, type AbilityMethod, type BuildContent } from "@/lib/characters/build";
 import { OPTIONAL_SUBRACE, VARIANT_HUMAN, parseAbilityIncrease } from "@/lib/rules/race";
@@ -59,6 +60,7 @@ export function CreatorWizard({ data }: { data: WizardData }) {
   const [subraceIndex, setSubraceIndex] = useState("");
   const [flexible, setFlexible] = useState<Ability[]>([]);
   const [classIndex, setClassIndex] = useState("");
+  const [subclassIndex, setSubclassIndex] = useState("");
   const [method, setMethod] = useState<AbilityMethod>("standard");
   const [scores, setScores] = useState<AbilityScores>(unassigned());
   const [rolled, setRolled] = useState<number[]>([]);
@@ -95,6 +97,7 @@ export function CreatorWizard({ data }: { data: WizardData }) {
     raceIndex,
     subraceIndex: subraceIndex || undefined,
     classIndex,
+    subclassIndex: subclassIndex || undefined,
     backgroundIndex,
     alignment: alignment || undefined,
     abilityMethod: method,
@@ -138,7 +141,7 @@ export function CreatorWizard({ data }: { data: WizardData }) {
 
   const stepReady = [
     !!race && (race.subraces.length === 0 || !!subrace || OPTIONAL_SUBRACE.includes(race.index)) && (!chooseRule || flexible.length === chooseRule.count),
-    !!classIndex,
+    !!classIndex && (!subclassDueAt(classIndex, 1) || !!subclassIndex),
     method === "pointbuy" ? pointBuyCost(scores) <= POINT_BUY_BUDGET : ABILITIES.every((a) => scores[a] > 0),
     !!background,
     !!classIndex && classSkills.length === CLASS_RULES[classIndex].skillChoices.count && (!variant || (!!variantSkill && !!variantFeat)),
@@ -239,7 +242,7 @@ export function CreatorWizard({ data }: { data: WizardData }) {
               {Object.entries(CLASS_RULES).map(([index, r]) => {
                 const Icon = classIcon(index);
                 return (
-                  <Choice key={index} selected={classIndex === index} onClick={() => { setClassIndex(index); setClassSkills([]); }}>
+                  <Choice key={index} selected={classIndex === index} onClick={() => { setClassIndex(index); setClassSkills([]); setSubclassIndex(""); }}>
                     <Icon className="mb-2 h-9 w-9 text-gold" />
                     <div className="font-display uppercase tracking-[0.1em]">{titleCase(index)}</div>
                     <div className="mt-1 text-xs text-muted">
@@ -250,6 +253,18 @@ export function CreatorWizard({ data }: { data: WizardData }) {
                 );
               })}
             </div>
+            {classIndex && subclassDueAt(classIndex, 1) && (
+              <div className="rounded border border-gold/40 bg-gold/5 p-4">
+                <p className="mb-3 text-sm">A {titleCase(classIndex)} chooses a subclass at 1st level:</p>
+                <div className="flex flex-wrap gap-2">
+                  {subclassesFor(classIndex).map((s) => (
+                    <Button key={s.index} variant={subclassIndex === s.index ? "primary" : "secondary"} onClick={() => setSubclassIndex(s.index)}>
+                      {s.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
 

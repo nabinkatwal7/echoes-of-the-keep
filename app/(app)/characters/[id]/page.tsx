@@ -9,6 +9,7 @@ import { Ornament } from "@/app/components/ui/Ornament";
 import { ABILITIES, SKILLS, type Skill } from "@/engine/abilities";
 import { explain } from "@/engine/character";
 import { CLASS_RULES } from "@/engine/classes/rules";
+import { SUBCLASSES } from "@/engine/classes/subclasses";
 import { requireUser } from "@/lib/auth";
 import { deleteCharacter } from "@/lib/characters/actions";
 import { deriveStored, prereqContext } from "@/lib/characters/derive";
@@ -35,7 +36,8 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
 
   const d = deriveStored(c);
   const feats = await prisma.feat.findMany({ select: { index: true, name: true, prerequisite: true }, orderBy: { name: "asc" } });
-  const classes = c.classes as { classIndex: string; level: number }[];
+  const classes = c.classes as { classIndex: string; level: number; subclassIndex?: string }[];
+  const subclassNames = classes.map((k) => SUBCLASSES.find((s) => s.index === k.subclassIndex)?.name).filter(Boolean);
   const proficient = new Set(c.skillProficiencies as Skill[]);
   const saveProf = new Set(CLASS_RULES[classes[0].classIndex]?.saves ?? []);
   const Icon = classIcon(classes[0].classIndex);
@@ -64,6 +66,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
           <p className="text-lg text-foreground/80">
             {titleCase(c.subraceIndex ?? c.raceIndex)} {classes.map((k) => `${titleCase(k.classIndex)} ${k.level}`).join(" / ")}
           </p>
+          {subclassNames.length > 0 && <p className="text-sm italic text-muted">{subclassNames.join(", ")}</p>}
           {c.alignment && <Badge tone="gold" className="mt-2">{titleCase(c.alignment)}</Badge>}
         </div>
         <div className="flex gap-3">

@@ -7,6 +7,7 @@ import { Card } from "@/app/components/ui/Card";
 import { Field, Input, Select } from "@/app/components/ui/Input";
 import { ABILITIES, type Ability } from "@/engine/abilities";
 import { CLASS_RULES } from "@/engine/classes/rules";
+import { subclassDueAt, subclassesFor } from "@/engine/classes/subclasses";
 import { checkPrerequisites, type PrereqContext } from "@/engine/feats";
 import { XP_THRESHOLDS, levelForXp, type ClassLevel } from "@/engine/progression";
 import { addExperience, levelUpCharacter } from "@/lib/characters/actions";
@@ -38,11 +39,14 @@ export function LevelUpPanel({
   const [kind, setKind] = useState<"asi" | "feat">("asi");
   const [picks, setPicks] = useState<Ability[]>([]);
   const [feat, setFeat] = useState("");
+  const [subclass, setSubclass] = useState("");
 
   const level = totalLevel(classes);
   const xpReady = levelForXp(xp) > level;
   const nextAt = level < 20 ? XP_THRESHOLDS[level] : null;
   const due = improvementDue(classes, classIndex);
+  const existing = classes.find((c) => c.classIndex === classIndex);
+  const subclassDue = subclassDueAt(classIndex, (existing?.level ?? 0) + 1) && !existing?.subclassIndex;
   const progress = nextAt ? Math.min(100, Math.round(((xp - XP_THRESHOLDS[level - 1]) / (nextAt - XP_THRESHOLDS[level - 1])) * 100)) : 100;
 
   function run(fn: () => Promise<{ ok: boolean; errors?: string[] }>) {
@@ -58,7 +62,7 @@ export function LevelUpPanel({
 
   function levelUp() {
     const improvement: ImprovementChoice | undefined = !due ? undefined : kind === "feat" ? { kind: "feat", feat } : { kind: "asi", abilities: picks };
-    run(() => levelUpCharacter(id, { classIndex, improvement }, !xpReady));
+    run(() => levelUpCharacter(id, { classIndex, improvement, subclassIndex: subclassDue ? subclass : undefined }, !xpReady));
   }
 
   return (
@@ -105,6 +109,18 @@ export function LevelUpPanel({
               ))}
             </Select>
           </Field>
+          {subclassDue && (
+            <Field label="Subclass">
+              <Select value={subclass} onChange={(e) => setSubclass(e.target.value)}>
+                <option value="">Choose a subclass</option>
+                {subclassesFor(classIndex).map((s) => (
+                  <option key={s.index} value={s.index}>
+                    {s.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
           {due && (
             <div className="flex flex-col gap-3">
               <div className="flex gap-2">

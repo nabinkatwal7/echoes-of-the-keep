@@ -79,4 +79,20 @@ describe("applyLevelUp", () => {
     expect(ok.ok && ok.update.hitDiceSpent).toMatchObject({ 10: { total: 1 }, 6: { total: 1 } });
     expect(applyLevelUp(fighter(), { classIndex: "wizard" }).ok).toBe(false);
   });
+
+  it("asks for a subclass at the class's subclass level and stores it", () => {
+    const l2 = fighter({ classes: [{ classIndex: "fighter", level: 2 }], xp: 900 });
+    expect(applyLevelUp(l2, { classIndex: "fighter" }).ok).toBe(false);
+    expect(applyLevelUp(l2, { classIndex: "fighter", subclassIndex: "life-domain" }).ok).toBe(false); // wrong class
+    const r = applyLevelUp(l2, { classIndex: "fighter", subclassIndex: "champion" });
+    expect(r.ok && r.update.classes).toEqual([{ classIndex: "fighter", level: 3, subclassIndex: "champion" }]);
+  });
+
+  it("a wizard picks a school at 2nd level, and only once", () => {
+    const w1 = fighter({ classes: [{ classIndex: "wizard", level: 1 }], baseScores: { str: 8, dex: 14, con: 14, int: 16, wis: 10, cha: 10 }, xp: 300 });
+    const r = applyLevelUp(w1, { classIndex: "wizard", subclassIndex: "school-of-evocation" });
+    expect(r.ok && r.update.classes[0].subclassIndex).toBe("school-of-evocation");
+    const w2 = fighter({ classes: [{ classIndex: "wizard", level: 2, subclassIndex: "school-of-evocation" }], baseScores: { str: 8, dex: 14, con: 14, int: 16, wis: 10, cha: 10 }, xp: 900 });
+    expect(applyLevelUp(w2, { classIndex: "wizard" }).ok).toBe(true);
+  });
 });

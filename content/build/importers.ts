@@ -3,7 +3,8 @@ import path from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { alignmentSchema } from "../schemas/alignment";
-import { ruleSectionSchema } from "../schemas/rules";
+import { ruleSectionSchema, subclassSchema } from "../schemas/rules";
+import { loadSubclasses } from "./subclasses";
 import { loadRuleSections } from "./ruleSections";
 import {
   backgroundSchema,
@@ -108,5 +109,10 @@ export const importers: Importer[] = [
     name: "languages",
     load: () => z.array(languageSchema).parse(overrides("languages.json")),
     write: (prisma, rows) => upsertAll(prisma.language, rows),
+  },
+  {
+    name: "subclasses",
+    load: () => z.array(subclassSchema).parse(loadSubclasses()),
+    write: (prisma, rows) => upsertAll(prisma.subclass, rows),
   },
 ];

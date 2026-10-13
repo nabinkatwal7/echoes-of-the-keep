@@ -5,6 +5,7 @@ import {
   validateStandardArray,
 } from "@/engine/abilities/generation";
 import { CLASS_RULES, parseSkillList, skillOptions } from "@/engine/classes/rules";
+import { isSubclassOf, subclassDueAt } from "@/engine/classes/subclasses";
 import { deriveCharacter } from "@/engine/character";
 import { VARIANT_HUMAN, parseAbilityIncrease, parseSpeed } from "@/lib/rules/race";
 
@@ -15,6 +16,8 @@ export type CreatorChoices = {
   raceIndex: string;
   subraceIndex?: string;
   classIndex: string;
+  /** required for classes that choose at 1st level (cleric, sorcerer, warlock) */
+  subclassIndex?: string;
   backgroundIndex: string;
   alignment?: string;
   abilityMethod: AbilityMethod;
@@ -45,7 +48,7 @@ export type NewCharacter = {
   subraceIndex: string | null;
   backgroundIndex: string;
   alignment: string | null;
-  classes: { classIndex: string; level: number }[];
+  classes: { classIndex: string; level: number; subclassIndex?: string }[];
   baseScores: AbilityScores;
   abilityMethod: AbilityMethod;
   scoreBonuses: Partial<AbilityScores>;
@@ -67,6 +70,10 @@ export function buildCharacter(choices: CreatorChoices, content: BuildContent): 
   const rules = CLASS_RULES[choices.classIndex];
   if (!choices.name.trim()) errors.push("Name is required");
   if (!rules) errors.push(`Unknown class: ${choices.classIndex}`);
+  const subclassNow = !!rules && subclassDueAt(choices.classIndex, 1);
+  if (subclassNow && !(choices.subclassIndex && isSubclassOf(choices.subclassIndex, choices.classIndex))) {
+    errors.push("Choose a subclass for your 1st-level class");
+  }
 
   // ability scores by method
   const method =
@@ -139,7 +146,7 @@ export function buildCharacter(choices: CreatorChoices, content: BuildContent): 
       subraceIndex: content.subrace?.index ?? null,
       backgroundIndex: content.background.index,
       alignment: choices.alignment ?? null,
-      classes: [{ classIndex: choices.classIndex, level: 1 }],
+      classes: [{ classIndex: choices.classIndex, level: 1, ...(subclassNow ? { subclassIndex: choices.subclassIndex } : {}) }],
       baseScores: choices.scores,
       abilityMethod: choices.abilityMethod,
       scoreBonuses: bonuses,

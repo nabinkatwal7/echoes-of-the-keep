@@ -14,7 +14,7 @@ Details for each phase: docs/phases/*.md
 === PHASE 1: RULES CONTENT AND WIKI ===
 [x] f8, Import reference data (abilities, skills, languages, alignments, damage types)
 [x] f9, Import races and subraces (incl. Variant Human)
-[~] f10, Import classes, level tables and subclasses
+[x] f10, Import classes, level tables and subclasses
 [x] f11, Import backgrounds and personality tables
 [x] f12, Import equipment, packs, tools, mounts, trade goods, trinkets
 [x] f13, Import feats with machine-checkable prerequisites
@@ -129,7 +129,6 @@ Details for each phase: docs/phases/*.md
 
 PARTIAL NOTES
 f4: Playwright e2e not set up yet
-f10: subclasses not split out of class text; level table columns are raw text
 f15: only the 31 Appendix D creatures; SRD monsters still to import
 f33: wizard has race, class, abilities (3 methods), background, skills, details, review; equipment step and racial/class effects (e.g. Hill Dwarf HP) still to do
 f34: sheet shows stats, saves, skills; no attacks, inventory, spells or HP editing yet
@@ -141,3 +140,4 @@ f47: table page with chat and dice log; presence list and shared scene not built
 f48: SSE stream polls the database every second with Last-Event-ID resume (verified over HTTP); LISTEN/NOTIFY not used yet
 f49: server-side rolls, /roll and /gmroll commands, quick dice buttons; the send action is not yet verified in a browser
 f50: chat, emotes and whispers to the DM; player-to-player whispers not built
+f10: subclass level tables per subclass (domain spells, etc.) are not split out; subclass text is shown as written

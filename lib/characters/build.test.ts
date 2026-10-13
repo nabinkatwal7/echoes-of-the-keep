@@ -18,6 +18,7 @@ const choices = (over: Partial<CreatorChoices> = {}): CreatorChoices => ({
   raceIndex: "dwarf",
   subraceIndex: "hill-dwarf",
   classIndex: "cleric",
+  subclassIndex: "life-domain",
   backgroundIndex: "acolyte",
   abilityMethod: "standard",
   scores: { str: 13, dex: 8, con: 14, int: 10, wis: 15, cha: 12 },
@@ -106,5 +107,19 @@ describe("buildCharacter", () => {
     expect(buildCharacter({ ...base, variantFeat: undefined }, human).ok).toBe(false);
     expect(buildCharacter({ ...base, variantSkill: "insight" }, human).ok).toBe(false); // already from background
     expect(buildCharacter({ ...base, flexibleBonuses: ["str"] }, human).ok).toBe(false);
+  });
+
+  it("requires a subclass for classes that choose at 1st level", () => {
+    const r = buildCharacter(choices({ subclassIndex: undefined }), hillDwarf);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join()).toMatch(/subclass/);
+    expect(buildCharacter(choices({ subclassIndex: "champion" }), hillDwarf).ok).toBe(false); // a fighter subclass
+    const ok = buildCharacter(choices(), hillDwarf);
+    expect(ok.ok && ok.character.classes[0].subclassIndex).toBe("life-domain");
+  });
+
+  it("does not ask a fighter for a subclass yet", () => {
+    const r = buildCharacter(choices({ classIndex: "fighter", subclassIndex: undefined, classSkills: ["athletics", "perception"] }), hillDwarf);
+    expect(r.ok).toBe(true);
   });
 });

@@ -11,3 +11,12 @@ export const ruleSectionSchema = z.object({
   source: z.string().default("PHB"),
   pdfPage: z.number().int().nullable().default(null),
 });
+
+export const subclassSchema = z.object({
+  index: z.string().regex(/^[a-z0-9-]+$/),
+  classIndex: z.string().min(1),
+  name: z.string().min(1),
+  text: z.string().min(100),
+  source: z.string().default("PHB"),
+  pdfPage: z.number().int().nullable().default(null),
+});
