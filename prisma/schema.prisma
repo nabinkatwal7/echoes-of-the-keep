@@ -112,3 +112,23 @@ model Spell {
 
   @@index([level])
 }
+
+model Race {
+  index    String @id
+  name     String
+  traits   Json
+  text     String
+  source   String @default("PHB")
+  pdfPages Int[]
+}
+
+model Class {
+  index         String @id
+  name          String
+  hitDie        Int
+  proficiencies Json
+  levelTable    Json
+  text          String
+  source        String @default("PHB")
+  pdfPages      Int[]
+}

@@ -26,4 +26,17 @@ describe("importers", () => {
     expect(fireball.classes).toEqual(["Sorcerer", "Wizard"]);
     expect(spells.filter((s) => s.level === 9)).toHaveLength(16);
   });
+
+  it("imports 12 classes with 20-row level tables and correct hit dice", () => {
+    const classes = importers.find((i) => i.name === "classes")!.load() as { index: string; hitDie: number }[];
+    expect(classes).toHaveLength(12);
+    expect(classes.find((c) => c.index === "wizard")!.hitDie).toBe(6);
+    expect(classes.find((c) => c.index === "barbarian")!.hitDie).toBe(12);
+  });
+
+  it("imports races and subraces with traits", () => {
+    const races = importers.find((i) => i.name === "races")!.load() as { index: string; traits: unknown[] }[];
+    expect(races).toHaveLength(18);
+    expect(races.find((r) => r.index === "hill-dwarf")!.traits.length).toBeGreaterThan(0);
+  });
 });

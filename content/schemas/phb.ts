@@ -41,3 +41,19 @@ export const spellSchema = z.object({
   classes: z.array(z.enum(["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"])).min(1),
   source: base.source,
 });
+
+export const raceSchema = z.object({
+  ...base,
+  traits: z.array(z.object({ name: z.string().min(1), description: z.string().min(1) })),
+  text: z.string(),
+});
+
+export const classSchema = z.object({
+  ...base,
+  hitDie: z.number().int().refine((n) => [6, 8, 10, 12].includes(n), "hit die must be d6/d8/d10/d12"),
+  proficiencies: z.record(z.string(), z.string().nullable()),
+  levelTable: z
+    .array(z.object({ level: z.number().int().min(1).max(20), proficiencyBonus: z.string(), columns: z.string() }))
+    .length(20),
+  text: z.string().min(100),
+});

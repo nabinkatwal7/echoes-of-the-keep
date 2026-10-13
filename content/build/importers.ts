@@ -3,7 +3,7 @@ import path from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { alignmentSchema } from "../schemas/alignment";
-import { backgroundSchema, conditionSchema, featSchema, spellSchema } from "../schemas/phb";
+import { backgroundSchema, classSchema, conditionSchema, featSchema, raceSchema, spellSchema } from "../schemas/phb";
 
 export type Importer = {
   name: string;
@@ -52,5 +52,15 @@ export const importers: Importer[] = [
     name: "spells",
     load: () => z.array(spellSchema).parse(extracted("spells.json")),
     write: (prisma, rows) => upsertAll(prisma.spell, rows),
+  },
+  {
+    name: "races",
+    load: () => z.array(raceSchema).parse(extracted("races.json")),
+    write: (prisma, rows) => upsertAll(prisma.race, rows),
+  },
+  {
+    name: "classes",
+    load: () => z.array(classSchema).parse(extracted("classes.json")),
+    write: (prisma, rows) => upsertAll(prisma.class, rows),
   },
 ];
