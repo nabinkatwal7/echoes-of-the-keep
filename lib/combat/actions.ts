@@ -23,7 +23,16 @@ import {
 import { changed, clearSheetConcentration, concentrationRolls, dropForDowned } from "./concentration";
 import { adjustSlot } from "@/lib/characters/playActions";
 import { slotViews } from "@/lib/characters/play";
+import { lineOfSight, shortestPath, visibleSquares } from "@/engine/combat/los";
 import { expectedDamage, planMonsterTurn } from "./ai";
+/** With fog on, a foe's movement out of the party's sight is not shown to players. */
+const fogHidden = (enc: { environment: unknown; combatants: Combatant[]; gridWidth: number; gridHeight: number }, mover: Combatant) => {
+  const env = (enc.environment ?? {}) as { fog?: boolean; walls?: string[] };
+  if (!env.fog || sideOf(mover) === "party" || mover.x === null || mover.y === null) return false;
+  const eyes = enc.combatants.filter((r) => sideOf(r) === "party" && !r.defeated && r.x !== null && r.y !== null).map((r) => ({ x: r.x!, y: r.y! }));
+  return !visibleSquares(eyes, new Set(env.walls ?? []), 12, enc.gridWidth, enc.gridHeight).has(`${mover.x},${mover.y}`);
+};
+const wallSet = (env: unknown) => new Set(((env as { walls?: string[] } | null)?.walls ?? []) as string[]);
 import { canControl, context, fail, isCtx, loadActing, refresh, type Result } from "./access";
 import { loadEncounter, profilesOf, rowToCmb, sideOf } from "./store";
 
@@ -379,6 +388,8 @@ export async function attack(req: AttackRequest): Promise<Result> {
   const dist = both ? distanceFeet({ x: attacker.x!, y: attacker.y! }, { x: target.x!, y: target.y! }) : undefined;
   const near = both ? adjacent({ x: attacker.x!, y: attacker.y! }, { x: target.x!, y: target.y! }) : profile.melee;
   if (profile.melee && both && dist! > (profile.reach ?? 5)) return fail(`${target.name} is out of reach (${dist} ft)`);
+  const walls = wallSet(enc.environment);
+  if (both && walls.size && !lineOfSight({ x: attacker.x!, y: attacker.y! }, { x: target.x!, y: target.y! }, walls)) return fail(`A wall blocks the line between ${attacker.name} and ${target.name}`);
 
   // class features that add damage on a hit
   const bonusDamage: { dice: string; type?: string; label?: string }[] = [];
@@ -472,6 +483,7 @@ export async function moveCombatant(combatantId: string, x: number, y: number): 
   const { row, ctx } = a;
   const { enc } = ctx;
   if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= enc.gridWidth || y >= enc.gridHeight) return fail("That square is off the map");
+  if (wallSet(enc.environment).has(`${x},${y}`)) return fail("That square is a wall");
   const c = rowToCmb(row);
   const from = c.x !== null && c.y !== null ? { x: c.x, y: c.y } : null;
   const to = { x, y };
@@ -483,7 +495,13 @@ export async function moveCombatant(combatantId: string, x: number, y: number): 
   let provokes: string[] = [];
   let next = { ...c, x, y };
   if (from && isActive) {
-    const cost = moveCost(from, to, { width: enc.gridWidth, height: enc.gridHeight, crawling: c.conditions.some((k) => k.condition === "prone") });
+    const wallsHere = wallSet(enc.environment);
+    const crawling = c.conditions.some((k) => k.condition === "prone");
+    let cost: ReturnType<typeof moveCost>;
+    if (wallsHere.size) {
+      const path = shortestPath(from, to, wallsHere, enc.gridWidth, enc.gridHeight);
+      cost = path ? { ok: true, feet: path.length * 5 * (crawling ? 2 : 1) } : { ok: false, reason: "Walls block the way" };
+    } else cost = moveCost(from, to, { width: enc.gridWidth, height: enc.gridHeight, crawling });
     if (!cost.ok) return fail(cost.reason);
     if (cost.feet > c.turn.movement) return fail(`Not enough movement (${cost.feet} ft needed, ${c.turn.movement} ft left)`);
     next = { ...next, turn: { ...c.turn, movement: c.turn.movement - cost.feet } };
@@ -502,7 +520,7 @@ export async function moveCombatant(combatantId: string, x: number, y: number): 
   } else {
     lines.push(`${c.name} is placed on the map`);
   }
-  await commit(enc, ctx.user, { update: [next], lines, dmOnly: row.hidden });
+  await commit(enc, ctx.user, { update: [next], lines, dmOnly: row.hidden || fogHidden(enc, { ...row, x, y }) });
   if (provokes.length) {
     const attackers = enc.combatants.filter((r) => provokes.includes(r.id) && r.characterId);
     const chars = attackers.length
@@ -735,7 +753,6 @@ export async function undoLast(encounterId: string): Promise<Result> {
 
 // ---------------------------------------------------------------------------------------------- monster turns
 
-const wallSet = (env: unknown) => new Set(((env as { walls?: string[] } | null)?.walls ?? []) as string[]);
 
 /**
  * Play the active DM-run creature's turn: choose the best target and attack, walk to it if needed, make every attack of its
@@ -795,4 +812,37 @@ export async function runMonsterTurn(encounterId: string, opts: { endAfter?: boo
   }
   refresh(enc.campaignId);
   return { ok: true, lines };
+}
+
+// ---------------------------------------------------------------------------------------------- walls and fog
+
+/** Draw or erase walls. Walls block movement, sight and ranged attacks. */
+export async function setWalls(encounterId: string, squares: { x: number; y: number }[], on: boolean): Promise<Result> {
+  const ctx = await context(encounterId);
+  if (!isCtx(ctx)) return ctx;
+  if (!ctx.isDm) return fail("Only the DM can draw walls");
+  const { enc } = ctx;
+  if (squares.length < 1 || squares.length > 400) return fail("Choose between 1 and 400 squares");
+  const walls = wallSet(enc.environment);
+  for (const q of squares) {
+    if (!Number.isInteger(q.x) || !Number.isInteger(q.y) || q.x < 0 || q.y < 0 || q.x >= enc.gridWidth || q.y >= enc.gridHeight) return fail("That square is off the map");
+    if (on && enc.combatants.some((c) => c.x === q.x && c.y === q.y && !c.defeated)) return fail("A creature is standing there");
+    if (on) walls.add(`${q.x},${q.y}`);
+    else walls.delete(`${q.x},${q.y}`);
+  }
+  const env = { ...((enc.environment ?? {}) as object), walls: [...walls] };
+  await commit(enc, ctx.user, { encounter: { environment: env as Prisma.InputJsonValue }, lines: [], silent: true });
+  refresh(enc.campaignId);
+  return { ok: true };
+}
+
+/** Fog of war: players see foes only within sight of their side. */
+export async function setFog(encounterId: string, on: boolean): Promise<Result> {
+  const ctx = await context(encounterId);
+  if (!isCtx(ctx)) return ctx;
+  if (!ctx.isDm) return fail("Only the DM can change the fog");
+  const env = { ...((ctx.enc.environment ?? {}) as object), fog: on };
+  await commit(ctx.enc, ctx.user, { encounter: { environment: env as Prisma.InputJsonValue }, lines: [on ? "Fog of war: you can only see what your side can see" : "The fog lifts"] });
+  refresh(ctx.enc.campaignId);
+  return { ok: true };
 }

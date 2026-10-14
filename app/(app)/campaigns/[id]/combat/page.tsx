@@ -46,6 +46,7 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
       .filter((r) => r.audience === "ALL" || isDm || r.actorId === user.id)
       .filter((r) => (r.payload as { encounterId?: string }).encounterId === enc.id)
       .slice(0, 30)
+      .filter((r) => !(r.payload as { silent?: boolean }).silent)
       .map((r) => ({ id: r.id, text: String((r.payload as { text?: string }).text ?? "") }));
   }
 

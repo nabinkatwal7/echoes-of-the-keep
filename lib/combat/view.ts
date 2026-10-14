@@ -1,5 +1,6 @@
 import type { Combatant, Encounter } from "@prisma/client";
 import { healthWord } from "@/engine/combat";
+import { visibleSquares } from "@/engine/combat/los";
 import { effectiveAc } from "./rules";
 import { rowToCmb, profilesOf, sideOf } from "./store";
 
@@ -45,7 +46,11 @@ export type EncounterView = {
   activeIndex: number;
   gridWidth: number;
   gridHeight: number;
-  environment: { underwater?: boolean; mounted?: boolean };
+  environment: { underwater?: boolean; mounted?: boolean; fog?: boolean };
+  /** squares that block movement and sight, as "x,y" */
+  walls: string[];
+  /** squares this viewer can currently see; null when there is no fog */
+  visible: string[] | null;
   combatants: CombatantView[];
   isDm: boolean;
 };
@@ -59,7 +64,15 @@ export function buildEncounterView(
   viewer: { userId: string; isDm: boolean },
   ownedCharacterIds: ReadonlySet<string>,
 ): EncounterView {
-  const visible = enc.combatants.filter((r) => viewer.isDm || !r.hidden);
+  const env = (enc.environment ?? {}) as { underwater?: boolean; mounted?: boolean; fog?: boolean; walls?: string[] };
+  const walls = new Set(env.walls ?? []);
+  // fog of war: players see foes only on squares one of their side can see (60 feet, blocked by walls)
+  let sight: Set<string> | null = null;
+  if (env.fog && !viewer.isDm) {
+    const eyes = enc.combatants.filter((r) => sideOf(r) === "party" && !r.defeated && r.x !== null && r.y !== null).map((r) => ({ x: r.x!, y: r.y! }));
+    sight = visibleSquares(eyes, walls, 12, enc.gridWidth, enc.gridHeight);
+  }
+  const visible = enc.combatants.filter((r) => (viewer.isDm || !r.hidden) && (!sight || sideOf(r) === "party" || (r.x !== null && r.y !== null && sight.has(`${r.x},${r.y}`))));
   const combatants = visible.map((r, i) => {
     const c = rowToCmb(r);
     const mine = !!r.characterId && ownedCharacterIds.has(r.characterId);
@@ -107,7 +120,9 @@ export function buildEncounterView(
     activeIndex: enc.activeIndex,
     gridWidth: enc.gridWidth,
     gridHeight: enc.gridHeight,
-    environment: (enc.environment ?? {}) as { underwater?: boolean; mounted?: boolean },
+    environment: { underwater: env.underwater, mounted: env.mounted, fog: env.fog },
+    walls: env.walls ?? [],
+    visible: sight ? [...sight] : null,
     combatants: combatants.map(({ _order, ...rest }) => (void _order, rest)),
     isDm: viewer.isDm,
   };

@@ -189,6 +189,7 @@ function EventLine({ event, mine }: { event: TableEvent; mine: boolean }) {
     minute: "2-digit",
   });
 
+  if (event.payload.silent) return null;
   if (event.type === "sheet") {
     return (
       <li className="rounded border border-borderSoft bg-black/20 px-3 py-1.5 text-sm text-foreground/80">

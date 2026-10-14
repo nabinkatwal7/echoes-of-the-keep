@@ -3,9 +3,10 @@ import { cleanup, makeUser, RUN_DB, signInAs } from "./db";
 import { attachCharacter, createCampaign } from "@/lib/campaigns/actions";
 import { addExperience, createCharacter, levelUpCharacter } from "@/lib/characters/actions";
 import { saveSpellSelection } from "@/lib/characters/playActions";
-import { addMonster, addParty, createEncounter, endTurn, moveCombatant, setInitiative, startEncounter } from "@/lib/combat/actions";
+import { addMonster, addParty, createEncounter, endTurn, moveCombatant, setFog, setInitiative, setWalls, startEncounter } from "@/lib/combat/actions";
 import { castCounterspell, castInCombat, endCombatConcentration, summonCreature } from "@/lib/combat/spellActions";
 import { loadEncounter } from "@/lib/combat/store";
+import { buildEncounterView } from "@/lib/combat/view";
 import { prisma } from "@/lib/prisma";
 
 const wizard = {
@@ -167,5 +168,58 @@ describe.skipIf(!RUN_DB)("spells in combat (database)", () => {
     expect((await endCombatConcentration(hero2.id)).ok).toBe(true);
     const gone = (await loadEncounter(enc2))!.combatants.filter((c) => (c.extra as { summonedBy?: string }).summonedBy === hero2.id);
     expect(gone.every((c) => c.defeated)).toBe(true);
+  });
+
+  it("walls block movement, sight and spells; fog hides foes from players only", async () => {
+    await prisma.character.update({
+      where: { id: heroId },
+      data: { classes: [{ classIndex: "wizard", level: 2, subclassIndex: "school-of-evocation" }], spellSlotsUsed: [], spells: { byClass: { wizard: { known: [], spellbook: ["magic-missile"], prepared: ["fire-bolt", "magic-missile"] } }, concentration: null } },
+    });
+    signInAs(dm);
+    const e = await createEncounter((await rows()).campaignId, "Walled hall");
+    if (!e.ok || !e.id) throw new Error("setup");
+    const enc3 = e.id;
+    await prisma.encounter.update({ where: { id: enc3 }, data: { gridWidth: 20, gridHeight: 20 } });
+    await addParty(enc3);
+    await addMonster(enc3, "wolf", 1);
+    const load = async () => (await loadEncounter(enc3))!;
+    const named = async (n: string) => (await load()).combatants.find((c) => c.name === n)!;
+    const hero3 = await named("Itest Evoker");
+    const wolf = await named("Wolf");
+    await moveCombatant(hero3.id, 2, 5);
+    await moveCombatant(wolf.id, 8, 5);
+
+    // a wall across the room: three squares at x=5
+    expect((await setWalls(enc3, [{ x: 5, y: 4 }, { x: 5, y: 5 }, { x: 5, y: 6 }], true)).ok).toBe(true);
+    signInAs(owner);
+    expect((await setWalls(enc3, [{ x: 1, y: 1 }], true)).ok).toBe(false); // players do not draw walls
+    signInAs(dm);
+    expect((await setWalls(enc3, [{ x: 2, y: 5 }], true)).ok).toBe(false); // a creature stands there
+    expect((await moveCombatant(wolf.id, 5, 5)).ok).toBe(false); // cannot be placed on a wall
+    await setInitiative(hero3.id, 20);
+    await startEncounter(enc3);
+
+    signInAs(owner);
+    const blocked = await castInCombat({ casterId: hero3.id, spell: "fire-bolt", targetIds: [wolf.id] });
+    expect(blocked.ok).toBe(false);
+    expect(!blocked.ok && blocked.errors[0]).toContain("wall");
+
+    // fog: the players' view drops a foe the party cannot see, the DM's does not
+    signInAs(dm);
+    await setFog(enc3, true);
+    const view = async (isDm: boolean) => buildEncounterView(await load(), { userId: isDm ? dm.id : owner.id, isDm }, new Set([heroId]));
+    expect((await view(false)).combatants.some((c) => c.name === "Wolf")).toBe(false);
+    expect((await view(false)).visible).not.toBeNull();
+    expect((await view(true)).combatants.some((c) => c.name === "Wolf")).toBe(true);
+    expect((await view(true)).visible).toBeNull();
+    expect((await view(true)).walls).toContain("5,5");
+    await setFog(enc3, false);
+
+    // the hero has to walk around the wall, which costs more than the straight line
+    signInAs(owner);
+    const before = ((await named("Itest Evoker")).turn as { movement: number }).movement;
+    expect((await moveCombatant(hero3.id, 8, 4)).ok).toBe(true);
+    const spent = before - ((await named("Itest Evoker")).turn as { movement: number }).movement;
+    expect(spent).toBeGreaterThanOrEqual(30);
   });
 });

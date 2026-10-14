@@ -9,7 +9,7 @@ import { Input, Select } from "@/app/components/ui/Input";
 import {
   runMonsterTurn, addConditionTo, addMonster, addParty, adjustHitPoints, applyFall, attack, createEncounter, endEncounter, endTurn, grappleOrShove, moveCombatant,
   removeCombatant, removeConditionFrom, setEnvironment, signalReady, standFromProne, startEncounter, takeAction, toggleMount, undoLast, takeReaction,
-  starve, suffocate, legendaryAction, rechargeAbility,
+  starve, suffocate, legendaryAction, rechargeAbility, setWalls, setFog,
 } from "@/lib/combat/actions";
 import type { CombatantView, EncounterView } from "@/lib/combat/view";
 import type { Spellbook } from "@/lib/combat/spellList";
@@ -38,6 +38,7 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
   const [selected, setSelected] = useState<string | null>(null);
   const [aim, setAim] = useState<{ x: number; y: number } | null>(null);
   const [aiming, setAiming] = useState(false);
+  const [wallMode, setWallMode] = useState(false);
 
   // The fight is shared state. Every change writes a combat event, so listen to the live stream and refresh the moment one
   // arrives (visibility is still filtered on the server). A slow poll remains as a safety net if the stream drops.
@@ -88,10 +89,10 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
       {view ? (
         <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
           <div className="flex flex-col gap-4">
-            <Header view={view} isDm={isDm} run={run} pending={pending} />
+            <Header view={view} isDm={isDm} run={run} pending={pending} wallMode={wallMode} setWallMode={setWallMode} />
             {isDm && view.state !== "DONE" && <DmSetup view={view} creatures={creatures} run={run} pending={pending} />}
             <Order view={view} selected={selected} onSelect={setSelected} />
-            <Board view={view} selected={selected} onSelect={setSelected} run={run} aim={aim} aiming={aiming} onAim={(x, y) => { setAim({ x, y }); setAiming(false); }} />
+            <Board wallMode={wallMode} view={view} selected={selected} onSelect={setSelected} run={run} aim={aim} aiming={aiming} onAim={(x, y) => { setAim({ x, y }); setAiming(false); }} />
           </div>
           <div className="flex flex-col gap-4">
             <Actions view={view} creatures={creatures} selected={selected} run={run} pending={pending} isDm={isDm} spellbooks={spellbooks} aim={aim} aiming={aiming} setAiming={setAiming} />
@@ -153,7 +154,7 @@ function EncounterPicker({ campaignId, isDm, encounters, current, run, pending }
   );
 }
 
-function Header({ view, isDm, run, pending }: { view: EncounterView; isDm: boolean; run: Run; pending: boolean }) {
+function Header({ view, isDm, run, pending, wallMode, setWallMode }: { view: EncounterView; isDm: boolean; run: Run; pending: boolean; wallMode: boolean; setWallMode: (b: boolean) => void }) {
   return (
     <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
       <div>
@@ -183,6 +184,10 @@ function Header({ view, isDm, run, pending }: { view: EncounterView; isDm: boole
               </Button>
             </>
           )}
+          <Button variant={wallMode ? "primary" : "secondary"} aria-pressed={wallMode} onClick={() => setWallMode(!wallMode)}>{wallMode ? "Drawing walls (click squares)" : "Draw walls"}</Button>
+          <Button variant={view.environment.fog ? "primary" : "secondary"} aria-pressed={!!view.environment.fog} disabled={pending} onClick={() => run(() => setFog(view.id, !view.environment.fog))}>Fog of war</Button>
+          <Button variant={wallMode ? "primary" : "secondary"} aria-pressed={wallMode} onClick={() => setWallMode(!wallMode)}>{wallMode ? "Drawing walls (click squares)" : "Draw walls"}</Button>
+          <Button variant={view.environment.fog ? "primary" : "secondary"} aria-pressed={!!view.environment.fog} disabled={pending} onClick={() => run(() => setFog(view.id, !view.environment.fog))}>Fog of war</Button>
           <Button variant="secondary" disabled={pending} onClick={() => run(() => undoLast(view.id))}>Undo last</Button>
           {view.state !== "DONE" && (
             <Button variant="danger" disabled={pending} onClick={() => { if (confirm("End the encounter and award XP? This cannot be undone.")) run(() => endEncounter(view.id)); }}>End &amp; award XP</Button>
@@ -244,12 +249,14 @@ function Order({ view, selected, onSelect }: { view: EncounterView; selected: st
 }
 
 /** A simple grid: tap a creature to select it, tap an empty square to move the selected creature there. */
-function Board({ view, selected, onSelect, run, aim, aiming, onAim }: { view: EncounterView; selected: string | null; onSelect: (id: string) => void; run: Run; aim: { x: number; y: number } | null; aiming: boolean; onAim: (x: number, y: number) => void }) {
+function Board({ wallMode, view, selected, onSelect, run, aim, aiming, onAim }: { wallMode: boolean; view: EncounterView; selected: string | null; onSelect: (id: string) => void; run: Run; aim: { x: number; y: number } | null; aiming: boolean; onAim: (x: number, y: number) => void }) {
   const at = new Map(view.combatants.filter((c) => c.x !== null && c.y !== null).map((c) => [`${c.x},${c.y}`, c]));
   const cols = Math.min(view.gridWidth, 30);
   const rows = Math.min(view.gridHeight, 20);
   const sel = view.combatants.find((c) => c.id === selected);
   const canMove = !!sel && (view.isDm || sel.mine);
+  const walls = new Set(view.walls);
+  const seen = view.visible ? new Set(view.visible) : null;
   return (
     <Card className="overflow-x-auto p-4">
       <h2 className="eyebrow mb-2">Battlefield <span className="normal-case tracking-normal text-muted">(5 ft squares)</span></h2>
@@ -258,16 +265,18 @@ function Board({ view, selected, onSelect, run, aim, aiming, onAim }: { view: En
           const x = i % cols;
           const y = Math.floor(i / cols);
           const c = at.get(`${x},${y}`);
+          const wall = walls.has(`${x},${y}`);
+          const fogged = !!seen && !seen.has(`${x},${y}`);
           return (
             <button
               key={i}
               type="button"
-              aria-label={c ? c.name : `Square ${x},${y}`}
+              aria-label={c ? c.name : wall ? `Wall at ${x},${y}` : fogged ? `Unseen square ${x},${y}` : `Square ${x},${y}`}
               title={c?.name}
-              onClick={() => (aiming ? onAim(x, y) : c ? onSelect(c.id) : canMove && sel && run(() => moveCombatant(sel.id, x, y)))}
-              className={`flex h-7 w-7 items-center justify-center bg-surface text-[0.65rem] font-bold ${c ? (c.kind === "character" ? "text-emerald" : "text-danger") : "text-transparent hover:bg-surface2"} ${c && selected === c.id ? "outline outline-2 outline-goldBright" : ""} ${aim && aim.x === x && aim.y === y ? "bg-arcane/40" : ""} ${c?.defeated ? "line-through opacity-50" : ""}`}
+              onClick={() => (wallMode && view.isDm ? run(() => setWalls(view.id, [{ x, y }], !wall)) : aiming ? onAim(x, y) : c ? onSelect(c.id) : canMove && sel && run(() => moveCombatant(sel.id, x, y)))}
+              className={`flex h-7 w-7 items-center justify-center ${wall ? "bg-[#3a2f22] text-transparent" : fogged ? "bg-black/70 text-transparent" : "bg-surface"} text-[0.65rem] font-bold ${c ? (c.kind === "character" ? "text-emerald" : "text-danger") : "text-transparent hover:bg-surface2"} ${c && selected === c.id ? "outline outline-2 outline-goldBright" : ""} ${aim && aim.x === x && aim.y === y ? "bg-arcane/40" : ""} ${c?.defeated ? "line-through opacity-50" : ""}`}
             >
-              {c ? c.name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase() : "·"}
+              {c ? c.name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase() : wall ? "▓" : "·"}
             </button>
           );
         })}

@@ -3,6 +3,7 @@
 import type { Prisma } from "@prisma/client";
 import { areaSquares, creaturesInArea } from "@/engine/combat/area";
 import { distanceFeet } from "@/engine/combat/grid";
+import { lineOfSight } from "@/engine/combat/los";
 import { takeAction, takeBonusAction, takeReaction } from "@/engine/combat";
 import { CASTING_ABILITY, castingTimeKind } from "@/engine/spells";
 import { CLASS_NAME } from "@/engine/classes/spellcasting";
@@ -138,6 +139,8 @@ export async function castInCombat(req: CombatCast): Promise<Result> {
       const t = alive.find((c) => c.id === id);
       if (!t) return fail("Target not found");
       const d = dist(t);
+      const wallsHere = new Set(((enc.environment as { walls?: string[] } | null)?.walls ?? []) as string[]);
+      if (casterPos && t.x !== null && t.y !== null && wallsHere.size && !lineOfSight(casterPos, { x: t.x, y: t.y }, wallsHere)) return fail(`A wall blocks the way to ${t.name}`);
       if (d !== undefined && effect.range.kind !== "self" && d > effect.range.feet) return fail(`${t.name} is out of range (${d} ft, range ${effect.range.feet} ft)`);
       targets.push(t);
     }

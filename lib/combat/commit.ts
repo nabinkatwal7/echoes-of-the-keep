@@ -16,6 +16,8 @@ export type Change = {
   lines: string[];
   /** hide the log line from players (hidden creatures involved) */
   dmOnly?: boolean;
+  /** a change with nothing to read (a wall drawn): it still wakes every open combat page */
+  silent?: boolean;
 };
 
 const flags = (c: Cmb) => [...c.conditions.map((x) => x.condition), ...(c.defeated ? ["dead"] : []), ...(c.stable ? ["stable"] : [])];
@@ -63,6 +65,7 @@ export async function commit(enc: Encounter & { combatants: Combatant[] }, actor
           actorName: actor.name,
           encounterId: enc.id,
           text: change.lines.join(" · "),
+          silent: change.silent ?? false,
           lines: change.lines,
           undo: {
             rows: snapshotRows(touched),
