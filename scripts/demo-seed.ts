@@ -24,6 +24,12 @@ async function main() {
       },
     });
   }
+  if (!(await prisma.encounter.findFirst({ where: { campaignId: campaign.id } }))) {
+    const enc = await prisma.encounter.create({ data: { campaignId: campaign.id, name: "Demo: wolves on the road" } });
+    await prisma.combatant.createMany({
+      data: [1, 2].map((n) => ({ encounterId: enc.id, kind: "monster", creatureIndex: "wolf", name: `Wolf ${n}`, dexMod: 2, ac: 13, hp: 11, maxHp: 11, speed: 40, x: 4 + n, y: 3 })),
+    });
+  }
   console.log(`Campaign ${campaign.id}: /campaigns/${campaign.id}`);
   console.log(`Sign in as demo_dm or demo_player, password: ${PASSWORD}`);
   await prisma.$disconnect();

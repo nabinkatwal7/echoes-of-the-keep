@@ -176,7 +176,7 @@ export async function signalReady(combatantId: string): Promise<Result> {
 }
 
 /** Use a recharge ability. With a target, a parsed save and damage roll are applied (half on a successful save). */
-export async function useRecharge(combatantId: string, name: string, targetId?: string): Promise<Result> {
+export async function rechargeAbility(combatantId: string, name: string, targetId?: string): Promise<Result> {
   const a = await loadActing(combatantId);
   if (a.error) return a.error;
   const { row, ctx } = a;
@@ -217,7 +217,7 @@ export async function useRecharge(combatantId: string, name: string, targetId?: 
 }
 
 /** One legendary action at the end of another creature's turn. The pool refills at the start of this creature's turn. */
-export async function useLegendary(combatantId: string, option?: string): Promise<Result> {
+export async function legendaryAction(combatantId: string, option?: string): Promise<Result> {
   const row = await prisma.combatant.findUnique({ where: { id: combatantId } });
   if (!row) return fail("Combatant not found");
   const ctx = await context(row.encounterId);

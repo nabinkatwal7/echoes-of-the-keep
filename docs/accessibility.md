@@ -29,6 +29,10 @@ A manual review against the success criteria that matter most for this interface
 4. Dice results in the chronicle are announced as a whole line; they could be shortened for speech.
 5. Not yet tested at 200% text zoom on every page, or with Windows high-contrast mode.
 
+## Automated scan
+
+`pnpm e2e` runs axe-core (WCAG 2.0, 2.1 and 2.2 A/AA rules) on the public pages and, with the demo data seeded (`pnpm exec tsx scripts/demo-seed.ts`), on the heroes, account, campaign, table, combat, DM screen, world and journal pages. All pass. The first run found a real problem: the battle and exploration maps used `role="grid"` without rows, which screen readers cannot navigate. They are now labelled groups of buttons.
+
 ## How to check
 
 1. Tab through each page and confirm focus is visible and nothing is skipped.

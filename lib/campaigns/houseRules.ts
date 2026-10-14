@@ -37,5 +37,5 @@ export function isFlanking(attacker: Square, target: Square, allies: Square[]): 
   const dx = target.x - attacker.x;
   const dy = target.y - attacker.y;
   if (Math.max(Math.abs(dx), Math.abs(dy)) !== 1) return false;
-  return allies.some((a) => a.x - target.x === -dx && a.y - target.y === -dy);
+  return allies.some((a) => a.x - target.x === dx && a.y - target.y === dy);
 }

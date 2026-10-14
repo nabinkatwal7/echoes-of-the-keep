@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { exportCharacter } from "@/lib/characters/portable";
 import { checkCredentials, hashPassword, MIN_PASSWORD_LENGTH, verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import { HOLD_MS } from "./throttle";
 
 export type Outcome = { ok: true } | { ok: false; error: string };
 
@@ -44,6 +45,13 @@ export async function removeAccount(userId: string, password: string, typedUsern
   if (!verifyPassword(password, user.passwordHash)) return { ok: false, error: "That password is not right" };
   await prisma.user.update({ where: { id: userId }, data: { deletedAt: new Date() } });
   return { ok: true };
+}
+
+/** Permanently delete accounts whose 14-day hold has passed (heroes, journal and the campaigns they run go with them). Returns how many. */
+export async function purgeExpiredAccounts(now = Date.now()): Promise<number> {
+  const cutoff = new Date(now - HOLD_MS);
+  const r = await prisma.user.deleteMany({ where: { deletedAt: { not: null, lt: cutoff } } });
+  return r.count;
 }
 
 /** Eight one-time codes. The plaintext is returned once; only hashes are stored. */

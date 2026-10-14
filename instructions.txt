@@ -128,5 +128,5 @@ Details for each phase: docs/phases/*.md
 [x] f107, User docs and release checklist
 
 PARTIAL NOTES
-f100: review in docs/accessibility.md; map positions are a text list and Counterspell uses number fields. Not yet checked with a screen reader, at 200% zoom, or in Windows high contrast
+f100: axe scan passes on public and signed-in pages (pnpm e2e); manual review in docs/accessibility.md; map positions are a text list and Counterspell uses number fields. Not yet checked with a screen reader, at 200% zoom, or in Windows high contrast
 f106: SRD_ONLY hides non-SRD choices and handbook prose; the database still stores handbook wording, and racial trait sentences are still parsed in the creator

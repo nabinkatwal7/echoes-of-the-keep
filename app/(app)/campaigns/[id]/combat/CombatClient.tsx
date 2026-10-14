@@ -9,7 +9,7 @@ import { Input, Select } from "@/app/components/ui/Input";
 import {
   addConditionTo, addMonster, addParty, adjustHitPoints, applyFall, attack, createEncounter, endEncounter, endTurn, grappleOrShove, moveCombatant,
   removeCombatant, removeConditionFrom, setEnvironment, signalReady, standFromProne, startEncounter, takeAction, toggleMount, undoLast, takeReaction,
-  starve, suffocate, useLegendary, useRecharge,
+  starve, suffocate, legendaryAction, rechargeAbility,
 } from "@/lib/combat/actions";
 import type { CombatantView, EncounterView } from "@/lib/combat/view";
 import type { Spellbook } from "@/lib/combat/spellList";
@@ -226,7 +226,7 @@ function Board({ view, selected, onSelect, run, aim, aiming, onAim }: { view: En
   return (
     <Card className="overflow-x-auto p-4">
       <h2 className="eyebrow mb-2">Battlefield <span className="normal-case tracking-normal text-muted">(5 ft squares)</span></h2>
-      <div role="grid" aria-label="Battle map" className="inline-grid gap-px bg-border" style={{ gridTemplateColumns: `repeat(${cols}, 1.75rem)` }}>
+      <div role="group" aria-label="Battle map" className="inline-grid gap-px bg-border" style={{ gridTemplateColumns: `repeat(${cols}, 1.75rem)` }}>
         {Array.from({ length: rows * cols }, (_, i) => {
           const x = i % cols;
           const y = Math.floor(i / cols);
@@ -235,7 +235,6 @@ function Board({ view, selected, onSelect, run, aim, aiming, onAim }: { view: En
             <button
               key={i}
               type="button"
-              role="gridcell"
               aria-label={c ? c.name : `Square ${x},${y}`}
               title={c?.name}
               onClick={() => (aiming ? onAim(x, y) : c ? onSelect(c.id) : canMove && sel && run(() => moveCombatant(sel.id, x, y)))}
@@ -338,7 +337,7 @@ function Actions({ view, selected, run, pending, isDm, spellbooks, aim, aiming, 
           {actor.recharge.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {actor.recharge.map((a) => (
-                <Button key={a.name} variant="secondary" disabled={pending || !a.ready} onClick={() => run(() => useRecharge(actor.id, a.name, target || undefined))}>
+                <Button key={a.name} variant="secondary" disabled={pending || !a.ready} onClick={() => run(() => rechargeAbility(actor.id, a.name, target || undefined))}>
                   {a.name}{a.ready ? "" : " (spent)"}
                 </Button>
               ))}
@@ -347,9 +346,9 @@ function Actions({ view, selected, run, pending, isDm, spellbooks, aim, aiming, 
           {view.isDm && actor.legendary && !actor.active && (
             <div className="flex flex-wrap gap-2">
               <Badge>Legendary {actor.legendary.left}/{actor.legendary.max}</Badge>
-              <Button variant="secondary" disabled={pending || actor.legendary.left < 1} onClick={() => run(() => useLegendary(actor.id))}>Legendary action</Button>
+              <Button variant="secondary" disabled={pending || actor.legendary.left < 1} onClick={() => run(() => legendaryAction(actor.id))}>Legendary action</Button>
               {actor.legendary.options.map((o) => (
-                <Button key={o.name} variant="secondary" disabled={pending || actor.legendary!.left < o.cost} onClick={() => run(() => useLegendary(actor.id, o.name))}>{o.name} ({o.cost})</Button>
+                <Button key={o.name} variant="secondary" disabled={pending || actor.legendary!.left < o.cost} onClick={() => run(() => legendaryAction(actor.id, o.name))}>{o.name} ({o.cost})</Button>
               ))}
             </div>
           )}

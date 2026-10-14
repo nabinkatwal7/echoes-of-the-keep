@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { cleanup, makeUser, RUN_DB } from "./db";
-import { changePassword, exportAccount, removeAccount } from "@/lib/account/service";
+import { changePassword, exportAccount, purgeExpiredAccounts, removeAccount } from "@/lib/account/service";
 import { createCampaign } from "@/lib/campaigns/actions";
 import { createCharacter } from "@/lib/characters/actions";
 import { hashPassword } from "@/lib/password";
@@ -35,11 +35,15 @@ describe.skipIf(!RUN_DB)("account data (database)", () => {
     expect((await changePassword(user.id, "correct horse", "again again")).ok).toBe(false); // the old one no longer works
   });
 
-  it("deletes the account, its heroes and the campaigns it runs, after confirmation", async () => {
+  it("hides a deleted account for 14 days, then purges it with its heroes and campaigns", async () => {
     expect((await removeAccount(user.id, "battery staple", "someone_else")).ok).toBe(false);
     expect((await removeAccount(user.id, "wrong password", user.username)).ok).toBe(false);
-    expect(await prisma.character.count({ where: { ownerId: user.id } })).toBe(1);
     expect((await removeAccount(user.id, "battery staple", user.username.toUpperCase())).ok).toBe(true);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).deletedAt).not.toBeNull();
+    expect(await purgeExpiredAccounts()).toBe(0); // still inside the hold
+    expect(await prisma.character.count({ where: { ownerId: user.id } })).toBe(1);
+    const later = Date.now() + 15 * 24 * 60 * 60 * 1000;
+    expect(await purgeExpiredAccounts(later)).toBeGreaterThanOrEqual(1);
     expect(await prisma.user.count({ where: { id: user.id } })).toBe(0);
     expect(await prisma.character.count({ where: { ownerId: user.id } })).toBe(0);
     expect(await prisma.campaign.count({ where: { dmId: user.id } })).toBe(0);

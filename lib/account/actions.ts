@@ -10,7 +10,7 @@ export async function changePasswordAction(_prev: Outcome | undefined, form: For
   return changePassword(user.id, String(form.get("current") ?? ""), String(form.get("next") ?? ""));
 }
 
-export async function recoveryCodesAction(_prev?: { ok: true; codes: string[] } | { ok: false; error: string }): Promise<{ ok: true; codes: string[] } | { ok: false; error: string }> {
+export async function recoveryCodesAction(): Promise<{ ok: true; codes: string[] } | { ok: false; error: string }> {
   const user = await requireUser();
   const codes = await createRecoveryCodes(user.id);
   return { ok: true, codes };

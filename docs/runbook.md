@@ -20,6 +20,10 @@ Required environment: `DATABASE_URL`, `AUTH_SECRET` (16+ characters), optional `
 - The app writes one JSON object per line to standard output (`lib/log.ts`). Collect it with your platform's log shipping and alert on `"level":"error"`. Failed and throttled sign-ins are logged as `login failed` and `login throttled`; a burst of either for one username is a guessing attempt.
 - The live table uses Server-Sent Events. Inserting a campaign event fires `pg_notify`, and the stream also polls once a second if a notification is missed. Each open table holds one extra Postgres connection for `LISTEN`. Watch the connection count if many tables are open at once.
 
+## Deleted accounts
+
+Deleting an account hides it for 14 days (signing in restores it). Run `pnpm purge:accounts` daily from a scheduled task to remove expired accounts for good.
+
 ## Backups
 
 ```bash

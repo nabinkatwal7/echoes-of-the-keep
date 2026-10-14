@@ -34,7 +34,7 @@ export function ExploreMap({ campaignId, isDm, map }: { campaignId: string; isDm
   return (
     <Card className="flex flex-col gap-3 p-4">
       <h2 className="eyebrow">Exploration map <span className="normal-case tracking-normal text-muted">({map.scale} ft squares)</span></h2>
-      <div role="grid" aria-label="Exploration map" className="inline-grid gap-px bg-border" style={{ gridTemplateColumns: `repeat(${map.width}, 1.75rem)` }}>
+      <div role="group" aria-label="Exploration map" className="inline-grid gap-px bg-border" style={{ gridTemplateColumns: `repeat(${map.width}, 1.75rem)` }}>
         {Array.from({ length: map.width * map.height }, (_, i) => {
           const x = i % map.width;
           const y = Math.floor(i / map.width);
@@ -43,7 +43,6 @@ export function ExploreMap({ campaignId, isDm, map }: { campaignId: string; isDm
             <button
               key={i}
               type="button"
-              role="gridcell"
               aria-label={t ? `${t.name}, ${x * map.scale} ft by ${y * map.scale} ft` : `Empty square ${x},${y}`}
               disabled={!isDm || pending}
               onClick={() => {
