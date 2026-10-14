@@ -1,6 +1,6 @@
 import type { Sprite } from "./canvas";
 
-/** The Emberhall mark: a hearth fire on a pair of logs. */
+/** The Echoes of the Keep mark: a hearth fire on a pair of logs. */
 export const LOGO: Sprite = {
   rows: [
     "................",

@@ -8,7 +8,7 @@ export function SiteFooter() {
     <footer className="no-print mt-16 border-t border-border/60 bg-shade/30 py-8 text-center text-sm text-muted">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-4">
         <PixelSprite sprite={LOGO} scale={2} />
-        <p className="font-display text-sm uppercase tracking-[0.2em] text-foreground">Emberhall</p>
+        <p className="font-display text-sm uppercase tracking-[0.2em] text-foreground">Echoes of the Keep</p>
         <div className="flex flex-wrap items-center justify-center gap-2">
           <ThemeToggle showLabel className="h-9 text-xs" />
           <ReadingOptions />

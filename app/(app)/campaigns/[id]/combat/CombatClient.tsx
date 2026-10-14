@@ -315,7 +315,7 @@ function Board({ wallMode, view, selected, onSelect, run, aim, aiming, onAim }: 
               onClick={() => (wallMode && view.isDm ? run(() => setWalls(view.id, [{ x, y }], !wall)) : aiming ? onAim(x, y) : c ? onSelect(c.id) : canMove && sel && run(() => moveCombatant(sel.id, x, y)))}
               className={`flex h-8 w-8 items-center justify-center ${wall ? "bg-shade/60 text-transparent" : fogged ? "bg-shade/70 text-transparent" : "bg-surface"} text-[0.65rem] font-bold ${c ? (c.kind === "character" ? "shadow-[inset_0_-2px_0_var(--emerald)]" : "shadow-[inset_0_-2px_0_var(--danger)]") : "text-transparent hover:bg-surface2"} ${c && selected === c.id ? "outline outline-2 outline-goldBright" : ""} ${aim && aim.x === x && aim.y === y ? "bg-arcane/40" : ""} ${c?.defeated ? "opacity-40 grayscale" : ""}`}
             >
-              {c ? <Token look={c.look} name={c.name} size={28} /> : wall ? "▓" : "·"}
+              {c ? <span className={c.active ? "anim-bob" : ""}><Token look={c.look} name={c.name} size={28} /></span> : wall ? "▓" : "·"}
             </button>
           );
         })}

@@ -1,6 +1,7 @@
 import { folkSprite, heroSprite } from "@/engine/pixel/heroes";
 import { monsterSprite } from "@/engine/pixel/monsters";
 import { sceneSprite, type SceneTheme } from "@/engine/pixel/scenes";
+import { hashString } from "@/engine/pixel/canvas";
 import { cn } from "@/utils/cn";
 import { PixelSprite, spriteRuns } from "./PixelSprite";
 
@@ -61,7 +62,7 @@ export function FolkAvatar({ name, size = 48, className }: { name: string; size?
 }
 
 /** A wide pixel banner for an adventure or a page. It is decoration, so it is hidden from screen readers unless given a label. */
-export function SceneBanner({ theme, seed = 0, className, label }: { theme: SceneTheme; seed?: number | string; className?: string; label?: string }) {
+export function SceneBanner({ theme, seed = 0, className, label, animate = true }: { theme: SceneTheme; seed?: number | string; className?: string; label?: string; animate?: boolean }) {
   const sprite = sceneSprite(theme, seed);
   return (
     <div className={cn("overflow-hidden rounded border border-border", className)} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
@@ -69,6 +70,14 @@ export function SceneBanner({ theme, seed = 0, className, label }: { theme: Scen
         {spriteRuns(sprite).map((r, i) => (
           <rect key={i} x={r.x} y={r.y} width={r.w} height={1} fill={r.fill} />
         ))}
+        {animate && (
+          <g fill="#fff3c4">
+            {Array.from({ length: 9 }, (_, i) => {
+              const h = hashString(`${seed}${theme}${i}`);
+              return <rect key={i} className="anim-twinkle" x={h % 96} y={(h >> 8) % 11} width={1} height={1} style={{ animationDelay: `${(i * 0.37).toFixed(2)}s`, animationDuration: `${2.4 + (i % 4) * 0.7}s` }} />;
+            })}
+          </g>
+        )}
       </svg>
     </div>
   );

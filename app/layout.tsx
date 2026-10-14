@@ -10,8 +10,8 @@ const body = EB_Garamond({ variable: "--font-body", subsets: ["latin"], weight: 
 const readable = Atkinson_Hyperlegible({ variable: "--font-readable", subsets: ["latin"], weight: ["400", "700"] });
 
 export const metadata: Metadata = {
-  title: { default: "Emberhall", template: "%s · Emberhall" },
-  description: "Emberhall: a rules tome, hero forge and shared table for 5th Edition role-playing, with solo play against a computer Dungeon Master.",
+  title: { default: "Echoes of the Keep", template: "%s · Echoes of the Keep" },
+  description: "Echoes of the Keep is a rules tome, hero forge and shared table for 5th Edition role-playing, with solo play against a computer Dungeon Master.",
 };
 
 export const viewport: Viewport = {

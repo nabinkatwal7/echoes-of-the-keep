@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Emberhall",
-    short_name: "Emberhall",
+    name: "Echoes of the Keep",
+    short_name: "Echoes",
     description: "A rules tome, hero forge and shared table for 5th Edition role-playing, with solo play.",
     start_url: "/",
     display: "standalone",

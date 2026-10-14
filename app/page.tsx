@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GiCastle, GiCrossedSwords, GiSpellBook } from "react-icons/gi";
-import { HeroAvatar, MonsterAvatar, SceneBanner } from "./components/pixel/Avatars";
+import { SceneBanner } from "./components/pixel/Avatars";
+import { Tableau } from "./components/pixel/Tableau";
 import { schoolStyle } from "./components/icons";
 import { Badge } from "./components/ui/Badge";
 import { Card } from "./components/ui/Card";
@@ -78,20 +79,9 @@ export default async function Home() {
             ))}
           </dl>
         </div>
-        <div className="panel flex flex-col gap-4 p-4" aria-label="A party by the fire">
+        <div className="panel flex flex-col gap-4 p-4">
           <SceneBanner theme="tavern" seed={7} className="h-44 sm:h-52" />
-          <ul className="flex flex-wrap items-end justify-center gap-3" aria-label="An example party">
-            {[["fighter", "Brannoch"], ["wizard", "Mirela"], ["rogue", "Tamsin"], ["cleric", "Orsolo"]].map(([k, n]) => (
-              <li key={n} className="flex flex-col items-center gap-1 text-xs text-muted">
-                <HeroAvatar classIndex={k} name={n} size={64} />
-                <span className="font-display uppercase tracking-[0.1em]">{k}</span>
-              </li>
-            ))}
-            <li className="flex flex-col items-center gap-1 text-xs text-muted">
-              <MonsterAvatar type="dragon" name="Ember drake" size={64} />
-              <span className="font-display uppercase tracking-[0.1em]">drake</span>
-            </li>
-          </ul>
+          <Tableau />
         </div>
       </section>
 

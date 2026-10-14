@@ -297,3 +297,33 @@ h1, h2, h3, h4, .font-display {
 .skip-link:focus {
   top: 0.5rem;
 }
+
+/* Motion. The reduced-motion rule above switches all of this off. */
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05, 0.97); } }
+@keyframes flicker { 0%, 100% { filter: brightness(1); } 30% { filter: brightness(1.25); } 60% { filter: brightness(0.9); } 80% { filter: brightness(1.15); } }
+@keyframes twinkle { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes drift { from { transform: translateX(-12%); } to { transform: translateX(112%); } }
+@keyframes flame {
+  0% { transform: translate(0, 0) scale(1.2); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translate(-150px, var(--dy, 0px)) scale(0.3); opacity: 0; }
+}
+@keyframes recoil { 0%, 55%, 100% { transform: translateX(0); } 65% { transform: translateX(-5px); } 75% { transform: translateX(0); } }
+@keyframes tumble {
+  0% { transform: translateY(8px) rotate(0) scale(0.6); opacity: 0; }
+  15% { opacity: 1; }
+  55% { transform: translateY(-10px) rotate(540deg) scale(1.1); opacity: 1; }
+  70%, 90% { transform: translateY(0) rotate(720deg) scale(1); opacity: 1; }
+  100% { transform: translateY(0) rotate(720deg) scale(1); opacity: 0; }
+}
+.anim-bob { animation: bob 2.4s ease-in-out infinite; }
+.anim-breathe { animation: breathe 3s ease-in-out infinite; transform-origin: bottom center; }
+.anim-flicker { animation: flicker 1.4s steps(1, end) infinite; }
+.anim-twinkle { animation: twinkle 3s ease-in-out infinite; }
+.anim-recoil { animation: recoil 5s ease-in-out infinite; }
+.anim-flame { animation: flame 2.5s ease-out infinite; }
+.anim-tumble { animation: tumble 5s ease-in-out infinite; }
+.anim-drift { animation: drift 60s linear infinite; }
+#main { animation: rise 0.45s ease-out both; }
