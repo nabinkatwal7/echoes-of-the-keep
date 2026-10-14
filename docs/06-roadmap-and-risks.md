@@ -72,4 +72,4 @@ These change scope and should be answered before Phase 1 starts. Defaults are no
 5. **Optional rules** — which variants on by default (feats, multiclassing, encumbrance, variant human, flanking)? *Default: feats + multiclassing on, encumbrance off, flanking off.*
 6. **Hosting target** — affects realtime transport. *Default: single Node host + managed Postgres.*
 7. **Monsters beyond Appendix D** — use SRD monster list (≈330) so DMs can run encounters. *Default: yes.*
-8. **Solo play / AI DM** — out of v1.
+8. **Solo play / AI DM** — originally out of v1; now built. See [solo-play.md](solo-play.md).

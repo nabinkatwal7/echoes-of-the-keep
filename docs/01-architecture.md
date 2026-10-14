@@ -1,85 +1,123 @@
-# 01 — Architecture
+# 01 - Architecture
+
+How the app is built today. (The original plan, written before the build, is in [06-roadmap-and-risks.md](06-roadmap-and-risks.md) and the phase documents; where this page and the plan disagree, this page is right.)
 
 ## Stack
 
-| Layer | Choice | Notes |
-|---|---|---|
-| Framework | Next.js 15 (App Router), React 19, TypeScript | Already in repo. Server Components for wiki; client components for live table |
-| Styling | Tailwind 3, `clsx` + `tailwind-merge` (`utils/cn.ts`), `motion` | Already in repo |
-| DB | PostgreSQL 17 + Prisma 6 | Local via `docker-compose.yml` |
-| Auth | Auth.js (NextAuth) — email magic link + OAuth (Google/Discord) | Phase 0 |
-| Validation | Zod | Shared between forms, server actions, and engine inputs |
-| Realtime | Server-Sent Events for server→client, Server Actions / route handlers for client→server | See [Realtime](#realtime) |
-| State (client) | TanStack Query for server data; Zustand for ephemeral table UI state | |
-| Tests | Vitest (unit/engine), Playwright (e2e), Testing Library | |
-| CI | GitHub Actions: typecheck, lint, test, prisma validate, e2e on PR | |
+| Layer | Choice |
+| --- | --- |
+| Framework | Next.js 15 (App Router), React 19, TypeScript, server actions |
+| Styling | Tailwind with a custom "candlelit tome" theme (CSS variables in `app/globals.css`), Cinzel and EB Garamond via `next/font`, `react-icons` |
+| Database | PostgreSQL with Prisma 6. Local Postgres or Docker (`docker-compose.yml`) |
+| Authentication | Auth.js v5, **username and password only** (no third-party sign-in), JWT sessions, scrypt password hashing, database-backed login throttle, one-time recovery codes |
+| Validation | Zod for content import and character import; explicit checks in every server action |
+| Realtime | Server-Sent Events with Postgres `LISTEN/NOTIFY` wake-ups and a one-second poll as a safety net ([ADR 0001](adr/0001-realtime-transport.md)) |
+| Tests | Vitest (unit and database integration), Playwright with axe-core (browser and accessibility) |
+| CI | GitHub Actions: Prisma validate, typecheck, lint, unit tests, migrate, seed, database tests, build, Playwright |
 
-Hosting is left open (any Node host + managed Postgres). SSE over a long-lived Node process is assumed; if deploying to a serverless-only host, swap the realtime transport (see risks).
-
-## Module layout
+## Layers
 
 ```
-app/
-  (marketing)/                 landing, login
-  (wiki)/wiki/...              public rules reference (Phase 1)
-  (app)/characters/...         character list, creator, sheet (Phase 3)
-  (app)/campaigns/...          campaign hub, DM screen, table (Phase 4+)
-  api/                         route handlers (SSE stream, webhooks)
-lib/
-  prisma.ts                    shared client
-  auth.ts                      Auth.js config, session helpers
-  realtime/                    publish/subscribe over Postgres LISTEN/NOTIFY
-engine/                        PURE TypeScript, no I/O, no React, no Prisma
-  dice/                        parser, roller, seeded RNG, advantage/disadvantage
-  abilities/                   modifiers, checks, saves, passive scores
-  character/                   derive(): level, prof bonus, AC, HP, speed, skills, attacks, slots
-  combat/                      initiative, turn state machine, attack/damage resolution, death saves
-  spells/                      slots, upcasting, concentration, components, rituals
-  conditions/                  15 PHB conditions as effect modifiers
-  exploration/                 travel pace, light, rests, hazards (falling, suffocation, etc.)
-  progression/                 XP table, level-up, multiclass prerequisites/slot table
-content/                       raw source data + loaders (see 04-content-pipeline.md)
-prisma/                        schema, migrations, seed
-docs/                          this plan
+engine/     pure rules, no I/O, no React, no Prisma           (tested without a database)
+lib/        server code: actions, queries, planners, helpers   (talks to Prisma)
+app/        routes, pages, client components                   (calls lib/)
+content/    extraction scripts, schemas, importers, seeds      (builds the rules tables)
+prisma/     schema and migrations
+scripts/    operations: backup, purge, load test, audits, demo data
+e2e/        Playwright tests
+tests/      database integration tests (RUN_DB_TESTS=1)
 ```
 
-`engine/` is the most important boundary: it takes plain data in and returns plain data out. It can be unit-tested without a database, shared by server and client, and run in a worker.
+The rule that keeps this manageable: **`engine/` never imports from `lib/` or `app/`.** It takes plain data and returns plain data, so every rule can be tested with a table of inputs and shared by server and client.
 
-## Rules engine design
+### `engine/` (pure rules)
 
-- **Effects model.** Anything that changes a number (race trait, class feature, feat, spell, condition, magic item) is an **Effect**: `{ source, target stat, kind: bonus | set | advantage | disadvantage | resistance | grant | ..., value, condition, duration }`. `derive(character)` folds all active effects into final stats and returns a **breakdown** for the "why" tooltip.
-- **Features as data where possible.** Simple features (proficiencies, bonuses, resistances, extra slots) are declarative JSON on content rows. Complex features (Rage, Sneak Attack, Wild Shape, Channel Divinity, Metamagic) are small TypeScript handlers registered by feature `index`, with a fallback of "DM-adjudicated" flag + text for anything not automated.
-- **Resolvers return events.** Combat/spell resolvers return a list of events (`AttackRolled`, `DamageApplied`, `ConditionAdded`, `SlotSpent`…). The server persists events; clients render them. This gives the combat log, undo, and replay for free.
-- **Determinism.** The RNG is injectable (seeded in tests; crypto-random in prod). Rolls are made server-side during live sessions so all clients see the same result; players may also enter physical-dice results.
-- **DM override everywhere.** Every automated outcome has an override path (set HP, add/remove condition, adjust result) which is itself logged.
+| Module | Holds |
+| --- | --- |
+| `dice` | Dice parser, roller, injectable RNG, advantage and disadvantage |
+| `abilities` | Modifiers, proficiency, skills, saves, passive scores, group and contested checks |
+| `character` | `deriveCharacter()`: level, proficiency, hit points, armor class, speed, skills, saves, attacks, with a breakdown of where each number comes from |
+| `classes` | Class rules, equipment kits, resources (rage, ki, channel divinity), subclasses, spellcasting tables, spell selection checks |
+| `progression` | Experience table, level-up hit points, multiclass prerequisites and spell slots, hit dice, Extra Attack |
+| `effects`, `feats` | Racial and feat effects folded into derived numbers; feat prerequisites ([ADR 0003](adr/0003-effects-model.md)) |
+| `combat` | Initiative, turn economy, attack resolution, grapple and shove, grid, area templates, line of sight and fog, pathing, monster stat-block parsing |
+| `damage`, `conditions` | Resistances, death saves, damage application; the conditions and their timers |
+| `spells` | Slots, concentration, upcasting, casting checks, the text parser that turns a spell into mechanics, summon rules |
+| `rest`, `exploration`, `economy`, `xp`, `companions` | Rests and resources, travel and light, money, experience, wild shape and familiars |
+| `world` | The clock, light burning down, travel time, encounter difficulty, social checks, downtime, resurrection, random tables |
+| `bots`, `solo` | Ready-made computer heroes, the encounter builder and narration for [solo play](solo-play.md) |
 
-## Realtime
+### `lib/` (server)
 
-- Source of truth is Postgres. A mutation writes state + an event row in one transaction and issues `NOTIFY campaign:<id>`.
-- `GET /api/campaigns/:id/stream` is an SSE endpoint that `LISTEN`s and forwards events; clients reconnect with `Last-Event-ID` to replay missed events.
-- Clients send intents (move, attack, cast, roll) through server actions. The server validates permissions (player owns the character / is the DM), runs the engine, persists, and broadcasts.
-- Presence (who is online) via heartbeat rows with TTL.
-- Fallback: short-interval polling if SSE is blocked.
+| Area | Holds |
+| --- | --- |
+| `characters` | Creation, level-up, sheet actions, inventory, rests, spells, companions, import and export, rules audit |
+| `campaigns` | Campaigns, members, chat commands, visibility filtering, house rules, call links, the event queries |
+| `combat` | Encounters and combatants, the undoable `commit()`, per-viewer views, monster and hero planners, concentration, in-combat spells, auto-play |
+| `journal`, `world` | Journal and handouts, sessions, the clock, travel, rests, checks, rewards, NPCs, places, quests, stash, tables, homebrew |
+| `solo` | The solo-play director, bot accounts and cleanup |
+| `account` | Password change, recovery codes, data export, soft delete and purge |
+| `auth.ts`, `actAs.ts`, `password.ts`, `log.ts`, `srd.ts` | Session helpers, acting as a computer player, hashing, structured logging, SRD-only mode |
 
-## Authorisation
+## Data flow
 
-| Role | Can |
-|---|---|
-| Anonymous | Read wiki |
-| User | Own characters; join campaigns by invite |
-| Player (in campaign) | Control own character(s); see public table state and own private notes |
-| DM | All campaign state, hidden monster stats/HP, NPCs, secrets; can override any result |
+1. A page (server component) reads through a `lib/` query and passes plain props to a client component.
+2. The client component calls a **server action** (a function in a `"use server"` file). Every action starts with `requireUser()` and then checks the person's role for the thing they touch.
+3. The action runs the engine, writes to Postgres (usually in one transaction) and, for anything the table should see, appends a `CampaignEvent`.
+4. Open pages learn about it through the event stream and refresh.
 
-Hidden information (monster HP, secret rolls, DM notes) is filtered server-side per role; it is never sent to player clients.
+### Server actions and permissions
+
+| Who | May |
+| --- | --- |
+| Anyone | Read the wiki and the learn, legal and rules-notes pages |
+| A signed-in person | Own and edit their characters, keep homebrew entries, create and join campaigns, play solo |
+| A campaign member | Read the table, chat, roll, see what is shared with them |
+| The DM | Everything in their campaign: encounters, the clock, rewards, NPCs, quests, scenes, tables, the stash, resurrection, other players' sheets |
+| A player | Act for their own hero, on their own turn (reactions any time) |
+
+A "use server" file may export **only async functions**. Constants and helpers live in sibling files (`games.ts`, `call.ts`, and so on). The compiler does not catch this until `next build`, so build before shipping.
+
+### Combat state and undo
+
+Every combat change goes through `lib/combat/commit.ts`: it writes the changed combatants, mirrors hit points and conditions onto the character sheets, and appends a `combat` event carrying an **undo snapshot** (the rows before the change). The DM's *Undo last* restores it. Undo snapshots contain monster hit points and armor class, so `lib/campaigns/queries.ts` strips them from every event before it leaves the server.
+
+### Who sees what
+
+Filtering is done on the server before anything is sent:
+
+- `lib/campaigns/visibility.ts` decides who sees an event (public, DM-only, a whisper to one person).
+- `lib/combat/view.ts` builds each viewer's encounter view: players get health words for monsters, never exact hit points or armor class, never hidden creatures, and with fog of war only the foes their side can see.
+- Unrevealed NPCs, places and quests are not loaded for players.
+
+### Realtime
+
+`GET /api/campaigns/:id/stream` is an SSE endpoint. It filters events per viewer, resumes from `Last-Event-ID`, wakes on a Postgres `NOTIFY` and also polls once a second. The table and combat pages listen to it and refresh when a relevant event arrives; combat also polls every 15 seconds in case the stream drops. `/api/campaigns/:id/presence` records and reports who has the table open.
+
+### Acting as a computer player
+
+Solo play lets bots act through the normal actions: `runAs(bot, fn)` (in `lib/actAs.ts`) makes `requireUser()` return the bot for one call chain, using `AsyncLocalStorage`. See [ADR 0004](adr/0004-bots-act-as-users.md) and [solo-play.md](solo-play.md).
+
+## Content pipeline
+
+`pnpm content:extract` reads the handbook PDF into `content/extracted/`; Zod-validated importers in `content/build/importers.ts` seed the database with `pnpm db:seed`. `pnpm db:seed:srd` seeds only SRD rows and removes the rest ([licensing.md](licensing.md)). Details: [04-content-pipeline.md](04-content-pipeline.md).
 
 ## Cross-cutting
 
-- **i18n-ready strings** (English only at launch).
-- **Accessibility:** keyboard-operable table, screen-reader labels, colour-independent conditions.
-- **Observability:** structured logs, error tracking (Sentry), event log doubles as audit trail.
-- **Security:** CSRF-safe server actions, rate limiting on roll/chat endpoints, input validation with Zod, secrets only in env (`.env.example` documents them).
+| Concern | How |
+| --- | --- |
+| Security headers | Content-Security-Policy, frame, referrer and permissions policies in `next.config.ts` ([security-review.md](security-review.md)) |
+| Logging | One JSON object per line (`lib/log.ts`); `LOG_LEVEL` controls verbosity |
+| Health | `GET /api/health` (database check), `GET /api/metrics` (counts only) |
+| Accessibility | Skip link, labelled controls, text equivalents for the maps, high-contrast and plain-type options, axe scans in CI ([accessibility.md](accessibility.md)) |
+| Installability | Web manifest and service worker; the offline page lists sheets saved in the browser |
+| Operations | [runbook.md](runbook.md) and [release-checklist.md](release-checklist.md) |
 
-## Migration from the current code
+## Decisions
 
-- `utils/getData.ts` (runtime fetch to `NEXT_PUBLIC_API_URL`) is replaced in Phase 1 by Prisma reads of seeded content. Wiki pages become Server Components calling `lib/content/*` query functions. `types/Character/Background.ts` is superseded by Prisma-generated types.
-- `data/pageTabData/CharacterTabData.ts` and wiki sidebar are generalised into a content-type registry driving all wiki sections.
+| ADR | Decision |
+| --- | --- |
+| [0001](adr/0001-realtime-transport.md) | Server-Sent Events over WebSockets |
+| [0002](adr/0002-content-license-mode.md) | `FULL` and `SRD_ONLY` content modes |
+| [0003](adr/0003-effects-model.md) | Effects folded by a pure `derive()` |
+| [0004](adr/0004-bots-act-as-users.md) | Computer players act through the normal actions as their own users |
