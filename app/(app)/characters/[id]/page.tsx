@@ -29,6 +29,8 @@ import { SpellsPanel, type CasterView } from "./SpellsPanel";
 import { CASTER_KIND, CLASS_NAME, maxSpellLevel, spellLimits, type SpellSelection } from "@/engine/classes/spellcasting";
 import { CASTING_ABILITY } from "@/engine/spells";
 import { resourceViews, slotViews } from "@/lib/characters/play";
+import { ClassOptions } from "./ClassOptions";
+import { SheetCache } from "@/app/components/SheetCache";
 import { VitalsPanel } from "./VitalsPanel";
 import type { InventoryItem } from "@/lib/characters/inventory";
 import type { Purse } from "@/engine/economy";
@@ -225,6 +227,14 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
         </section>
       )}
 
+      <SheetCache id={c.id} name={c.name} line={`${c.name}, level ${d.level}. HP ${c.currentHp}/${d.maxHp}. AC ${d.armorClass.total}.`} />
+      <ClassOptions
+        id={c.id}
+        sorcererLevel={classes.find((k) => k.classIndex === "sorcerer")?.level ?? 0}
+        warlockLevel={classes.find((k) => k.classIndex === "warlock")?.level ?? 0}
+        metamagic={Array.isArray((c.resources as { _metamagic?: unknown })?._metamagic) ? ((c.resources as { _metamagic: string[] })._metamagic) : []}
+        invocations={Array.isArray((c.resources as { _invocations?: unknown })?._invocations) ? ((c.resources as { _invocations: string[] })._invocations) : []}
+      />
       {casters.length > 0 && <SpellsPanel id={c.id} casters={casters} slots={slots.slots} pact={slots.pact} concentration={spellState.concentration ?? null} />}
 
       <ResourcesPanel

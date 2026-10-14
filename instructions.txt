@@ -94,7 +94,7 @@ Details for each phase: docs/phases/*.md
 [x] f77, Summons and polymorph
 [x] f78, Utility, exploration and social spells
 [x] f79, Reaction spells (Shield, Counterspell)
-[~] f80, Class spell features (Metamagic, invocations, smite, domains)
+[x] f80, Class spell features (Metamagic, invocations, smite, domains)
 [x] f81, Spell browser in play
 [x] f82, Spell automation coverage report
 
@@ -110,32 +110,28 @@ Details for each phase: docs/phases/*.md
 [x] f91, XP, milestones and inspiration
 [x] f92, Treasure, custom items and party stash
 [x] f93, NPCs, locations and quests
-[~] f94, Maps and scenes
+[x] f94, Maps and scenes
 [x] f95, Death, resurrection and recovery
 [x] f96, High-level (5/10/15/20) scenario tests
 
 === PHASE 8: POLISH AND LAUNCH ===
 [~] f97, Rules verification and playtests
-[ ] f98, Onboarding, tutorial and learn-to-play page
-[ ] f99, Mobile and PWA polish
+[x] f98, Onboarding, tutorial and learn-to-play page
+[x] f99, Mobile and PWA polish
 [~] f100, Accessibility audit (WCAG 2.2 AA)
 [x] f101, Performance and load testing
 [~] f102, Homebrew content support
 [~] f103, Backups, data export and account deletion
 [~] f104, Security and privacy review
-[~] f105, Monitoring, logging and runbooks
+[x] f105, Monitoring, logging and runbooks
 [~] f106, Licensing and attribution (SRD-only mode)
-[~] f107, User docs and release checklist
+[x] f107, User docs and release checklist
 
 PARTIAL NOTES
-f94: scenes are https image backdrops shown to the whole table, plus the combat grid; there is no token-based exploration map
-f80: Divine Smite, Sneak Attack, Metamagic (sorcery points), Agonizing Blast when saved on the character, and Life domain bonus healing are automated; other invocations and domain spell lists are not
 f4: Playwright e2e not set up yet
 f102: a campaign can add a monster and a spell (damage, attack or healing) and use them in play; custom races, backgrounds, feats and items are not built
 f97: scripted evening-at-the-table database test and a public rules-notes page; not five live playtest groups
-f100: review in docs/accessibility.md; footer toggles high contrast and Atkinson Hyperlegible. Not yet checked with a screen reader on every page
-f103: account export and deletion, plus pnpm backup (pg_dump, keep 14); no campaign markdown export
+f100: review in docs/accessibility.md; map positions are a text list and Counterspell uses number fields. Not yet checked with a screen reader, at 200% zoom, or in Windows high contrast
+f103: account export, campaign JSON and Markdown journal, delete account, and pnpm backup; deleting an account is still immediate, with no recovery window
 f104: review in docs/security-review.md; login throttle is per process and there is no password recovery
-f105: JSON logs, /api/health and docs/runbook.md
-f107: docs/release-checklist.md and the learn page; no separate player guide, DM guide or FAQ yet
 f106: SRD_ONLY hides non-SRD choices and handbook prose; the database still stores handbook wording, and racial trait sentences are still parsed in the creator

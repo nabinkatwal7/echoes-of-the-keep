@@ -246,6 +246,11 @@ function Board({ view, selected, onSelect, run, aim, aiming, onAim }: { view: En
           );
         })}
       </div>
+      <ul className="mt-2 text-sm" aria-label="Positions on the map">
+        {view.combatants.filter((c) => c.x !== null && c.y !== null).map((c) => (
+          <li key={c.id}>{c.name} is at square {c.x}, {c.y}{c.defeated ? ", defeated" : ""}</li>
+        ))}
+      </ul>
     </Card>
   );
 }

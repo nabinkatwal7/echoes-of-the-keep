@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
-import { Select } from "@/app/components/ui/Input";
+import { Input, Select } from "@/app/components/ui/Input";
 import { castCounterspell, castInCombat, endCombatConcentration } from "@/lib/combat/spellActions";
 import type { Spellbook } from "@/lib/combat/spellList";
 import type { CombatantView } from "@/lib/combat/view";
@@ -29,6 +29,8 @@ export function SpellPanel({
   const [pact, setPact] = useState(false);
   const [filter, setFilter] = useState<"castable" | "all">("castable");
   const [metamagic, setMetamagic] = useState("");
+  const [counterLevel, setCounterLevel] = useState("3");
+  const [counterSlot, setCounterSlot] = useState("3");
 
   const spell = book.spells.find((s) => s.index === index);
   const canCast = (s: Spellbook["spells"][number]) => {
@@ -110,18 +112,18 @@ export function SpellPanel({
       <div className="flex flex-wrap gap-2">
         {actor.concentrating && <Button variant="ghost" className="min-h-9 px-2" disabled={pending} onClick={() => run(() => endCombatConcentration(actor.id))}>Drop concentration ({actor.concentrating})</Button>}
         {book.spells.some((s) => s.index === "counterspell") && (
-          <Button
-            variant="secondary"
-            className="min-h-9 px-3"
-            disabled={pending || !actor.turn?.reaction}
-            onClick={() => {
-              const lvl = Number(prompt("Level of the spell being cast (1-9)?"));
-              const slotLvl = Number(prompt("Counterspell slot level (3-9)?", "3"));
-              if (lvl && slotLvl) run(() => castCounterspell(actor.id, slotLvl, lvl));
-            }}
-          >
-            Counterspell
-          </Button>
+          <>
+            <Input className="w-16" type="number" min={1} max={9} value={counterLevel} onChange={(e) => setCounterLevel(e.target.value)} aria-label="Level of the spell being countered" />
+            <Input className="w-16" type="number" min={3} max={9} value={counterSlot} onChange={(e) => setCounterSlot(e.target.value)} aria-label="Counterspell slot level" />
+            <Button
+              variant="secondary"
+              className="min-h-9 px-3"
+              disabled={pending || !actor.turn?.reaction}
+              onClick={() => run(() => castCounterspell(actor.id, Number(counterSlot), Number(counterLevel)))}
+            >
+              Counterspell
+            </Button>
+          </>
         )}
       </div>
     </div>

@@ -604,6 +604,24 @@ export const subclassFeaturesAt = (subclassIndex: string, level: number): Featur
 
 const bare = (name: string) => name.replace(/ \(.*\)$/, "");
 
+/** Spell names a domain or oath says are always prepared at this class level. */
+export function preparedSpellNames(classes: { subclassIndex?: string; level: number }[]): string[] {
+  const names: string[] = [];
+  for (const c of classes) {
+    if (!c.subclassIndex) continue;
+    for (const f of SUBCLASS_FEATURES[c.subclassIndex] ?? []) {
+      if (f.level > c.level) continue;
+      const m = /always prepared[^:]*: ([^.]+)/i.exec(f.description);
+      if (!m) continue;
+      for (const part of m[1].split(",")) {
+        const name = part.trim();
+        if (name) names.push(name);
+      }
+    }
+  }
+  return [...new Set(names)];
+}
+
 /** Every class and subclass feature the character has reached, newest levels included. */
 export function featuresKnown(classes: ClassLevel[]): { name: string; source: string; automated: boolean }[] {
   const seen = new Set<string>();

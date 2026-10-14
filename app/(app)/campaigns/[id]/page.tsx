@@ -50,6 +50,8 @@ export default async function CampaignHub({ params }: { params: Promise<{ id: st
             {isDm && <LinkButton variant="secondary" href={`/campaigns/${campaign.id}/dm`}>DM screen</LinkButton>}
             <LinkButton variant="secondary" href={`/campaigns/${campaign.id}/world`}>World</LinkButton>
             <LinkButton variant="secondary" href={`/campaigns/${campaign.id}/journal`}>Journal</LinkButton>
+            <LinkButton variant="secondary" href={`/api/campaigns/${campaign.id}/export`} prefetch={false}>Export</LinkButton>
+            <LinkButton variant="secondary" href={`/api/campaigns/${campaign.id}/export?format=md`} prefetch={false}>Download journal</LinkButton>
             <LinkButton variant="secondary" href={`/campaigns/${campaign.id}/combat`}>Combat</LinkButton>
             <LinkButton href={`/campaigns/${campaign.id}/table`}>Enter the table</LinkButton>
           </div>

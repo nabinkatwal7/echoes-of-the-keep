@@ -23,9 +23,9 @@ A manual review against the success criteria that matter most for this interface
 
 ## Known gaps
 
-1. The battle map shows two-letter abbreviations in each square. Screen reader users get the full name from the label, but there is no text list of who stands where; the initiative list partly covers this.
+1. The battle map and the exploration map both include a text list of who stands where, as well as a name on each square.
 2. Drag-free movement means moving a token is two clicks (select, then choose a square). That is accessible, but slow for long moves.
-3. The Counterspell button uses `prompt()` dialogs for levels. These are accessible but unpolished; replace with inline inputs.
+3. Counterspell uses two number fields (the incoming spell's level, and the slot you spend) instead of browser prompts.
 4. Dice results in the chronicle are announced as a whole line; they could be shortened for speech.
 5. Not yet tested at 200% text zoom on every page, or with Windows high-contrast mode.
 

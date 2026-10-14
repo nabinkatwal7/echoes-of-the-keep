@@ -7,6 +7,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatGameTime, timeOfDay } from "@/engine/world";
 import { prisma } from "@/lib/prisma";
+import { readExplore } from "@/lib/world/exploreMap";
+import { ExploreMap } from "./ExploreMap";
 import { Presence } from "./Presence";
 import { TableClient, type TableEvent } from "./TableClient";
 
@@ -26,9 +28,10 @@ export default async function TablePage({
     campaign.members.find((m) => m.userId === user.id)?.role === "DM";
 
   const [clock, scene] = await Promise.all([
-    prisma.campaign.findUniqueOrThrow({ where: { id }, select: { clockMinutes: true } }),
+    prisma.campaign.findUniqueOrThrow({ where: { id }, select: { clockMinutes: true, world: true } }),
     prisma.location.findFirst({ where: { campaignId: id, current: true } }),
   ]);
+  const explore = readExplore((clock.world as { explore?: unknown } | null)?.explore);
   const events = await getRecentVisibleEvents(id, { userId: user.id, isDm });
   const initial: TableEvent[] = events.map((e) => ({
     id: e.id,
@@ -56,6 +59,7 @@ export default async function TablePage({
         </p>
       </div>
       <Presence campaignId={id} userId={user.id} />
+      <ExploreMap campaignId={id} isDm={isDm} map={explore} />
       {scene && (
         <div className="panel flex flex-col gap-2 p-4">
           <p className="eyebrow">Current scene</p>

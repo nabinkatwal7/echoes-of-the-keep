@@ -2,6 +2,7 @@ import type { Character, Spell } from "@prisma/client";
 import { CASTER_KIND, type SpellSelection } from "@/engine/classes/spellcasting";
 import { castingTimeKind } from "@/engine/spells";
 import { parseSpellEffect } from "@/engine/spells/effects";
+import { preparedSpellNames } from "@/engine/classes/features";
 import type { ClassLevel } from "@/engine/progression";
 import { slotViews, type StoredPlay } from "@/lib/characters/play";
 import { prisma } from "@/lib/prisma";
@@ -47,6 +48,14 @@ export async function spellbookFor(c: Character): Promise<Spellbook | null> {
     const kind = CASTER_KIND[k.classIndex];
     if (!sel || !kind) continue;
     for (const i of kind === "known" ? sel.known : sel.prepared) indexes.add(i);
+  }
+  const granted = preparedSpellNames(c.classes as ClassLevel[]);
+  if (granted.length) {
+    const extra = await prisma.spell.findMany({
+      where: { OR: granted.map((name) => ({ name: { equals: name, mode: "insensitive" as const } })) },
+      select: { index: true },
+    });
+    for (const s of extra) indexes.add(s.index);
   }
   if (!indexes.size) return null;
   const spells = await prisma.spell.findMany({ where: { index: { in: [...indexes] } }, orderBy: [{ level: "asc" }, { name: "asc" }] });

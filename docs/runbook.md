@@ -16,8 +16,9 @@ Required environment: `DATABASE_URL`, `AUTH_SECRET` (16+ characters), optional `
 ## Health and monitoring
 
 - `GET /api/health` returns `{"status":"ok","database":"up"}` with HTTP 200, or 503 when the database cannot be reached. Point an uptime monitor at it (every 1 minute, alert after 2 failures).
+- `GET /api/metrics` returns counts only: users, campaigns, and campaign events in the last hour.
 - The app writes one JSON object per line to standard output (`lib/log.ts`). Collect it with your platform's log shipping and alert on `"level":"error"`. Failed and throttled sign-ins are logged as `login failed` and `login throttled`; a burst of either for one username is a guessing attempt.
-- The live table uses Server-Sent Events that poll the database once a second per open table. Watch database connection count if many tables are open at once.
+- The live table uses Server-Sent Events. Inserting a campaign event fires `pg_notify`, and the stream also polls once a second if a notification is missed. Each open table holds one extra Postgres connection for `LISTEN`. Watch the connection count if many tables are open at once.
 
 ## Backups
 

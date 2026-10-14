@@ -4,6 +4,7 @@ import { LinkButton } from "../components/ui/Button";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Ornament } from "../components/ui/Ornament";
 import { GiBookCover } from "react-icons/gi";
+import { startTutorial } from "@/lib/tutorial";
 
 export const metadata = { title: "Learn to play" };
 
@@ -59,6 +60,11 @@ export default function Learn() {
       <div className="flex flex-wrap gap-3">
         <LinkButton href="/characters/new">Create your first hero</LinkButton>
         <LinkButton variant="secondary" href="/campaigns">Find a campaign</LinkButton>
+        <form action={startTutorial}>
+          <button className="inline-flex min-h-11 items-center rounded border border-gold/50 px-4 font-display text-sm uppercase tracking-wider text-gold hover:text-goldBright" type="submit">
+            Play the tutorial
+          </button>
+        </form>
       </div>
       <Ornament />
       {steps.map((s) => (
@@ -72,7 +78,10 @@ export default function Learn() {
       <Card className="p-5">
         <h2 className="font-display text-xl text-goldBright">Keep going</h2>
         <p className="mt-2 leading-relaxed">
-          The <Link className="text-gold underline" href="/rules-notes">rules notes</Link> say where the app leaves a call to the DM. The{" "}
+          Read the <Link className="text-gold underline" href="/guide/player">player guide</Link>, the{" "}
+          <Link className="text-gold underline" href="/guide/dm">DM guide</Link>, or the{" "}
+          <Link className="text-gold underline" href="/guide/faq">FAQ</Link>. The{" "}
+          <Link className="text-gold underline" href="/rules-notes">rules notes</Link> say where the app leaves a call to the DM. The{" "}
           <Link className="text-gold underline" href="/wiki/rules">rules chapters</Link> explain every detail, the{" "}
           <Link className="text-gold underline" href="/wiki/conditions">conditions list</Link> covers what blinded or grappled really mean, and the{" "}
           <Link className="text-gold underline" href="/wiki/spells">spell list</Link> is searchable by class and level.

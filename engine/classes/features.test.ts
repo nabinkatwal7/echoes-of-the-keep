@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CLASS_RULES } from "./rules";
 import { SUBCLASSES } from "./subclasses";
-import { CLASS_FEATURES, SUBCLASS_FEATURES, featuresAt, featuresKnown, subclassFeaturesAt } from "./features";
+import { CLASS_FEATURES, SUBCLASS_FEATURES, featuresAt, featuresKnown, preparedSpellNames, subclassFeaturesAt } from "./features";
 
 describe("class features", () => {
   it("covers every class, and every grant has a level and a description", () => {
@@ -40,5 +40,11 @@ describe("class features", () => {
     expect(names).not.toContain("Blessed Healer");
     const life = featuresKnown([{ classIndex: "cleric", level: 1, subclassIndex: "life-domain" }]).find((f) => f.name === "Disciple of Life");
     expect(life?.automated).toBe(true);
+  });
+
+  it("lists domain and oath spells that are always prepared", () => {
+    expect(preparedSpellNames([{ level: 1, subclassIndex: "life-domain" }])).toEqual(["bless", "cure wounds"]);
+    expect(preparedSpellNames([{ level: 3, subclassIndex: "life-domain" }])).toContain("spiritual weapon");
+    expect(preparedSpellNames([{ level: 3, subclassIndex: "oath-of-devotion" }])).toContain("sanctuary");
   });
 });
