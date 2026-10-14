@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 /** Which spells the combat engine can resolve by itself, and which are narrated by the DM. Writes docs/spell-automation.md. */
 (async () => {
-  const spells = await prisma.spell.findMany({ orderBy: [{ level: "asc" }, { name: "asc" }] });
+  const spells = await prisma.spell.findMany({ where: { campaignId: null }, orderBy: [{ level: "asc" }, { name: "asc" }] });
   const rows = spells.map((s) => {
     const e = parseSpellEffect(s);
     const buff = SPELL_BUFFS[s.index];

@@ -6,6 +6,7 @@ export type SpellFilters = { level?: number; className?: string; q?: string; rit
 export async function getSpells(f: SpellFilters = {}) {
   const rows = await prisma.spell.findMany({
     where: {
+      campaignId: null,
       ...(f.level !== undefined && { level: f.level }),
       ...(f.className && { classes: { has: f.className } }),
       ...(f.q && { name: { contains: f.q, mode: "insensitive" } }),
@@ -19,7 +20,7 @@ export async function getSpells(f: SpellFilters = {}) {
 
 export async function getSpell(index: string) {
   const spell = await prisma.spell.findUnique({ where: { index } });
-  if (!spell || !showSpell(spell.name, spell.source)) return null;
+  if (!spell || spell.campaignId || !showSpell(spell.name, spell.source)) return null;
   return spell;
 }
 

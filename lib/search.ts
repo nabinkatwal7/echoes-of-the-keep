@@ -25,7 +25,7 @@ export async function searchAll(raw: string): Promise<SearchHit[]> {
   const take = MAX_PER_TYPE * 2;
 
   const [spells, classes, races, feats, backgrounds, creatures, equipment, conditions, rules] = await Promise.all([
-    prisma.spell.findMany({ where: { name }, select: { index: true, name: true, level: true, school: true, source: true }, take }),
+    prisma.spell.findMany({ where: { name, campaignId: null }, select: { index: true, name: true, level: true, school: true, source: true }, take }),
     prisma.class.findMany({ where: { name }, select: { index: true, name: true }, take }),
     prisma.race.findMany({ where: { name, ...srdWhere("race") }, select: { index: true, name: true }, take }),
     prisma.feat.findMany({ where: { name, ...srdWhere("feat") }, select: { index: true, name: true }, take }),

@@ -60,10 +60,16 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
   // spellcasting: one section per caster class, with the spells that class could choose
   const spellState = (c.spells ?? {}) as { byClass?: Record<string, SpellSelection>; concentration?: { spell: string; name: string } | null };
   const casterClasses = classes.filter((k) => CASTER_KIND[k.classIndex] && maxSpellLevel(k.classIndex, k.level) > 0);
+  const campaignIds = (await prisma.campaignCharacter.findMany({ where: { characterId: c.id }, select: { campaignId: true } })).map((l) => l.campaignId);
   const options = casterClasses.length
     ? await prisma.spell.findMany({
-        where: { OR: casterClasses.map((k) => ({ classes: { has: CLASS_NAME[k.classIndex] }, level: { lte: maxSpellLevel(k.classIndex, k.level) } })) },
-        select: { index: true, name: true, level: true, school: true, ritual: true, concentration: true, classes: true },
+        where: {
+          AND: [
+            { OR: [{ campaignId: null }, ...(campaignIds.length ? [{ campaignId: { in: campaignIds } }] : [])] },
+            { OR: casterClasses.map((k) => ({ classes: { has: CLASS_NAME[k.classIndex] }, level: { lte: maxSpellLevel(k.classIndex, k.level) } })) },
+          ],
+        },
+        select: { index: true, name: true, level: true, school: true, ritual: true, concentration: true, classes: true, source: true },
         orderBy: [{ level: "asc" }, { name: "asc" }],
       })
     : [];
@@ -74,7 +80,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
     limits: spellLimits(k.classIndex, k.level, d.abilities[CASTING_ABILITY[k.classIndex]].score)!,
     maxSpellLevel: maxSpellLevel(k.classIndex, k.level),
     selection: spellState.byClass?.[k.classIndex] ?? { known: [], prepared: [], spellbook: [] },
-    options: options.filter((o) => showSpell(o.name) && o.classes.includes(CLASS_NAME[k.classIndex]) && o.level <= maxSpellLevel(k.classIndex, k.level)),
+    options: options.filter((o) => showSpell(o.name, o.source) && o.classes.includes(CLASS_NAME[k.classIndex]) && o.level <= maxSpellLevel(k.classIndex, k.level)),
   }));
   const slots = slotViews(c);
   const creatures = (await prisma.creature.findMany({ where: { campaignId: null }, select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } })).filter((c) => showCreature(c.name));

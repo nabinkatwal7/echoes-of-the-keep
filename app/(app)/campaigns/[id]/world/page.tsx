@@ -17,13 +17,14 @@ export default async function WorldPage({ params }: { params: Promise<{ id: stri
   const isDm = mine?.role === "DM";
   const only = isDm ? {} : { revealed: true };
 
-  const [npcs, places, quests, stash, party, homebrew] = await Promise.all([
+  const [npcs, places, quests, stash, party, homebrew, homebrewSpells] = await Promise.all([
     prisma.npc.findMany({ where: { campaignId: id, ...only }, orderBy: { name: "asc" } }),
     prisma.location.findMany({ where: { campaignId: id, ...only }, orderBy: { name: "asc" } }),
     prisma.quest.findMany({ where: { campaignId: id, ...only }, orderBy: [{ status: "asc" }, { createdAt: "desc" }] }),
     prisma.stashItem.findMany({ where: { campaignId: id }, orderBy: { name: "asc" } }),
     prisma.campaignCharacter.findMany({ where: { campaignId: id }, include: { character: { select: { id: true, name: true, ownerId: true } } } }),
     isDm ? prisma.creature.findMany({ where: { campaignId: id }, orderBy: { name: "asc" } }) : Promise.resolve([]),
+    isDm ? prisma.spell.findMany({ where: { campaignId: id }, orderBy: { name: "asc" } }) : Promise.resolve([]),
   ]);
 
   return (
@@ -41,6 +42,7 @@ export default async function WorldPage({ params }: { params: Promise<{ id: stri
         quests={quests.map((q) => ({ id: q.id, title: q.title, description: q.description, reward: q.reward, status: q.status, revealed: q.revealed }))}
         stash={stash.map((s) => ({ id: s.id, name: s.name, quantity: s.quantity, notes: s.notes, valueGp: s.valueCp / 100 }))}
         monsters={homebrew.map((m) => ({ index: m.index, name: m.name, size: m.size, ac: m.armorClass ?? "", hp: m.hitPoints ?? "", challenge: m.challenge ?? "" }))}
+        spells={homebrewSpells.map((s) => ({ index: s.index, name: s.name, level: s.level, className: s.classes[0] ?? "" }))}
         heroes={party.filter((p) => isDm || p.character.ownerId === user.id).map((p) => ({ id: p.character.id, name: p.character.name }))}
       />
     </div>

@@ -7,15 +7,16 @@ import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Select, Textarea } from "@/app/components/ui/Input";
 import { addStashItem, removeStashItem, takeFromStash } from "@/lib/world/playActions";
-import { deleteHomebrewMonster, deleteWorldItem, saveHomebrewMonster, saveLocation, saveNpc, saveQuest, setQuestStatus, setRevealed, setScene } from "@/lib/world/worldActions";
+import { deleteHomebrewMonster, deleteHomebrewSpell, deleteWorldItem, saveHomebrewMonster, saveHomebrewSpell, saveLocation, saveNpc, saveQuest, setQuestStatus, setRevealed, setScene } from "@/lib/world/worldActions";
 
 type Npc = { id: string; name: string; role: string; attitude: string; notes: string; revealed: boolean };
 type Place = { id: string; name: string; description: string; imageUrl: string; revealed: boolean; current: boolean };
 type Quest = { id: string; title: string; description: string; reward: string; status: string; revealed: boolean };
 type Stash = { id: string; name: string; quantity: number; notes: string; valueGp: number };
 type Monster = { index: string; name: string; size: string; ac: string; hp: string; challenge: string };
-type Props = { campaignId: string; isDm: boolean; npcs: Npc[]; places: Place[]; quests: Quest[]; stash: Stash[]; monsters: Monster[]; heroes: { id: string; name: string }[] };
-type Tab = "npcs" | "places" | "quests" | "stash" | "monsters";
+type SpellRow = { index: string; name: string; level: number; className: string };
+type Props = { campaignId: string; isDm: boolean; npcs: Npc[]; places: Place[]; quests: Quest[]; stash: Stash[]; monsters: Monster[]; spells: SpellRow[]; heroes: { id: string; name: string }[] };
+type Tab = "npcs" | "places" | "quests" | "stash" | "monsters" | "spells";
 type Out = { ok: boolean; errors?: string[] };
 
 const ATTITUDE_TONE = { friendly: "emerald", indifferent: "neutral", hostile: "crimson" } as const;
@@ -43,7 +44,7 @@ export function WorldClient(p: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="World">
-        {([["quests", "Quests"], ["npcs", "People"], ["places", "Places"], ["stash", "Party stash"], ...(p.isDm ? [["monsters", "Homebrew monsters"] as const] : [])] as const).map(([k, label]) => (
+        {([["quests", "Quests"], ["npcs", "People"], ["places", "Places"], ["stash", "Party stash"], ...(p.isDm ? [["monsters", "Homebrew monsters"] as const, ["spells", "Homebrew spells"] as const] : [])] as const).map(([k, label]) => (
           <Button key={k} role="tab" aria-selected={tab === k} variant={tab === k ? "primary" : "secondary"} className="px-4" onClick={() => { setTab(k); clear(); }}>{label}</Button>
         ))}
       </div>
@@ -121,6 +122,13 @@ export function WorldClient(p: Props) {
             </Card>
           )))}
 
+          {tab === "spells" && (p.spells.length === 0 ? <Empty text="No homebrew spells yet. Build one on the right; heroes in this campaign can prepare it." /> : p.spells.map((s) => (
+            <Card key={s.index} className="flex flex-wrap items-center gap-2 p-4">
+              <span className="flex-1"><strong>{s.name}</strong> <span className="text-sm text-muted">{s.level === 0 ? "cantrip" : `level ${s.level}`} · {s.className}</span></span>
+              <Button variant="ghost" className="min-h-9 px-3" disabled={pending} onClick={() => confirm("Delete this spell?") && run(() => deleteHomebrewSpell(p.campaignId, s.index))}>Delete</Button>
+            </Card>
+          )))}
+
           {tab === "stash" && (p.stash.length === 0 ? <Empty text="The party has found nothing yet." /> : (
             <Card className="flex flex-col gap-2 p-4">
               {p.stash.map((s) => (
@@ -140,7 +148,8 @@ export function WorldClient(p: Props) {
         </div>
 
         {p.isDm && tab === "monsters" && <MonsterForm campaignId={p.campaignId} run={run} pending={pending} />}
-        {p.isDm && tab !== "monsters" && (
+        {p.isDm && tab === "spells" && <SpellForm campaignId={p.campaignId} run={run} pending={pending} />}
+        {p.isDm && tab !== "monsters" && tab !== "spells" && (
           <Card className="flex h-fit flex-col gap-3 p-4">
             <h2 className="eyebrow">Add</h2>
             <Input placeholder={tab === "quests" ? "Quest title" : "Name"} value={f.name} onChange={(e) => set({ name: e.target.value })} aria-label="Name" maxLength={120} />
@@ -188,6 +197,31 @@ function Empty({ text = "Nothing here yet." }: { text?: string }) {
 
 const DAMAGE_TYPES = ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"];
 const CRS = ["0", "1/8", "1/4", "1/2", ...Array.from({ length: 30 }, (_, i) => String(i + 1))];
+
+const CLASSES = ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"];
+const SAVES = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"];
+const SPELL_TYPES = ["acid", "cold", "fire", "force", "lightning", "necrotic", "poison", "psychic", "radiant", "thunder"];
+
+function SpellForm({ campaignId, run, pending }: { campaignId: string; run: (fn: () => Promise<Out>, after?: () => void) => void; pending: boolean }) {
+  const [s, setS] = useState({ name: "", level: 1, className: "Wizard", kind: "save" as "save" | "attack" | "heal", dice: "2d6", damageType: "fire", save: "Dexterity", range: 60, upcastDice: "" });
+  return (
+    <Card className="flex h-fit flex-col gap-3 p-4">
+      <h2 className="eyebrow">Build a spell</h2>
+      <Input placeholder="Name" value={s.name} onChange={(e) => setS({ ...s, name: e.target.value })} aria-label="Spell name" maxLength={60} />
+      <div className="grid grid-cols-2 gap-2">
+        <label className="text-xs">Level <Input type="number" min={0} max={9} value={s.level} onChange={(e) => setS({ ...s, level: Number(e.target.value) })} /></label>
+        <label className="text-xs">Range (ft) <Input type="number" min={5} max={500} value={s.range} onChange={(e) => setS({ ...s, range: Number(e.target.value) })} /></label>
+        <Select aria-label="Class" value={s.className} onChange={(e) => setS({ ...s, className: e.target.value })}>{CLASSES.map((c) => <option key={c}>{c}</option>)}</Select>
+        <Select aria-label="How it hits" value={s.kind} onChange={(e) => setS({ ...s, kind: e.target.value as typeof s.kind })}><option value="save">saving throw</option><option value="attack">spell attack</option><option value="heal">healing</option></Select>
+        <label className="text-xs">Dice <Input value={s.dice} onChange={(e) => setS({ ...s, dice: e.target.value })} /></label>
+        <label className="text-xs">Higher slot <Input value={s.upcastDice} onChange={(e) => setS({ ...s, upcastDice: e.target.value })} placeholder="1d6" /></label>
+      </div>
+      {s.kind !== "heal" && <Select aria-label="Damage type" value={s.damageType} onChange={(e) => setS({ ...s, damageType: e.target.value })}>{SPELL_TYPES.map((t) => <option key={t}>{t}</option>)}</Select>}
+      {s.kind === "save" && <Select aria-label="Saving throw" value={s.save} onChange={(e) => setS({ ...s, save: e.target.value })}>{SAVES.map((t) => <option key={t}>{t}</option>)}</Select>}
+      <Button disabled={pending || !s.name.trim()} onClick={() => run(() => saveHomebrewSpell(campaignId, { name: s.name, level: s.level, className: s.className, kind: s.kind, dice: s.dice, damageType: s.damageType, save: s.save, range: s.range, upcastDice: s.upcastDice }))}>Save spell</Button>
+    </Card>
+  );
+}
 
 function MonsterForm({ campaignId, run, pending }: { campaignId: string; run: (fn: () => Promise<Out>, after?: () => void) => void; pending: boolean }) {
   const [m, setM] = useState({ name: "", size: "Medium", type: "monster", ac: 12, hp: 20, speed: 30, cr: "1/2", per: 1, str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 });

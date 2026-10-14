@@ -9,6 +9,7 @@ import { ATTITUDES, downtime, type Attitude, type DowntimeKind } from "@/engine/
 import { requireUser } from "@/lib/auth";
 import { audit, editable } from "@/lib/characters/access";
 import { prisma } from "@/lib/prisma";
+import { homebrewSpellFields, type HomebrewSpellInput } from "./homebrewSpell";
 import { dm, fail, say, touchWorld, type Result } from "./guard";
 
 const text = (s: string, max: number) => s.trim().slice(0, max);
@@ -171,7 +172,7 @@ const SIZES = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"];
 const DAMAGE_WORDS = ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"];
 
 /** One attack in the handbook's stat block wording, so the combat parser reads it back exactly. */
-export function attackLine(a: HomebrewAttack): string {
+function attackLine(a: HomebrewAttack): string {
   const p = parseDice(a.dice);
   const avg = p.terms.reduce((s, t) => s + Math.floor((t.count * (t.sides + 1)) / 2), 0) + a.bonus;
   const how = a.melee ? `reach ${a.reach ?? 5} ft.` : `range ${a.range?.normal ?? 30}/${a.range?.long ?? 120} ft.`;
@@ -215,6 +216,26 @@ export async function saveHomebrewMonster(campaignId: string, input: HomebrewMon
   await prisma.creature.upsert({ where: { index }, update: data, create: { index, ...data } });
   touchWorld(campaignId);
   return { ok: true, index };
+}
+
+export async function saveHomebrewSpell(campaignId: string, input: HomebrewSpellInput): Promise<Result<{ index: string }>> {
+  const d = await dm(campaignId);
+  if (d.error) return d.error;
+  const built = homebrewSpellFields(input);
+  if (!built.ok) return fail(built.error);
+  const slug = built.fields.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const index = `hb-${campaignId.slice(-6).toLowerCase()}-${slug}`;
+  await prisma.spell.upsert({ where: { index }, update: { ...built.fields, campaignId }, create: { index, ...built.fields, campaignId } });
+  touchWorld(campaignId);
+  return { ok: true, index };
+}
+
+export async function deleteHomebrewSpell(campaignId: string, index: string): Promise<Result> {
+  const d = await dm(campaignId);
+  if (d.error) return d.error;
+  await prisma.spell.deleteMany({ where: { index, campaignId } });
+  touchWorld(campaignId);
+  return { ok: true };
 }
 
 export async function deleteHomebrewMonster(campaignId: string, index: string): Promise<Result> {

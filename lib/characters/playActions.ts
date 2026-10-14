@@ -93,8 +93,14 @@ export async function saveSpellSelection(characterId: string, classIndex: string
   if (!level || !ability || !CASTER_KIND[classIndex]) return fail("That class does not cast spells");
 
   const wanted = [...new Set([...selection.known, ...selection.prepared, ...selection.spellbook])];
-  const rows = await prisma.spell.findMany({ where: { index: { in: wanted } }, select: { index: true, name: true, level: true, classes: true } });
-  if (srdOnly() && rows.some((r) => !spellInSrd(r.name))) return fail("That spell is not part of the free rules (SRD)");
+  const rows = await prisma.spell.findMany({ where: { index: { in: wanted } }, select: { index: true, name: true, level: true, classes: true, source: true, campaignId: true } });
+  if (srdOnly() && rows.some((r) => r.source !== "HOMEBREW" && !spellInSrd(r.name))) return fail("That spell is not part of the free rules (SRD)");
+  const foreign = rows.filter((r) => r.campaignId);
+  if (foreign.length) {
+    const links = await prisma.campaignCharacter.findMany({ where: { characterId, campaignId: { in: foreign.map((r) => r.campaignId!) } }, select: { campaignId: true } });
+    const mine = new Set(links.map((l) => l.campaignId));
+    if (foreign.some((r) => !mine.has(r.campaignId!))) return fail("That spell belongs to another campaign");
+  }
   const catalog = new Map<string, SpellMeta>(rows.map((r) => [r.index, r]));
   const errors = validateSpellSelection(classIndex, level, finalScores(c)[ability], selection, catalog);
   if (errors.length) return { ok: false, errors };
@@ -114,6 +120,8 @@ export async function castSpell(characterId: string, spellIndex: string, opts: C
   if (!c) return fail("Character not found");
   const spell = await prisma.spell.findUnique({ where: { index: spellIndex } });
   if (!spell) return fail("Unknown spell");
+  if (spell.campaignId && !(await prisma.campaignCharacter.findFirst({ where: { characterId, campaignId: spell.campaignId } }))) return fail("That spell belongs to another campaign");
+  if (srdOnly() && spell.source !== "HOMEBREW" && !spellInSrd(spell.name)) return fail("That spell is not part of the free rules (SRD)");
 
   const state = spellState(c);
   const classes = c.classes as ClassLevel[];

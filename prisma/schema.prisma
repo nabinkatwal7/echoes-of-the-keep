@@ -78,8 +78,12 @@ model Spell {
   higherLevels  String   @default("")
   classes       String[]
   source        String   @default("PHB")
+  /// set for a homebrew spell, which only that campaign's heroes can learn
+  campaignId    String?
+  campaign      Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([level])
+  @@index([campaignId])
 }
 
 model Race {
@@ -211,7 +215,8 @@ model Campaign {
   places      Location[]
   quests      Quest[]
   stash       StashItem[]
-  homebrew    Creature[]
+  homebrew       Creature[]
+  homebrewSpells Spell[]
   /// in-game time: minutes since midnight of day 1 (starts at 8:00)
   clockMinutes Int                @default(480)
   /// light sources burning, party funds and other world state

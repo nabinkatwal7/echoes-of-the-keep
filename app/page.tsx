@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const [user, spellCount, classCount, creatureCount, featCount] = await Promise.all([
     getUser(),
-    prisma.spell.count(),
+    prisma.spell.count({ where: { campaignId: null } }),
     prisma.class.count(),
     prisma.creature.count({ where: { campaignId: null } }),
     prisma.feat.count(),
@@ -25,9 +25,9 @@ export default async function Home() {
   // spell of the day: stable for a calendar day, and only a free-rules spell when that mode is on
   const day = Math.floor(Date.now() / 86_400_000);
   const pool = srdOnly()
-    ? (await prisma.spell.findMany({ orderBy: { index: "asc" } })).filter((s) => spellInSrd(s.name))
+    ? (await prisma.spell.findMany({ where: { campaignId: null }, orderBy: { index: "asc" } })).filter((s) => spellInSrd(s.name))
     : spellCount
-      ? await prisma.spell.findMany({ orderBy: { index: "asc" }, skip: day % spellCount, take: 1 })
+      ? await prisma.spell.findMany({ where: { campaignId: null }, orderBy: { index: "asc" }, skip: day % spellCount, take: 1 })
       : [];
   const featured = srdOnly() ? pool[day % Math.max(pool.length, 1)] : pool[0];
   const school = featured ? schoolStyle(featured.school) : null;
