@@ -22,7 +22,7 @@ type Props = {
   encounters: { id: string; name: string; state: string }[];
   view: EncounterView | null;
   log: LogLine[];
-  creatures: { index: string; label: string }[];
+  creatures: { index: string; label: string; name: string; type: string | null; challenge: string | null }[];
   spellbooks: Record<string, Spellbook>;
   /** newest campaign event when the page was built, so the live stream only delivers what comes after */
   lastEventId?: number;
@@ -94,7 +94,7 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
             <Board view={view} selected={selected} onSelect={setSelected} run={run} aim={aim} aiming={aiming} onAim={(x, y) => { setAim({ x, y }); setAiming(false); }} />
           </div>
           <div className="flex flex-col gap-4">
-            <Actions view={view} selected={selected} run={run} pending={pending} isDm={isDm} spellbooks={spellbooks} aim={aim} aiming={aiming} setAiming={setAiming} />
+            <Actions view={view} creatures={creatures} selected={selected} run={run} pending={pending} isDm={isDm} spellbooks={spellbooks} aim={aim} aiming={aiming} setAiming={setAiming} />
             <Card className="p-4">
               <h2 className="eyebrow mb-2">Combat log</h2>
               <CombatLog log={log} />
@@ -281,7 +281,7 @@ function Board({ view, selected, onSelect, run, aim, aiming, onAim }: { view: En
   );
 }
 
-function Actions({ view, selected, run, pending, isDm, spellbooks, aim, aiming, setAiming }: { view: EncounterView; selected: string | null; run: Run; pending: boolean; isDm: boolean; spellbooks: Record<string, Spellbook>; aim: { x: number; y: number } | null; aiming: boolean; setAiming: (b: boolean) => void }) {
+function Actions({ view, creatures, selected, run, pending, isDm, spellbooks, aim, aiming, setAiming }: { view: EncounterView; selected: string | null; run: Run; pending: boolean; isDm: boolean; creatures: Props["creatures"]; spellbooks: Record<string, Spellbook>; aim: { x: number; y: number } | null; aiming: boolean; setAiming: (b: boolean) => void }) {
   const me = view.combatants.find((c) => c.id === selected);
   const [target, setTarget] = useState("");
   const [attackName, setAttackName] = useState("");
@@ -352,7 +352,7 @@ function Actions({ view, selected, run, pending, isDm, spellbooks, aim, aiming, 
             </div>
           )}
           {actor.characterId && spellbooks[actor.characterId] && (
-            <SpellPanel actor={actor} book={spellbooks[actor.characterId]} others={view.combatants} aim={aim} aiming={aiming} setAiming={setAiming} run={run} pending={pending} />
+            <SpellPanel creatures={creatures} actor={actor} book={spellbooks[actor.characterId]} others={view.combatants} aim={aim} aiming={aiming} setAiming={setAiming} run={run} pending={pending} />
           )}
           <div className="flex flex-wrap gap-2">
             {(["dash", "disengage", "dodge", "help", "hide", "search", "use-object"] as const).map((a) => (

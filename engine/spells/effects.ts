@@ -23,12 +23,16 @@ export type SpellArea = {
 
 export type SpellEffect = {
   /** how the spell reaches its targets */
-  delivery: "attack" | "save" | "auto" | "heal" | "none";
+  delivery: "attack" | "save" | "auto" | "heal" | "temp" | "pool" | "none";
   attack?: "melee" | "ranged";
   save?: Ability;
   halfOnSave: boolean;
   damage?: { dice: string; type: SpellDamageType; flat: number };
-  healing?: { dice: string; addModifier: boolean };
+  healing?: { dice: string; addModifier: boolean; /** a fixed amount instead of dice (Heal restores 70) */ flat?: number };
+  /** temporary hit points granted (False Life, Armor of Agathys) */
+  tempHp?: { dice: string; flat: number; perSlotLevel: number };
+  /** a pool of hit points rolled once; creatures are affected lowest first (Sleep, Color Spray) */
+  pool?: { dice: string; condition: "unconscious" | "blinded" };
   /** extra damage or healing dice for each slot level above the spell's own */
   upcastDice?: string;
   /** damage that grows with character level (cantrips) */
@@ -98,14 +102,22 @@ export function parseSpellEffect(spell: { level: number; range: string; duration
   if (proj) projectiles = { count: NUMBER_WORDS[proj[1].toLowerCase()], extraPerLevel: /(?:one )?(?:more|additional) (?:dart|ray)/i.test(higher) ? 1 : 0 };
 
   const extraTargets = /(?:one |1 )?additional (?:humanoid|creature|target)s? for each slot level/i.exec(higher) ? 1 : 0;
-  const area = parseArea(spell.range, text);
+  const area = parseArea(spell.range, text) ?? (/within (\d+) feet of a point you choose/i.test(text) ? { shape: "sphere" as const, size: Number(/within (\d+) feet of a point you choose/i.exec(text)![1]), fromSelf: false } : undefined);
 
   const cond = new RegExp(`(?:be|becomes?|is) (${CONDITIONS.join("|")})`, "i").exec(text)?.[1].toLowerCase() as SpellCondition | undefined;
+
+  const flatHeal = /regains? (\d+) hit points/i.exec(text);
+  const temp = /(?:gain|gains)\s+(?:(\d+d\d+)(?:\s*\+\s*(\d+))?|(\d+))\s+temporary hit points/i.exec(text);
+  const tempPerLevel = /(\d+) additional temporary hit points for each slot level/i.exec(higher) ?? /temporary hit points increases? by (\d+) for each slot level/i.exec(higher);
+  const poolMatch = /roll (\d+d\d+); the total is how many hit points/i.exec(text);
+  const poolExtra = /roll an additional (\d+d\d+) for each slot level/i.exec(higher)?.[1];
 
   let delivery: SpellEffect["delivery"] = "none";
   if (attack) delivery = "attack";
   else if (save && (dmg || cond)) delivery = "save";
-  else if (heal) delivery = "heal";
+  else if (heal || flatHeal) delivery = "heal";
+  else if (temp) delivery = "temp";
+  else if (poolMatch) delivery = "pool";
   else if (dmg && /never misses|automatically hits?|dart hits/i.test(text)) delivery = "auto";
 
   return {
@@ -114,8 +126,10 @@ export function parseSpellEffect(spell: { level: number; range: string; duration
     save,
     halfOnSave: /half as much damage/i.test(text),
     damage: dmg ? { dice: dmg[1], type: dmg[3].toLowerCase() as SpellDamageType, flat: dmg[2] ? Number(dmg[2]) : 0 } : undefined,
-    healing: heal ? { dice: heal[1], addModifier: !!heal[2] } : undefined,
-    upcastDice: upcast,
+    healing: heal ? { dice: heal[1], addModifier: !!heal[2] } : flatHeal ? { dice: "0d1", addModifier: false, flat: Number(flatHeal[1]) } : undefined,
+    tempHp: temp ? { dice: temp[1] ?? "0d1", flat: temp[1] ? Number(temp[2] ?? 0) : Number(temp[3]), perSlotLevel: tempPerLevel ? Number(tempPerLevel[1]) : 0 } : undefined,
+    pool: poolMatch ? { dice: poolMatch[1], condition: /blinded/i.test(text) ? "blinded" : "unconscious" } : undefined,
+    upcastDice: upcast ?? poolExtra,
     cantripScaling,
     projectiles,
     extraTargetsPerLevel: extraTargets,

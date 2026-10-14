@@ -47,7 +47,7 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
       .map((r) => ({ id: r.id, text: String((r.payload as { text?: string }).text ?? "") }));
   }
 
-  const creatures = isDm ? await listEncounterCreatures(id) : [];
+  const creatures = await listEncounterCreatures(id);
 
   return (
     <div className="flex flex-col gap-4">
@@ -65,7 +65,7 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
         log={log}
         lastEventId={latest?.id ?? 0}
         spellbooks={spellbooks}
-        creatures={creatures.map((c) => ({ index: c.index, label: `${c.name} (CR ${String(c.challenge ?? "?").split(" ")[0]})` }))}
+        creatures={creatures.map((c) => ({ index: c.index, label: `${c.name} (CR ${String(c.challenge ?? "?").split(" ")[0]})`, name: c.name, type: c.type, challenge: c.challenge }))}
       />
     </div>
   );

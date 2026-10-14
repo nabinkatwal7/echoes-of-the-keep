@@ -127,4 +127,45 @@ describe.skipIf(!RUN_DB)("spells in combat (database)", () => {
     signInAs(dm);
     expect((await endCombatConcentration(hero.id)).ok).toBe(false); // not concentrating
   });
+
+  it("conjures allies within the spell's limits and they vanish when concentration ends", async () => {
+    await prisma.character.update({
+      where: { id: heroId },
+      data: {
+        classes: [{ classIndex: "druid", level: 5 }],
+        spellSlotsUsed: [],
+        spells: { byClass: { druid: { known: [], spellbook: [], prepared: ["conjure-animals"] } }, concentration: null },
+      },
+    });
+    signInAs(dm);
+    const e = await createEncounter((await rows()).campaignId, "Grove");
+    if (!e.ok || !e.id) throw new Error("setup");
+    const enc2 = e.id;
+    await prisma.encounter.update({ where: { id: enc2 }, data: { gridWidth: 20, gridHeight: 20 } });
+    await addParty(enc2);
+    await addMonster(enc2, "wolf", 1);
+    const hero2 = (await loadEncounter(enc2))!.combatants.find((c) => c.name === "Itest Evoker")!;
+    await moveCombatant(hero2.id, 5, 5);
+    await setInitiative(hero2.id, 20);
+    await startEncounter(enc2);
+
+    signInAs(owner);
+    // the rules are checked before anything is spent
+    expect((await castInCombat({ casterId: hero2.id, spell: "conjure-animals", slotLevel: 3 })).ok).toBe(false); // no choice made
+    expect((await castInCombat({ casterId: hero2.id, spell: "conjure-animals", slotLevel: 3, summon: { creatureIndex: "skeleton", count: 1 } })).ok).toBe(false); // not a beast
+    expect((await castInCombat({ casterId: hero2.id, spell: "conjure-animals", slotLevel: 3, summon: { creatureIndex: "wolf", count: 9 } })).ok).toBe(false); // eight at most
+    expect((await prisma.character.findUniqueOrThrow({ where: { id: heroId } })).spellSlotsUsed).toEqual([]);
+
+    expect(await castInCombat({ casterId: hero2.id, spell: "conjure-animals", slotLevel: 3, summon: { creatureIndex: "wolf", count: 4 } })).toEqual({ ok: true });
+    const after = (await loadEncounter(enc2))!;
+    const pack = after.combatants.filter((c) => (c.extra as { summonedBy?: string }).summonedBy === hero2.id);
+    expect(pack).toHaveLength(4);
+    expect(new Set(pack.map((c) => `${c.x},${c.y}`)).size).toBe(4); // each on its own square
+    expect(pack.every((c) => (c.extra as { ally?: boolean }).ally)).toBe(true);
+
+    // the pack is gone when the druid stops concentrating
+    expect((await endCombatConcentration(hero2.id)).ok).toBe(true);
+    const gone = (await loadEncounter(enc2))!.combatants.filter((c) => (c.extra as { summonedBy?: string }).summonedBy === hero2.id);
+    expect(gone.every((c) => c.defeated)).toBe(true);
+  });
 });

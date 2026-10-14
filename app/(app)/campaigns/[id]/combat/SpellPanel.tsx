@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Input, Select } from "@/app/components/ui/Input";
+import { SUMMON_RULES, summonChoices } from "@/engine/spells/summons";
+import { parseChallenge } from "@/engine/companions";
 import { castCounterspell, castInCombat, endCombatConcentration } from "@/lib/combat/spellActions";
 import type { Spellbook } from "@/lib/combat/spellList";
 import type { CombatantView } from "@/lib/combat/view";
@@ -12,8 +14,9 @@ type Run = (fn: () => Promise<{ ok: boolean; errors?: string[]; id?: string }>, 
 
 /** Spell browser for a hero in combat: what they can cast now, what it does, and a way to aim it. */
 export function SpellPanel({
-  actor, book, others, aim, aiming, setAiming, run, pending,
+  creatures, actor, book, others, aim, aiming, setAiming, run, pending,
 }: {
+  creatures: { index: string; label: string; name: string; type: string | null; challenge: string | null }[];
   actor: CombatantView;
   book: Spellbook;
   others: CombatantView[];
@@ -27,6 +30,8 @@ export function SpellPanel({
   const [targets, setTargets] = useState<string[]>([]);
   const [slot, setSlot] = useState(0);
   const [pact, setPact] = useState(false);
+  const [summonIndex, setSummonIndex] = useState("");
+  const [summonCount, setSummonCount] = useState(0);
   const [filter, setFilter] = useState<"castable" | "all">("castable");
   const [metamagic, setMetamagic] = useState("");
   const [counterLevel, setCounterLevel] = useState("3");
@@ -40,6 +45,14 @@ export function SpellPanel({
   };
   const list = book.spells.filter((s) => filter === "all" || canCast(s));
   const slotOptions = spell && spell.level > 0 ? book.slots.filter((x) => x.level >= spell.level && x.left > 0) : [];
+  const effectiveSlot = pact ? book.pact?.slotLevel ?? 0 : slot || slotOptions[0]?.level || spell?.level || 1;
+  const rule = spell ? SUMMON_RULES[spell.index] : undefined;
+  const summonOptions = spell && rule ? summonChoices(spell.index, effectiveSlot) : [];
+  const pickCount = summonCount || summonOptions[0]?.count || 1;
+  const maxCr = summonOptions.find((o) => o.count === pickCount)?.maxCr ?? 0;
+  const summonable = rule
+    ? creatures.filter((c) => rule.type.test((c.type ?? "").toLowerCase()) && parseChallenge(c.challenge) <= maxCr && (!rule.names || rule.names.some((n) => c.name.toLowerCase().includes(n))))
+    : [];
   const timeText = (t: string) => (t === "bonus" ? "bonus action" : t);
 
   const cast = () => {
@@ -83,6 +96,17 @@ export function SpellPanel({
               {book.pact && book.pact.left > 0 && book.pact.slotLevel >= spell.level && <option value="pact">Pact slot (level {book.pact.slotLevel})</option>}
             </Select>
           )}
+          {rule && (
+            <div className="flex flex-col gap-2">
+              <Select aria-label="How many" value={pickCount} onChange={(e) => { setSummonCount(Number(e.target.value)); setSummonIndex(""); }}>
+                {summonOptions.map((o) => <option key={o.count} value={o.count}>{o.count} creature{o.count > 1 ? "s" : ""} (CR {o.maxCr === 0.5 ? "1/2" : o.maxCr === 0.25 ? "1/4" : o.maxCr} or lower)</option>)}
+              </Select>
+              <Select aria-label="Creature to call" value={summonIndex} onChange={(e) => setSummonIndex(e.target.value)}>
+                <option value="">Choose {rule.label}…</option>
+                {summonable.map((c) => <option key={c.index} value={c.index}>{c.label}</option>)}
+              </Select>
+            </div>
+          )}
           {spell.aim === "targets" && (
             <fieldset className="flex flex-col gap-1">
               <legend className="rune-label">Targets{spell.maxTargets > 1 ? ` (up to ${spell.maxTargets})` : ""}</legend>
@@ -104,7 +128,7 @@ export function SpellPanel({
               <span className="text-muted">{aim ? `Square ${aim.x},${aim.y}` : "No point chosen"}</span>
             </div>
           )}
-          <Button disabled={pending || (spell.aim === "targets" && !targets.length) || (spell.aim === "point" && !aim) || !canCast(spell)} onClick={cast}>
+          <Button disabled={pending || (spell.aim === "targets" && !targets.length) || (spell.mode === "summon" && !summonIndex) || (spell.aim === "point" && !aim) || !canCast(spell)} onClick={cast}>
             Cast {spell.name}
           </Button>
         </div>

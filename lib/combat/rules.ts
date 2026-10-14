@@ -67,6 +67,12 @@ export type Buff = {
   saveDie?: number;
   /** advantage on Dexterity saves (Haste) */
   dexSaveAdvantage?: boolean;
+  /** attackers have advantage against the bearer (Faerie Fire, Guiding Bolt) */
+  advAgainst?: boolean;
+  /** attackers have disadvantage against the bearer (Blur) */
+  disAgainst?: boolean;
+  /** removed after the first attack made against the bearer */
+  oneShot?: boolean;
   /** one extra action: a single weapon attack, Dash, Disengage, Hide, or Use an Object */
   haste?: boolean;
   /** when the buff ends, the creature cannot move or act on that turn */
@@ -116,6 +122,8 @@ export type Cmb = {
   stable?: boolean;
   concentrating?: string | null;
   buffs?: Buff[];
+  /** the creature that conjured this one with a concentration spell; it vanishes when that ends */
+  summonedBy?: string | null;
   /** summoned or controlled creatures fight on the party's side */
   ally?: boolean;
   /** original stats while polymorphed; cleared when the new form drops to 0 HP */
@@ -375,8 +383,8 @@ export function resolveAttackAction(attacker: Cmb, target: Cmb, profile: AttackP
   // sources of advantage and disadvantage
   const adjacent = ctx.withinFiveFeet ?? true;
   const mods = attackModifiers({ attacker: aSet, target: conditionSet(target.conditions), withinFiveFeet: adjacent, attackerExhaustion: attacker.exhaustion });
-  const advantage = mods.advantage + (ctx.extraAdvantage ?? 0) + (attacker.turn.helped ? 1 : 0);
-  let disadvantage = mods.disadvantage + (ctx.extraDisadvantage ?? 0);
+  const advantage = mods.advantage + (ctx.extraAdvantage ?? 0) + (attacker.turn.helped ? 1 : 0) + ((target.buffs ?? []).some((b) => b.advAgainst) ? 1 : 0);
+  let disadvantage = mods.disadvantage + (ctx.extraDisadvantage ?? 0) + ((target.buffs ?? []).some((b) => b.disAgainst) ? 1 : 0);
   if (target.turn.dodging && !aSet.has("blinded")) disadvantage += 1;
   let autoMiss = false;
   if (profile.melee && adjacent === false && (profile.reach ?? 5) <= 5) lines.push(`${target.name} is out of ${attacker.name}'s reach`);
@@ -398,7 +406,7 @@ export function resolveAttackAction(attacker: Cmb, target: Cmb, profile: AttackP
 
   const cover = ctx.cover ?? "none";
   // Bless and similar: a die added to the attack roll
-  const dieBonus = (attacker.buffs ?? []).reduce((sum, b) => sum + (b.attackDie ? Math.floor(rng() * b.attackDie) + 1 : 0), 0);
+  const dieBonus = (attacker.buffs ?? []).reduce((sum, b) => sum + (b.attackDie ? Math.sign(b.attackDie) * (Math.floor(rng() * Math.abs(b.attackDie)) + 1) : 0), 0);
   const toHit = profile.toHit + dieBonus;
   const out = autoMiss
     ? { roll: rollD20(toHit, "normal", rng), effectiveAc: effectiveAc(target) + coverBonus(cover), hit: false, critical: false, fumble: false }
@@ -438,7 +446,7 @@ export function resolveAttackAction(attacker: Cmb, target: Cmb, profile: AttackP
     if (target.concentrating && (dropped || t.hp === 0)) lines.push(`${t.name} loses concentration`);
   }
   return {
-    attacker: { ...attacker, turn }, target: t, hit, critical: out.critical, fumble: out.fumble,
+    attacker: { ...attacker, turn }, target: (t.buffs ?? []).some((b) => b.oneShot && b.advAgainst) ? { ...t, buffs: (t.buffs ?? []).filter((b) => !(b.oneShot && b.advAgainst)) } : t, hit, critical: out.critical, fumble: out.fumble,
     roll: out.roll.total, natural: out.roll.natural, mode, damage, lines, dropped, concentrationDc,
   };
 }

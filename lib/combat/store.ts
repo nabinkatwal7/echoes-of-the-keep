@@ -15,6 +15,7 @@ export type Extra = {
   buffs?: Buff[];
   /** fights on the party's side (summons, companions) */
   ally?: boolean;
+  summonedBy?: string | null;
   /** original stats while polymorphed, restored when the new form drops to 0 HP or the spell ends */
   polymorph?: SavedForm | null;
   recharge?: RechargeAbility[];
@@ -54,6 +55,7 @@ export function rowToCmb(r: Combatant): Cmb {
     concentrating: extra.concentrating ?? null,
     buffs: extra.buffs ?? [],
     ally: extra.ally ?? false,
+    summonedBy: extra.summonedBy ?? null,
     polymorph: extra.polymorph ?? null,
     recharge: extra.recharge,
     legendary: extra.legendary,

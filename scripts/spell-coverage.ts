@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { parseSpellEffect } from "@/engine/spells/effects";
-import { SPELL_BUFFS } from "@/lib/combat/spellRules";
+import { automationMode } from "@/lib/combat/spellRules";
 import { prisma } from "@/lib/prisma";
 
 /** Which spells the combat engine can resolve by itself, and which are narrated by the DM. Writes docs/spell-automation.md. */
@@ -8,9 +8,8 @@ import { prisma } from "@/lib/prisma";
   const spells = await prisma.spell.findMany({ where: { campaignId: null }, orderBy: [{ level: "asc" }, { name: "asc" }] });
   const rows = spells.map((s) => {
     const e = parseSpellEffect(s);
-    const buff = SPELL_BUFFS[s.index];
-    const mode = e.delivery !== "none" ? e.delivery : buff ? "buff" : "narrated";
-    const needs = e.delivery !== "none" || buff ? "" : "DM adjudicates";
+    const mode = automationMode(s.index, e);
+    const needs = mode === "narrated" ? "DM adjudicates" : "";
     return { s, e, mode, needs };
   });
   const by: Record<string, number> = {};

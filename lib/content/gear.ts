@@ -21,8 +21,8 @@ export async function getCreature(index: string) {
 export async function listEncounterCreatures(campaignId: string) {
   const rows = await prisma.creature.findMany({
     where: { OR: [{ campaignId: null }, { campaignId }] },
-    select: { index: true, name: true, challenge: true, campaignId: true },
+    select: { index: true, name: true, challenge: true, type: true, campaignId: true },
     orderBy: { name: "asc" },
   });
-  return rows.filter((c) => showCreature(c.name, c.campaignId)).map(({ index, name, challenge }) => ({ index, name, challenge }));
+  return rows.filter((c) => showCreature(c.name, c.campaignId)).map(({ index, name, challenge, type }) => ({ index, name, challenge, type }));
 }

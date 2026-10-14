@@ -2,6 +2,7 @@ import type { Character, Spell } from "@prisma/client";
 import { CASTER_KIND, type SpellSelection } from "@/engine/classes/spellcasting";
 import { castingTimeKind } from "@/engine/spells";
 import { parseSpellEffect } from "@/engine/spells/effects";
+import { automationMode } from "./spellRules";
 import { preparedSpellNames } from "@/engine/classes/features";
 import type { ClassLevel } from "@/engine/progression";
 import { slotViews, type StoredPlay } from "@/lib/characters/play";
@@ -19,24 +20,31 @@ export type CastableSpell = {
   /** a short mechanical summary, e.g. "8d6 fire, Dex save for half, 20 ft sphere" */
   summary: string;
   maxTargets: number;
+  /** how the spell is handled: attack, save, heal, buff, summon ... or narrated */
+  mode: string;
 };
 
 export type Spellbook = { characterId: string; slots: { level: number; left: number }[]; pact: { slotLevel: number; left: number } | null; spells: CastableSpell[] };
 
-const summarize = (s: Spell): { summary: string; aim: CastableSpell["aim"]; delivery: string; maxTargets: number } => {
+const summarize = (s: Spell): { summary: string; aim: CastableSpell["aim"]; delivery: string; maxTargets: number; mode: string } => {
   const e = parseSpellEffect(s);
   const bits: string[] = [];
   if (e.damage) bits.push(`${e.damage.dice}${e.damage.flat ? `+${e.damage.flat}` : ""} ${e.damage.type}`);
-  if (e.healing) bits.push(`heals ${e.healing.dice}`);
+  if (e.healing) bits.push(e.healing.flat ? `heals ${e.healing.flat}` : `heals ${e.healing.dice}`);
+  if (e.tempHp) bits.push("temporary hit points");
+  if (e.pool) bits.push(`${e.pool.dice} hit point pool, ${e.pool.condition}`);
   if (e.save) bits.push(`${e.save.toUpperCase()} save${e.halfOnSave ? " for half" : ""}`);
   if (e.attack) bits.push(`${e.attack} spell attack`);
   if (e.condition) bits.push(e.condition);
   if (e.area) bits.push(`${e.area.size} ft ${e.area.shape}`);
   if (e.projectiles) bits.push(`${e.projectiles.count} darts or rays`);
   if (e.durationRounds) bits.push(`${e.durationRounds} rounds`);
-  const aim: CastableSpell["aim"] = e.area ? "point" : e.delivery !== "none" && e.range.kind !== "self" ? "targets" : "none";
-  const maxTargets = e.projectiles ? e.projectiles.count + 6 : 1 + (e.extraTargetsPerLevel ? 6 : 0) + (/up to (three|three creatures)/i.test(s.description) ? 2 : 0);
-  return { summary: bits.join(", ") || "Narrated by the DM", aim, delivery: e.delivery, maxTargets };
+  const mode = automationMode(s.index, e);
+  if (mode === "buff" || mode === "debuff" || mode === "condition") bits.push(mode === "buff" ? "lasting bonus" : mode === "debuff" ? "penalty on a failed save" : "condition");
+  if (mode === "summon") bits.push("summons creatures");
+  const aim: CastableSpell["aim"] = mode === "summon" ? "none" : e.area ? "point" : (e.delivery !== "none" || mode !== "narrated") && e.range.kind !== "self" ? "targets" : "none";
+  const maxTargets = e.projectiles ? e.projectiles.count + 6 : 1 + (e.extraTargetsPerLevel ? 6 : 0) + (/up to (two|three|four|five|six)/i.test(s.description) ? 5 : 0);
+  return { summary: bits.join(", ") || "Narrated by the DM", aim, delivery: e.delivery, maxTargets, mode };
 };
 
 /** Known or prepared spells a character can cast now, with slot counts and a plain summary of what each does. */

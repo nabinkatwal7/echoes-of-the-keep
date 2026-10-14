@@ -7,6 +7,7 @@ import { takeAction, takeBonusAction, takeReaction } from "@/engine/combat";
 import { CASTING_ABILITY, castingTimeKind } from "@/engine/spells";
 import { CLASS_NAME } from "@/engine/classes/spellcasting";
 import { maxTargets, parseSpellEffect, projectileCount } from "@/engine/spells/effects";
+import { checkSummon, summonRule } from "@/engine/spells/summons";
 import type { ClassLevel } from "@/engine/progression";
 import { castSpell } from "@/lib/characters/playActions";
 import { deriveStored, type StoredCharacter } from "@/lib/characters/derive";
@@ -29,6 +30,8 @@ export type CombatCast = {
   point?: { x: number; y: number };
   /** sorcerer Metamagic option, paid in sorcery points */
   metamagic?: string;
+  /** for summoning spells: which creature to call and how many */
+  summon?: { creatureIndex: string; count: number };
 };
 
 /** Cast a spell as a hero in the middle of a fight: economy, targeting, slot, rolls, effects and concentration. */
@@ -86,6 +89,17 @@ export async function castInCombat(req: CombatCast): Promise<Result> {
 
   let effect = parseSpellEffect(spell);
   const slotLevel = spell.level === 0 ? 0 : Math.max(spell.level, req.slotLevel ?? spell.level);
+
+  // summoning spells need a legal choice before anything is spent
+  const rule = summonRule(spell.index);
+  let summoned: Awaited<ReturnType<typeof prisma.creature.findFirst>> = null;
+  if (rule) {
+    if (!req.summon) return fail(`Choose what ${spell.name} calls`);
+    summoned = await prisma.creature.findFirst({ where: { index: req.summon.creatureIndex, OR: [{ campaignId: null }, { campaignId: enc.campaignId }] } });
+    if (!summoned) return fail("Unknown creature");
+    const bad = checkSummon(spell.index, slotLevel, summoned, req.summon.count);
+    if (bad) return fail(bad);
+  }
   if (distant && (effect.range.kind === "ranged" || effect.range.kind === "sight")) effect = { ...effect, range: { ...effect.range, feet: effect.range.feet * 2 } };
   if (distant && effect.range.kind === "touch") effect = { ...effect, range: { kind: "ranged", feet: 30 } };
   if (req.metamagic === "twinned") {
@@ -195,7 +209,42 @@ export async function castInCombat(req: CombatCast): Promise<Result> {
   const update = changed(all, settled);
   await clearSheetConcentration(enc.combatants, all, settled.filter((c) => c.id !== caster.id));
 
-  await commit(enc, ctx.user, { update, lines, dmOnly: row.hidden });
+  let create: Prisma.CombatantUncheckedCreateInput[] | undefined;
+  if (rule && summoned && req.summon) {
+    const stats = monsterStats(summoned);
+    const near = casterPos ?? { x: 1, y: 1 };
+    const taken = new Set(enc.combatants.filter((c) => c.x !== null && c.y !== null).map((c) => `${c.x},${c.y}`));
+    const free = (i: number) => {
+      // the closest unoccupied squares to the caster, spiralling outward
+      let n = 0;
+      for (let r = 1; r < 12; r++) {
+        for (let dx = -r; dx <= r; dx++) {
+          for (let dy = -r; dy <= r; dy++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+            const x = near.x + dx;
+            const y = near.y + dy;
+            if (x < 0 || y < 0 || x >= enc.gridWidth || y >= enc.gridHeight || taken.has(`${x},${y}`)) continue;
+            if (n++ === i) {
+              taken.add(`${x},${y}`);
+              return { x, y };
+            }
+          }
+        }
+      }
+      return { x: near.x, y: near.y };
+    };
+    create = Array.from({ length: req.summon.count }, (_, i) => {
+      const spot = free(0);
+      return {
+        encounterId: enc.id, kind: "monster", creatureIndex: summoned!.index, name: `${summoned!.name} ${i + 1} (${caster.name}'s)`,
+        dexMod: stats.dexMod, ac: stats.ac, hp: stats.hp, maxHp: stats.hp, speed: stats.speed, attacks: stats.attacks as unknown as Prisma.InputJsonValue,
+        defenses: stats.defenses as Prisma.InputJsonValue, x: spot.x, y: spot.y,
+        extra: { attacksPerAction: stats.attacksPerAction, cr: 0, size: stats.size, ally: true, summonedBy: rule.concentration ? caster.id : null },
+      };
+    });
+    lines.push(`${caster.name} calls ${req.summon.count} × ${summoned.name}`);
+  }
+  await commit(enc, ctx.user, { update, create, lines, dmOnly: row.hidden });
   refresh(enc.campaignId);
   return { ok: true };
 }
