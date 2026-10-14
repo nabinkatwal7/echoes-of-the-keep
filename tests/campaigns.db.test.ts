@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { cleanup, makeUser, RUN_DB, signInAs } from "./db";
-import { attachCharacter, createCampaign, joinCampaign, postMessage } from "@/lib/campaigns/actions";
+import { attachCharacter, createCampaign, joinCampaign, postMessage, setCallLink, updateHouseRules } from "@/lib/campaigns/actions";
+import { callLinkOf } from "@/lib/campaigns/call";
 import { getVisibleEventsForTest } from "./helpers";
 import { createCharacter } from "@/lib/characters/actions";
 import { prisma } from "@/lib/prisma";
@@ -109,5 +110,20 @@ describe.skipIf(!RUN_DB)("campaigns (database)", () => {
     expect(await sees(alice, false)).toBe(true);
     expect(await sees(carol, false)).toBe(true);
     expect(await sees(dm, true)).toBe(false); // the DM does not read player-to-player whispers
+  });
+
+  it("the DM shares a call link, players cannot, and house rules do not erase it", async () => {
+    signInAs(alice);
+    expect((await setCallLink(campaignId, "https://meet.google.com/abc-defg-hij")).ok).toBe(false);
+    signInAs(dm);
+    expect((await setCallLink(campaignId, "javascript:alert(1)")).ok).toBe(false);
+    expect((await setCallLink(campaignId, "http://example.com/room")).ok).toBe(false);
+    expect((await setCallLink(campaignId, "https://meet.google.com/abc-defg-hij")).ok).toBe(true);
+    expect(callLinkOf((await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } })).settings)).toBe("https://meet.google.com/abc-defg-hij");
+    expect((await updateHouseRules(campaignId, { multiclass: false, feats: true, flanking: true })).ok).toBe(true);
+    const settings = (await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } })).settings as Record<string, unknown>;
+    expect(settings).toMatchObject({ multiclass: false, flanking: true, callUrl: "https://meet.google.com/abc-defg-hij" });
+    expect((await setCallLink(campaignId, "")).ok).toBe(true);
+    expect(callLinkOf((await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } })).settings)).toBeNull();
   });
 });

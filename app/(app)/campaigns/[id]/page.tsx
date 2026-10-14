@@ -6,6 +6,9 @@ import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
 import { LinkButton } from "@/app/components/ui/Button";
 import { PageHeader } from "@/app/components/ui/PageHeader";
+import { CallLink } from "@/app/components/CallLink";
+import { callLinkOf } from "@/lib/campaigns/call";
+import { CallLinkForm } from "./CallLinkForm";
 import { HouseRulesForm } from "./HouseRulesForm";
 import { readHouseRules } from "@/lib/campaigns/houseRules";
 import { requireUser } from "@/lib/auth";
@@ -46,7 +49,8 @@ export default async function CampaignHub({ params }: { params: Promise<{ id: st
         subtitle={campaign.description || undefined}
         icon={<GiCastle />}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <CallLink url={callLinkOf(campaign.settings)} />
             {isDm && <LinkButton variant="secondary" href={`/campaigns/${campaign.id}/dm`}>DM screen</LinkButton>}
             <LinkButton variant="secondary" href={`/campaigns/${campaign.id}/world`}>World</LinkButton>
             <LinkButton variant="secondary" href={`/campaigns/${campaign.id}/journal`}>Journal</LinkButton>
@@ -60,6 +64,7 @@ export default async function CampaignHub({ params }: { params: Promise<{ id: st
 
       <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         <section className="flex flex-col gap-4">
+          {isDm && <CallLinkForm campaignId={campaign.id} campaignName={campaign.name} initial={callLinkOf(campaign.settings) ?? ""} />}
           {isDm && <HouseRulesForm campaignId={campaign.id} initial={readHouseRules(campaign.settings)} />}
           <h2 className="eyebrow">The party</h2>
           {campaign.characters.length === 0 ? (

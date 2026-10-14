@@ -9,6 +9,8 @@ import { formatGameTime, timeOfDay } from "@/engine/world";
 import { prisma } from "@/lib/prisma";
 import { readExplore } from "@/lib/world/exploreMap";
 import { ExploreMap } from "./ExploreMap";
+import { CallLink } from "@/app/components/CallLink";
+import { callLinkOf } from "@/lib/campaigns/call";
 import { Presence } from "./Presence";
 import { TableClient, type TableEvent } from "./TableClient";
 
@@ -58,7 +60,10 @@ export default async function TablePage({
           {formatGameTime(clock.clockMinutes)} ({timeOfDay(clock.clockMinutes)}) · {campaign.members.length} at the table
         </p>
       </div>
-      <Presence campaignId={id} userId={user.id} />
+      <div className="flex flex-wrap items-center gap-3">
+        <Presence campaignId={id} userId={user.id} />
+        <CallLink url={callLinkOf(campaign.settings)} className="min-h-9 px-3" />
+      </div>
       <ExploreMap campaignId={id} isDm={isDm} map={explore} />
       {scene && (
         <div className="panel flex flex-col gap-2 p-4">

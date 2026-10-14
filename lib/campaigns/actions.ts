@@ -1,5 +1,6 @@
 "use server";
 
+import { callProvider, safeCallUrl } from "./call";
 import { revalidatePath } from "next/cache";
 import { rollExpression } from "@/engine/dice";
 import { requireUser } from "@/lib/auth";
@@ -141,6 +142,26 @@ export async function updateHouseRules(campaignId: string, rules: HouseRules): P
     where: { id: campaignId },
     data: { settings: { ...prev, ...next } },
   });
+  revalidatePath(`/campaigns/${campaignId}`);
+  return { ok: true };
+}
+
+/** Share (or clear) the voice or video call link for this campaign. Only plain https links are accepted. */
+export async function setCallLink(campaignId: string, url: string): Promise<Result> {
+  const user = await requireUser();
+  const membership = await getMembership(campaignId, user.id);
+  if (!membership || membership.role !== "DM") return { ok: false, errors: ["Only the DM can set the call link"] };
+  const clean = url.trim() === "" ? null : safeCallUrl(url);
+  if (url.trim() !== "" && !clean) return { ok: false, errors: ["Use an https link, for example from Discord, Google Meet, Zoom or Jitsi"] };
+  const current = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { settings: true } });
+  if (!current) return { ok: false, errors: ["Campaign not found"] };
+  const prev = current.settings && typeof current.settings === "object" ? (current.settings as Record<string, unknown>) : {};
+  const { callUrl: _old, ...rest } = prev;
+  void _old;
+  await prisma.campaign.update({ where: { id: campaignId }, data: { settings: (clean ? { ...rest, callUrl: clean } : rest) as object } });
+  if (clean) {
+    await prisma.campaignEvent.create({ data: { campaignId, actorId: user.id, type: "system", audience: "ALL", payload: { text: `The DM shared a call link: ${callProvider(clean)}` } } });
+  }
   revalidatePath(`/campaigns/${campaignId}`);
   return { ok: true };
 }

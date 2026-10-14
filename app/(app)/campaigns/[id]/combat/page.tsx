@@ -7,6 +7,8 @@ import { loadEncounter } from "@/lib/combat/store";
 import { listEncounterCreatures } from "@/lib/content/gear";
 import { prisma } from "@/lib/prisma";
 import { spellbookFor, type Spellbook } from "@/lib/combat/spellList";
+import { CallLink } from "@/app/components/CallLink";
+import { callLinkOf } from "@/lib/campaigns/call";
 import { CombatClient, type LogLine } from "./CombatClient";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +58,7 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
           ← {campaign.name}
         </Link>
         <h1 className="gilded text-3xl font-bold">Combat</h1>
+      <div className="mt-2"><CallLink url={callLinkOf(campaign.settings)} className="min-h-9 px-3" /></div>
       </div>
       <CombatClient
         campaignId={id}
