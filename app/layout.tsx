@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible, Cinzel, EB_Garamond, Pixelify_Sans } from "next/font/google";
+import { AmbientEmbers } from "./components/motion/AmbientEmbers";
 import { MotionRoot } from "./components/motion/MotionRoot";
 import { RegisterSW } from "./components/RegisterSW";
 import { SiteFooter } from "./components/layout/SiteFooter";
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: "try{var r=document.documentElement;var t=localStorage.getItem('emberhall-theme');r.dataset.theme=(t==='light'||t==='dark')?t:(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');var c=localStorage.getItem('dnd-contrast');var f=localStorage.getItem('dnd-font');if(c)r.dataset.contrast=c;if(f)r.dataset.font=f}catch(e){}" }} />
         <a href="#main" className="skip-link">Skip to content</a>
         <RegisterSW />
+        <AmbientEmbers />
         <MotionRoot>
           <SiteHeader />
           <div id="main" tabIndex={-1} className="flex-1 outline-none">{children}</div>

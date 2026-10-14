@@ -11,6 +11,7 @@ import { deriveStored, type StoredCharacter } from "@/lib/characters/derive";
 import { prisma } from "@/lib/prisma";
 import { readSolo } from "@/lib/solo/config";
 import { readAdventure } from "@/lib/solo/director";
+import { SceneIntro } from "@/app/components/cutscene/MomentScenes";
 import { SoloControls } from "./SoloControls";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,15 @@ export default async function SoloGamePage({ params }: { params: Promise<{ id: s
         <p className="text-sm text-muted">{solo.mode === "player" ? "You play a hero. The computer runs the story and your companions." : "You are the Dungeon Master. Computer heroes play the party."}</p>
       </div>
 
+      {adv && !adv.complete && (
+        <SceneIntro
+          storageKey={`${id}:${adv.chapter}:${adv.sceneIndex}`}
+          theme={(SCENE_THEMES as readonly string[]).includes(solo.theme) ? (solo.theme as SceneTheme) : "crypt"}
+          title={SCENE_LABEL[scene ?? "intro"] ?? "The story continues"}
+          text={[...events].find((e) => (e.payload as { narration?: boolean }).narration) ? String(([...events].find((e) => (e.payload as { narration?: boolean }).narration)!.payload as { text?: string }).text ?? "") : adv.title ?? ""}
+          party={party.map((p) => ({ name: p.name, classIndex: p.classIndex }))}
+        />
+      )}
       <SceneBanner theme={(SCENE_THEMES as readonly string[]).includes(solo.theme) ? (solo.theme as SceneTheme) : "crypt"} seed={id} className="h-24 sm:h-32" />
 
       {adv && (

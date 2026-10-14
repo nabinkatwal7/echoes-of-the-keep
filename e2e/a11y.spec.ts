@@ -125,6 +125,8 @@ test("the character sheet passes axe and fits a phone without sideways scrolling
 
 // Solo play, through the real screens: start a game, move the story along, scan each page, then delete the game.
 test("solo play: create a game, read the story, and the pages pass axe", async ({ page }) => {
+  // cutscenes cover the page until dismissed; this test is about the screens underneath
+  await page.addInitScript(() => localStorage.setItem("echoes-cutscenes", "off"));
   await page.goto("/login");
   await page.getByLabel(/username/i).fill("demo_player");
   await page.getByLabel(/password/i).fill("demo-password-1");
@@ -158,6 +160,31 @@ test("solo play: create a game, read the story, and the pages pass axe", async (
 
   page.once("dialog", (d) => void d.accept());
   await page.goto(page.url().replace(/\/combat.*/, "/solo"));
+  await page.getByRole("button", { name: /delete this game/i }).click();
+  await page.waitForURL(/\/solo$/, { timeout: 15_000 });
+});
+
+// Cutscenes: a chapter intro covers the page, can be skipped with Escape, and does not come back for the same scene.
+test("solo play: the chapter cutscene plays once and can be skipped", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel(/username/i).fill("demo_player");
+  await page.getByLabel(/password/i).fill("demo-password-1");
+  await page.getByRole("button", { name: /sign in|enter|log in/i }).click();
+  await page.waitForURL(/\/characters/, { timeout: 10_000 }).catch(() => {});
+  test.skip(!/\/characters/.test(page.url()), "demo data is not seeded");
+  await page.goto("/solo");
+  await page.getByRole("button", { name: /^begin$/i }).click();
+  await page.waitForURL(/\/campaigns\/[^/]+\/solo/, { timeout: 60_000 });
+  const scene = page.getByRole("dialog");
+  await expect(scene).toBeVisible({ timeout: 10_000 });
+  await page.keyboard.press("Escape");
+  await expect(scene).toBeHidden();
+  const url = page.url();
+  await page.reload();
+  await page.waitForTimeout(1500);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  page.once("dialog", (d) => void d.accept());
+  await page.goto(url.replace(/\/combat.*/, ""));
   await page.getByRole("button", { name: /delete this game/i }).click();
   await page.waitForURL(/\/solo$/, { timeout: 15_000 });
 });

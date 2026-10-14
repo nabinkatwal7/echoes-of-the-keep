@@ -155,7 +155,7 @@ export function CreatorWizard({ data, subclassAllow }: { data: WizardData; subcl
   function submit() {
     start(async () => {
       const result = await createCharacter(choices, equipmentMode);
-      if (result.ok) router.push(`/characters/${result.id}`);
+      if (result.ok) router.push(`/characters/${result.id}?new=1`);
       else setServerErrors(result.errors);
     });
   }

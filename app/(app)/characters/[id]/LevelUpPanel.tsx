@@ -1,6 +1,8 @@
 "use client";
 
+import { AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { LevelUpScene, cutscenesOff } from "@/app/components/cutscene/MomentScenes";
 import { useState, useTransition } from "react";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -17,6 +19,7 @@ const titleCase = (s: string) => s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.
 
 export function LevelUpPanel({
   id,
+  name = "Your hero",
   xp,
   classes,
   feats,
@@ -28,6 +31,7 @@ export function LevelUpPanel({
   canUndo = false,
 }: {
   id: string;
+  name?: string;
   xp: number;
   classes: ClassLevel[];
   feats: { index: string; name: string; prerequisite: string | null }[];
@@ -49,6 +53,7 @@ export function LevelUpPanel({
   const [feat, setFeat] = useState("");
   const [subclass, setSubclass] = useState("");
   const [gained, setGained] = useState<string[]>([]);
+  const [scene, setScene] = useState<{ level: number; gained: string[] } | null>(null);
 
   const level = totalLevel(classes);
   const xpReady = levelForXp(xp) > level;
@@ -58,12 +63,13 @@ export function LevelUpPanel({
   const subclassDue = subclassDueAt(classIndex, (existing?.level ?? 0) + 1) && !existing?.subclassIndex;
   const progress = nextAt ? Math.min(100, Math.round(((xp - XP_THRESHOLDS[level - 1]) / (nextAt - XP_THRESHOLDS[level - 1])) * 100)) : 100;
 
-  function run(fn: () => Promise<{ ok: boolean; errors?: string[]; gained?: string[] }>) {
+  function run(fn: () => Promise<{ ok: boolean; errors?: string[]; gained?: string[] }>, celebrate = false) {
     start(async () => {
       const r = await fn();
       if (r.ok) {
         setErrors([]);
         setGained(r.gained ?? []);
+        if (celebrate && !cutscenesOff()) setScene({ level: totalLevel(classes) + 1, gained: r.gained ?? [] });
         setOpen(false);
         router.refresh();
       } else setErrors(r.errors ?? []);
@@ -72,11 +78,12 @@ export function LevelUpPanel({
 
   function levelUp() {
     const improvement: ImprovementChoice | undefined = !due ? undefined : kind === "feat" ? { kind: "feat", feat } : { kind: "asi", abilities: picks };
-    run(() => levelUpCharacter(id, { classIndex, improvement, subclassIndex: subclassDue ? subclass : undefined }, !xpReady));
+    run(() => levelUpCharacter(id, { classIndex, improvement, subclassIndex: subclassDue ? subclass : undefined }, !xpReady), true);
   }
 
   return (
     <Card className="no-print flex flex-col gap-4">
+      <AnimatePresence>{scene && <LevelUpScene name={name} classIndex={classes[0].classIndex} level={scene.level} gained={scene.gained} onDone={() => setScene(null)} />}</AnimatePresence>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="font-display text-lg uppercase tracking-[0.12em] text-goldBright">Experience</h2>
         <p className="text-sm text-muted">

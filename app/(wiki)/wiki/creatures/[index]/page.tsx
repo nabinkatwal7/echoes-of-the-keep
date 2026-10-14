@@ -1,3 +1,4 @@
+import { MonsterAvatar } from "@/app/components/pixel/Avatars";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SourceText } from "@/app/components/SourceText";
@@ -38,7 +39,10 @@ export default async function CreaturePage({ params }: { params: Promise<{ index
       {/* classic stat block: parchment panel framed by crimson rules */}
       <div className="mt-4 rounded-sm bg-[#f1e6c8] px-6 py-5 text-[#2b1d12] shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
         <div className="border-y-[3px] border-[#8b1e1e] py-4">
-          <h1 className="font-display text-3xl font-bold uppercase tracking-[0.06em] text-[#7a1520]">{c.name}</h1>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="font-display text-3xl font-bold uppercase tracking-[0.06em] text-[#7a1520]">{c.name}</h1>
+            <span className="anim-bob shrink-0"><MonsterAvatar type={c.type} name={c.name} size={72} /></span>
+          </div>
           <p className="mb-3 italic">
             {c.size} {c.type}, {c.alignment}
           </p>

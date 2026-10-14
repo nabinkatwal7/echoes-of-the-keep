@@ -4,6 +4,12 @@ What was built, grouped by area, newest first. The project has no version number
 
 ## 2026-10-14
 
+### Cutscenes and site-wide motion
+- **Battle cutscenes** on the Combat page, drawn with the pixel sprites: a versus screen when a fight starts, each blow (a slash, a spell, an arrow, dragon fire, or shadow, chosen from who struck) with the damage floating up, heals, a fall when a creature is defeated, and a victory or defeat finale. Scenes come from changes between two snapshots of the fight (`lib/combat/cutscene.ts`), so a player never sees hidden monster hit points; a monster whose numbers are hidden shows the blow with no figure. Click, Enter, Space or Esc skips; "Cutscenes: on/off" on the Combat page switches them off (kept in this browser). Reduced motion turns them off.
+- **Moment scenes:** a chapter intro in solo play (narration typed over the scene, once per scene), "A hero is forged" after the creator, and "Level up!" after levelling.
+- Every page now fades in (`app/template.tsx`), panels rise in turn, page headers carry a pixel scene, and a faint field of embers drifts behind the site (off for reduced motion and high contrast). New 404 and error pages, pixel scenes and heroes on sign in and register, a creature picture on each stat block.
+- `/dev/cutscenes` (development only) plays every scene on demand.
+
 ### Home page tools
 Ten animated sections under the hero, each with a floating pixel icon that drifts with the scroll (GSAP ScrollTrigger) and Framer Motion springs inside:
 - **Spotlight search** (live against the real search API, keyboard navigable), **rules bar** (concentration, exhaustion, cover, action economy, advantage, death saves, rests), **dice playground** (the game's own dice engine: `4d6kh3`, modifiers, advantage and disadvantage; `engine/dice/playground.ts`), **sheet previewer** (real modifier, proficiency, save and skill code), **grimoire** (the real spell list, filters, slot tracker), **bestiary** (the real creature list by challenge rating and type, with attack rolls parsed from stat blocks in `lib/content/attacks.ts`), **combat tracker demo**, **world tools demo**, **homebrew vault preview** and **rules and licence badges** with the SRD 5.1 CC-BY-4.0 attribution.

@@ -327,4 +327,9 @@ h1, h2, h3, h4, .font-display {
 .anim-flame { animation: flame 2.5s ease-out infinite; }
 .anim-tumble { animation: tumble 5s ease-in-out infinite; }
 .anim-drift { animation: drift 60s linear infinite; }
-#main { animation: rise 0.45s ease-out both; }
+/* every framed panel rises in, one after another within a row or grid */
+.panel, .panel-flat { animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.panel:nth-child(2), .panel-flat:nth-child(2) { animation-delay: 0.06s; }
+.panel:nth-child(3), .panel-flat:nth-child(3) { animation-delay: 0.12s; }
+.panel:nth-child(4), .panel-flat:nth-child(4) { animation-delay: 0.18s; }
+.panel:nth-child(n+5), .panel-flat:nth-child(n+5) { animation-delay: 0.24s; }

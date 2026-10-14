@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { AnimatePresence } from "framer-motion";
+import { BattleCutscene } from "@/app/components/cutscene/BattleCutscene";
 import { Token } from "@/app/components/pixel/Avatars";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
@@ -12,6 +14,7 @@ import {
   removeCombatant, removeConditionFrom, setEnvironment, signalReady, standFromProne, startEncounter, takeAction, toggleMount, undoLast, takeReaction,
   starve, suffocate, legendaryAction, rechargeAbility, setWalls, setFog, addManualCombatant,
 } from "@/lib/combat/actions";
+import { diffEncounter, type CutsceneEvent } from "@/lib/combat/cutscene";
 import type { CombatantView, EncounterView } from "@/lib/combat/view";
 import type { Spellbook } from "@/lib/combat/spellList";
 import { autoStep } from "@/lib/combat/autoActions";
@@ -71,6 +74,35 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
     };
   }, [router, campaignId, lastEventId]);
 
+  // Cutscenes: each change to the fight (the start, a blow, a heal, the end) plays as a short pixel scene. They can be turned off.
+  const [cutscenes, setCutscenes] = useState(true);
+  const [queue, setQueue] = useState<{ id: number; e: CutsceneEvent }[]>([]);
+  const nextId = useRef(0);
+  const prevView = useRef<EncounterView | null>(null);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("echoes-cutscenes") === "off" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) setCutscenes(false);
+    } catch {
+      /* storage unavailable: leave them on */
+    }
+  }, []);
+  useEffect(() => {
+    const events = cutscenes ? diffEncounter(prevView.current, view) : [];
+    prevView.current = view;
+    if (events.length) setQueue((q) => [...q, ...events.map((e) => ({ id: nextId.current++, e }))].slice(-6));
+  }, [view, cutscenes]);
+  const toggleCutscenes = () => {
+    const next = !cutscenes;
+    setCutscenes(next);
+    if (!next) setQueue([]);
+    try {
+      localStorage.setItem("echoes-cutscenes", next ? "on" : "off");
+    } catch {
+      /* ignore */
+    }
+  };
+  const nextCutscene = () => setQueue((q) => q.slice(1));
+
   // Solo play: when it is the computer's turn, play turns (one at a time so you can follow along) until it is yours.
   const [playing, setPlaying] = useState(false);
   const lastPlayed = useRef("");
@@ -122,6 +154,12 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
           {!playing && solo.aiTurn && <Button variant="secondary" className="ml-2 min-h-8 px-3" onClick={() => { lastPlayed.current = ""; router.refresh(); }}>Play now</Button>}
         </p>
       )}
+      <div className="flex justify-end">
+        <button type="button" aria-pressed={cutscenes} onClick={toggleCutscenes} className="min-h-9 rounded border border-border px-3 text-sm text-muted hover:border-gold hover:text-goldBright">
+          Cutscenes: {cutscenes ? "on" : "off"}
+        </button>
+      </div>
+      <AnimatePresence>{queue[0] && view && <BattleCutscene key={queue[0].id} event={queue[0].e} encounterName={view.name} onDone={nextCutscene} />}</AnimatePresence>
       <EncounterPicker campaignId={campaignId} isDm={isDm} encounters={encounters} current={view?.id} run={run} pending={pending} />
       {view ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">

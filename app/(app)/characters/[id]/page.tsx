@@ -18,6 +18,7 @@ import { combineHouseRules, readHouseRules } from "@/lib/campaigns/houseRules";
 import { prisma } from "@/lib/prisma";
 import { SRD_SUBCLASSES, showCreature, showSpell, srdOnly, srdWhere } from "@/lib/srd";
 import { InventoryPanel } from "./InventoryPanel";
+import { HeroReveal } from "@/app/components/cutscene/MomentScenes";
 import { LevelUpPanel } from "./LevelUpPanel";
 import { CompanionsPanel } from "./CompanionsPanel";
 import { SheetTools } from "./SheetTools";
@@ -48,8 +49,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return { title: c?.name ?? "Hero" };
 }
 
-export default async function CharacterSheet({ params }: { params: Promise<{ id: string }> }) {
+export default async function CharacterSheet({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ new?: string }> }) {
   const user = await requireUser();
+  const isNew = (await searchParams).new === "1";
   const c = await getOwnedCharacter((await params).id, user.id);
   if (!c) notFound();
 
@@ -112,6 +114,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
 
   return (
     <article className="flex flex-col gap-8 pb-24 md:pb-0">
+      {isNew && <HeroReveal name={c.name} classIndex={classes[0]?.classIndex ?? "fighter"} line={`${titleCase(c.subraceIndex ?? c.raceIndex)} ${titleCase(classes[0]?.classIndex ?? "")}, joins the Keep.`} />}
       <Link href="/characters" className="eyebrow hover:text-goldBright">
         ← All heroes
       </Link>
@@ -275,7 +278,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
 
       <Ornament />
 
-      <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} prereq={prereqContext(c)} subclassAllow={srdOnly() ? SRD_SUBCLASSES : undefined} allowMulticlass={house.multiclass} allowFeats={house.feats} canUndo={Boolean(c.resources && typeof c.resources === "object" && !Array.isArray(c.resources) && (c.resources as { _undo?: string })._undo)} />
+      <LevelUpPanel id={c.id} name={c.name} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} prereq={prereqContext(c)} subclassAllow={srdOnly() ? SRD_SUBCLASSES : undefined} allowMulticlass={house.multiclass} allowFeats={house.feats} canUndo={Boolean(c.resources && typeof c.resources === "object" && !Array.isArray(c.resources) && (c.resources as { _undo?: string })._undo)} />
 
       <SheetTools id={c.id} portraitUrl={c.portraitUrl} />
 
