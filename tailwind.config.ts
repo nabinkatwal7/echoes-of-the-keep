@@ -24,6 +24,7 @@ export default {
         onGold: "var(--on-gold)",
       },
       fontFamily: {
+        pixel: ["var(--font-pixel)", "ui-monospace", "monospace"],
         display: ["var(--font-display)", "Georgia", "serif"],
         body: ["var(--font-body)", "Georgia", "serif"],
       },

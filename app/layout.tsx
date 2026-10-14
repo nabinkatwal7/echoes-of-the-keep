@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Atkinson_Hyperlegible, Cinzel, EB_Garamond } from "next/font/google";
+import { Atkinson_Hyperlegible, Cinzel, EB_Garamond, Pixelify_Sans } from "next/font/google";
+import { MotionRoot } from "./components/motion/MotionRoot";
 import { RegisterSW } from "./components/RegisterSW";
 import { SiteFooter } from "./components/layout/SiteFooter";
 import { SiteHeader } from "./components/layout/SiteHeader";
@@ -7,6 +8,7 @@ import "./globals.css";
 
 const display = Cinzel({ variable: "--font-display", subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 const body = EB_Garamond({ variable: "--font-body", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const pixel = Pixelify_Sans({ variable: "--font-pixel", subsets: ["latin"] });
 const readable = Atkinson_Hyperlegible({ variable: "--font-readable", subsets: ["latin"], weight: ["400", "700"] });
 
 export const metadata: Metadata = {
@@ -24,14 +26,16 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${display.variable} ${body.variable} ${readable.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${display.variable} ${body.variable} ${readable.variable} ${pixel.variable}`}>
       <body className="flex min-h-screen flex-col antialiased">
         <script dangerouslySetInnerHTML={{ __html: "try{var r=document.documentElement;var t=localStorage.getItem('emberhall-theme');r.dataset.theme=(t==='light'||t==='dark')?t:(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');var c=localStorage.getItem('dnd-contrast');var f=localStorage.getItem('dnd-font');if(c)r.dataset.contrast=c;if(f)r.dataset.font=f}catch(e){}" }} />
         <a href="#main" className="skip-link">Skip to content</a>
         <RegisterSW />
-        <SiteHeader />
-        <div id="main" tabIndex={-1} className="flex-1 outline-none">{children}</div>
-        <SiteFooter />
+        <MotionRoot>
+          <SiteHeader />
+          <div id="main" tabIndex={-1} className="flex-1 outline-none">{children}</div>
+          <SiteFooter />
+        </MotionRoot>
       </body>
     </html>
   );

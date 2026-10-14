@@ -4,6 +4,10 @@ What was built, grouped by area, newest first. The project has no version number
 
 ## 2026-10-14
 
+### A cinematic landing page
+- The home page opens on a five-layer pixel scene: a stormy sky with an eldritch moon, mountains and cathedral ruins under drifting mist, a campfire that lights the scene, rising embers that shy away from the cursor, and vines inside a 16-bit frame. GSAP runs the entrance, idle loops and parallax; Framer Motion runs the shockwave, spring-in text, cards and scroll reveals (sections, counters, bestiary tiles). Everything is decoration and stops for reduced motion.
+- New sections: class parade, animated counters, how it goes, bestiary, solo-play pitch, closing call. A thin progress bar follows the scroll.
+
 ### Echoes of the Keep: new name, light and dark themes, pixel art
 - **Renamed to Echoes of the Keep.** The product name is now Echoes of the Keep; "5th Edition" and the not-affiliated notices are unchanged.
 - **Light and dark themes.** The header and footer have an Auto / Light / Dark switch (Auto follows the device). The choice is remembered, applied before the page paints, and every colour is a theme token. Both themes pass the axe scan; high contrast still overrides either.

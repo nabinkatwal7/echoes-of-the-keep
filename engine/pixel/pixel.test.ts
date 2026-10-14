@@ -3,6 +3,7 @@ import { Canvas, hashString, seeded } from "./canvas";
 import { HERO_CLASSES, HERO_H, HERO_W, folkSprite, heroSprite } from "./heroes";
 import { MONSTER_SHAPES, MON_H, MON_W, monsterSprite, shapeFor } from "./monsters";
 import { SCENE_H, SCENE_THEMES, SCENE_W, sceneSprite } from "./scenes";
+import { FIRE_H, FIRE_W, LEAF_H, LEAF_W, RIDGE_H, RIDGE_W, SKY_H, SKY_W, campfireSprite, foliageSprite, ridgeSprite, skySprite } from "./vista";
 import type { Sprite } from "./canvas";
 
 /** A sprite is valid when every row is the same width and every colour it uses is in its palette. */
@@ -107,5 +108,17 @@ describe("scenes", () => {
   it("the seed changes the details and the same seed repeats them", () => {
     expect(sceneSprite("wilds", 1)).toEqual(sceneSprite("wilds", 1));
     expect(sceneSprite("wilds", 1).rows.join("")).not.toBe(sceneSprite("wilds", 2).rows.join(""));
+  });
+});
+
+describe("landing scene pieces", () => {
+  it("sky, ridge, campfire frames and foliage are rectangular and use only palette colours", () => {
+    for (const [s, w, h] of [[skySprite(), SKY_W, SKY_H], [ridgeSprite(), RIDGE_W, RIDGE_H], [campfireSprite(0), FIRE_W, FIRE_H], [campfireSprite(1), FIRE_W, FIRE_H], [foliageSprite(), LEAF_W, LEAF_H]] as const) {
+      expect(problems(s, w, h)).toEqual([]);
+      expect(filled(s)).toBeGreaterThan(40);
+    }
+  });
+  it("the two fire frames differ so the flame can dance", () => {
+    expect(campfireSprite(0).rows.join("")).not.toBe(campfireSprite(1).rows.join(""));
   });
 });

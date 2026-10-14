@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 /* Candlelit tome: ink-dark leather, bronze borders, gold leaf accents, parchment text */
-:root {
+:root,
+.force-dark {
   --background: #100c08;
   --foreground: #eadfc6;
   --surface: #1b1510;
