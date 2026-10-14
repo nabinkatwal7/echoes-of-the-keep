@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { HAS_HANDBOOK } from "./handbook";
 import { importers } from "./importers";
 import { srdRows } from "./srdSeed";
 
 const load = (name: string) => importers.find((i) => i.name === name)!.load() as { index: string; name: string; text?: string }[];
 
-describe("SRD-only seed", () => {
+describe.skipIf(!HAS_HANDBOOK)("SRD-only seed", () => {
   it("keeps SRD spells and drops the rest", () => {
     const all = load("spells");
     const kept = srdRows("spells", all);

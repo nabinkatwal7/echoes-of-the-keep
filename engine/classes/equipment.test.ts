@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { HAS_HANDBOOK } from "../../content/build/handbook";
 import { importers } from "../../content/build/importers";
 import { CLASS_RULES } from "./rules";
 import { STARTING_GOLD, STARTING_KITS, WEAPON_PROFICIENCIES, armorProficiencies, weaponProficient } from "./equipment";
@@ -34,7 +35,7 @@ describe("class data tables", () => {
       expect(STARTING_KITS[c], c).toBeDefined();
     }
   });
-  it("every kit item exists in the equipment catalog", () => {
+  it.skipIf(!HAS_HANDBOOK)("every kit item exists in the equipment catalog", () => {
     const catalog = new Set((importers.find((i) => i.name === "equipment")!.load() as { index: string }[]).map((e) => e.index));
     for (const [cls, kit] of Object.entries(STARTING_KITS)) for (const item of kit) expect(catalog.has(item.index), `${cls}: ${item.index}`).toBe(true);
   });

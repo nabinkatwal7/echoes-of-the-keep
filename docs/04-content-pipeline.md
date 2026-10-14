@@ -1,5 +1,7 @@
 # 04 — Content Pipeline
 
+> The PDF and `content/extracted/` are **not in the repository** (they are git-ignored). Supply your own copy to run the pipeline; see [licensing.md](licensing.md).
+
 How the handbook's rules content gets into the database as validated, structured data.
 
 ## Licensing note (read first)

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { HAS_HANDBOOK } from "../content/build/handbook";
 import { afterEach, describe, expect, it } from "vitest";
 import { allowed, creatureInSrd, gearInSrd, spellInSrd, srdOnly, srdViolations, srdWhere } from "./srd";
 
@@ -38,7 +39,7 @@ describe("SRD-only mode", () => {
     expect(creatureInSrd("Aboleth")).toBe(true);
   });
 
-  it("keeps the 319 SRD spells from the local extract and drops the rest", () => {
+  it.skipIf(!HAS_HANDBOOK)("keeps the 319 SRD spells from the local extract and drops the rest", () => {
     const spells = JSON.parse(readFileSync("content/extracted/structured/spells.json", "utf8")) as { name: string }[];
     const extra = JSON.parse(readFileSync("content/overrides/spells-extra.json", "utf8")) as { name: string }[];
     const kept = [...spells, ...extra].filter((s) => spellInSrd(s.name));

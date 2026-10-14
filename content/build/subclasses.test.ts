@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { HAS_HANDBOOK } from "./handbook";
 import { SUBCLASSES } from "../../engine/classes/subclasses";
 import { extractSubclasses, loadSubclasses } from "./subclasses";
 
@@ -13,8 +14,8 @@ describe("extractSubclasses", () => {
   });
 });
 
-describe("handbook subclasses", () => {
-  const rows = loadSubclasses();
+describe.skipIf(!HAS_HANDBOOK)("handbook subclasses", () => {
+  const rows = HAS_HANDBOOK ? loadSubclasses() : [];
   it("finds all 40 with real content", () => {
     expect(SUBCLASSES).toHaveLength(40);
     expect(rows).toHaveLength(40);

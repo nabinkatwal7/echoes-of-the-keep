@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { HAS_HANDBOOK } from "./handbook";
 import { loadRuleSections, splitChapter } from "./ruleSections";
 
 describe("splitChapter", () => {
@@ -15,7 +16,7 @@ describe("splitChapter", () => {
   });
 });
 
-describe("loadRuleSections", () => {
+describe.skipIf(!HAS_HANDBOOK)("loadRuleSections", () => {
   it("loads the handbook chapters with real sections", () => {
     const rows = loadRuleSections();
     const titles = (c: string) => rows.filter((r) => r.chapter === c).map((r) => r.title);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { HAS_HANDBOOK } from "../../content/build/handbook";
 import { importers } from "../../content/build/importers";
 import { addCondition, conditionSet, isCondition, removeCondition, tickConditions } from "../conditions/timers";
 import { mountMoveCost, underwaterAttack } from "./environment";
@@ -8,11 +9,11 @@ import { healthWord, parseDefenses, parseMonsterActions } from "./monsters";
 const creature = (index: string) => (importers.find((i) => i.name === "creatures")!.load() as { index: string; text: string }[]).find((c) => c.index === index)!;
 
 describe("monster actions", () => {
-  it("parses a melee attack with dice", () => {
+  it.skipIf(!HAS_HANDBOOK)("parses a melee attack with dice", () => {
     const a = parseMonsterActions(creature("wolf").text);
     expect(a.attacks[0]).toMatchObject({ name: "Bite", melee: true, toHit: 4, reach: 5, damage: "2d4+2", damageType: "piercing", flat: false });
   });
-  it("parses flat damage", () => {
+  it.skipIf(!HAS_HANDBOOK)("parses flat damage", () => {
     const a = parseMonsterActions(creature("cat").text);
     expect(a.attacks[0]).toMatchObject({ name: "Claws", toHit: 0, damage: "1", damageType: "slashing", flat: true });
   });
@@ -23,7 +24,7 @@ describe("monster actions", () => {
     expect(a.attacks[1].range).toEqual({ normal: 30, long: 120 });
     expect(a.multiattack?.count).toBe(2);
   });
-  it("every Appendix D creature with an attack parses at least one", () => {
+  it.skipIf(!HAS_HANDBOOK)("every Appendix D creature with an attack parses at least one", () => {
     const all = importers.find((i) => i.name === "creatures")!.load() as { index: string; text: string }[];
     const withAttacks = all.filter((c) => parseMonsterActions(c.text).attacks.length > 0);
     expect(withAttacks.length).toBeGreaterThanOrEqual(22);

@@ -2,7 +2,7 @@
 
 A web app for playing D&D 5th Edition end to end: a rules wiki, a hero builder, live campaigns with a human Dungeon Master, a combat tracker with spells, a Dungeon Master toolkit, and **solo play** with a computer Dungeon Master and companions.
 
-> An unofficial fan project, not affiliated with or endorsed by Wizards of the Coast. The *Player's Handbook* is copyrighted: keep the extracted text private, or run in SRD-only mode. Read [docs/licensing.md](docs/licensing.md) before putting this on the internet.
+> An unofficial fan project, not affiliated with or endorsed by Wizards of the Coast. Open source under the [MIT licence](LICENSE). It ships **no** *Player's Handbook* text: see [Content](#content) and [NOTICE.md](NOTICE.md).
 
 ## What it does
 
@@ -46,12 +46,18 @@ For a production build set `AUTH_TRUST_HOST=true` (or `AUTH_URL`), then `pnpm bu
 | `DATABASE_URL` | PostgreSQL connection string |
 | `AUTH_SECRET` | Signs sessions, at least 16 characters. Changing it signs everyone out |
 | `AUTH_TRUST_HOST` / `AUTH_URL` | Needed when serving from a real host |
-| `CONTENT_LICENSE_MODE` | `FULL` (default, private use) or `SRD_ONLY` (public-safe subset) |
+| `CONTENT_LICENSE_MODE` | `FULL` (default, for a private copy) or `SRD_ONLY` (only SRD 5.1 names and options, for a public site) |
 | `LOG_LEVEL` | `debug`, `info` (default), `warn`, `error` |
 
 ## Content
 
-The rules content comes from a copy of the *Player's Handbook* you supply as `DD-Player-Handbook.pdf` (`pnpm content:extract` reads it; this needs Python, `pdftotext` and `pip install wordninja`). `pnpm db:seed` loads it. `pnpm db:seed:srd` loads only the parts that appear in the free SRD 5.1 and removes the rest.
+This repository does **not** include the *Player's Handbook*, its text, or data extracted from it (those are copyrighted). The app reads its rules from a database you fill yourself:
+
+1. Put a legitimate copy of the handbook at `DD-Player-Handbook.pdf` (git-ignored).
+2. `pnpm content:extract` (needs Python 3 and `pdftotext` from poppler on your PATH; it writes the git-ignored `content/extracted/`).
+3. `pnpm db:seed` loads the extract and the SRD monsters; `pnpm db:seed:srd` loads only the SRD subset.
+
+Keep the extract and any database built from it private. If you host a public site, run with `CONTENT_LICENSE_MODE=SRD_ONLY` and read [docs/licensing.md](docs/licensing.md) first. See [CONTRIBUTING.md](CONTRIBUTING.md) to help.
 
 ## Scripts
 

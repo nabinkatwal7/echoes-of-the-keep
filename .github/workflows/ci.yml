@@ -30,8 +30,6 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm exec prisma migrate deploy
-      - run: pnpm db:seed
-      - run: pnpm test:db
       - run: pnpm build
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm exec playwright test
+      # Database and browser tests need the rules data, which is built from a Player's Handbook PDF that is not in this
+      # repository. Run `pnpm test:db` and `pnpm e2e` locally after seeding (see CONTRIBUTING.md).

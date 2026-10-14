@@ -1,5 +1,7 @@
 # Licensing and attribution
 
+> **Open-source release.** This repository is MIT-licensed code and contains no Wizards of the Coast text: the handbook PDF and `content/extracted/` were removed from the tree and from the git history, and are git-ignored. Everyone who runs the app supplies their own copy. See [NOTICE.md](../NOTICE.md).
+
 This is a fan project built from a copy of the *Player's Handbook* supplied by its owner. Read this before putting the app on the public internet.
 
 ## What is and is not freely usable

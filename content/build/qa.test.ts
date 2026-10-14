@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { HAS_HANDBOOK } from "./handbook";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { wikiSections } from "../../data/wikiSections";
@@ -7,7 +8,7 @@ import { importers } from "./importers";
 const rows = (name: string) => importers.find((i) => i.name === name)!.load() as Record<string, any>[];
 
 // Content QA gates: these fail CI if an extraction or import regression drops data.
-describe("content counts (regression gates)", () => {
+describe.skipIf(!HAS_HANDBOOK)("content counts (regression gates)", () => {
   it("has the expected number of entities", () => {
     expect(rows("alignments")).toHaveLength(9);
     expect(rows("conditions")).toHaveLength(15);
@@ -29,7 +30,7 @@ describe("content counts (regression gates)", () => {
   });
 });
 
-describe("referential integrity", () => {
+describe.skipIf(!HAS_HANDBOOK)("referential integrity", () => {
   it("every class has all 20 levels in order", () => {
     for (const c of rows("classes")) expect(c.levelTable.map((r: { level: number }) => r.level)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
   });

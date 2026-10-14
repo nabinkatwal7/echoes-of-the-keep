@@ -47,3 +47,14 @@ next-env.d.ts
 # playwright output
 /test-results/
 /playwright-report/
+
+# copyrighted source material: supply your own copy to run the importer (see docs/04-content-pipeline.md)
+*.pdf
+/content/extracted/
+
+# editor and assistant settings
+/.claude/
+/.vscode/
+
+# scratch notes
+/instructions.txt

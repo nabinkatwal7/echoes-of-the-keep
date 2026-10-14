@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { HAS_HANDBOOK } from "./handbook";
 import { importers } from "./importers";
 
-describe("importers", () => {
+describe.skipIf(!HAS_HANDBOOK)("importers", () => {
   it.each(importers.map((i) => [i.name, i] as const))("%s source data validates", (_name, importer) => {
     expect(importer.load().length).toBeGreaterThan(0);
   });

@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { HAS_HANDBOOK } from "../../content/build/handbook";
 import { importers } from "../../content/build/importers";
 import { customItem, equipmentForEngine, itemFromCatalog, parseWeight, setEquipped, totalWeight, type CatalogRow } from "./inventory";
 import { deriveStored } from "./derive";
 
-const catalog = importers.find((i) => i.name === "equipment")!.load() as (CatalogRow & { index: string })[];
+const catalog = HAS_HANDBOOK ? (importers.find((i) => i.name === "equipment")!.load() as (CatalogRow & { index: string })[]) : [];
 const row = (index: string) => catalog.find((r) => r.index === index)!;
 
 describe("parseWeight", () => {
@@ -12,7 +13,7 @@ describe("parseWeight", () => {
   });
 });
 
-describe("itemFromCatalog", () => {
+describe.skipIf(!HAS_HANDBOOK)("itemFromCatalog", () => {
   it("reads weapons", () => {
     const sword = itemFromCatalog(row("longsword"));
     expect(sword).toMatchObject({ kind: "weapon", damage: "1d8", melee: true, finesse: false, category: "Martial Melee Weapons", weight: 3 });
@@ -30,7 +31,7 @@ describe("itemFromCatalog", () => {
   });
 });
 
-describe("equipping", () => {
+describe.skipIf(!HAS_HANDBOOK)("equipping", () => {
   it("only one armor and one shield at a time", () => {
     let items = [itemFromCatalog(row("chainmail")), itemFromCatalog(row("leather")), itemFromCatalog(row("shield"))];
     items = setEquipped(items, items[0].id, true);
@@ -49,7 +50,7 @@ describe("equipping", () => {
   });
 });
 
-describe("equipment feeds the sheet", () => {
+describe.skipIf(!HAS_HANDBOOK)("equipment feeds the sheet", () => {
   const stored = (items: ReturnType<typeof itemFromCatalog>[]) => ({
     classes: [{ classIndex: "fighter", level: 1 }],
     baseScores: { str: 16, dex: 12, con: 14, int: 10, wis: 10, cha: 8 },

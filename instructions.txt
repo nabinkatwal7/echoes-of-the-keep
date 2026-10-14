@@ -1,3 +1,0 @@
-remove pdf and now unnecessary contents since website is built 
-prepare to open source the project
-open source the project 
