@@ -143,8 +143,8 @@ f63: opportunity attackers are reported on movement; the attack itself is made b
 f4: Playwright e2e not set up yet
 f15: only the 31 Appendix D creatures; SRD monsters still to import
 f102: a campaign can add a monster and a spell (damage, attack or healing) and use them in play; custom races, backgrounds, feats and items are not built
-f97: scripted evening-at-the-table database test (tests/playtest.db.test.ts); no public rules-notes page yet
-f100: review in docs/accessibility.md; no high-contrast theme or dyslexia font option yet
+f97: scripted evening-at-the-table database test and a public rules-notes page; not five live playtest groups
+f100: review in docs/accessibility.md; footer toggles high contrast and Atkinson Hyperlegible. Not yet checked with a screen reader on every page
 f101: scripts/load-test.mjs against a running server with demo data; no log virtualisation
 f103: account export and deletion, plus pnpm backup (pg_dump, keep 14); no campaign markdown export
 f104: review in docs/security-review.md; login throttle is per process and there is no password recovery

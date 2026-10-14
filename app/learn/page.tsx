@@ -72,7 +72,8 @@ export default function Learn() {
       <Card className="p-5">
         <h2 className="font-display text-xl text-goldBright">Keep going</h2>
         <p className="mt-2 leading-relaxed">
-          The <Link className="text-gold underline" href="/wiki/rules">rules chapters</Link> explain every detail, the{" "}
+          The <Link className="text-gold underline" href="/rules-notes">rules notes</Link> say where the app leaves a call to the DM. The{" "}
+          <Link className="text-gold underline" href="/wiki/rules">rules chapters</Link> explain every detail, the{" "}
           <Link className="text-gold underline" href="/wiki/conditions">conditions list</Link> covers what blinded or grappled really mean, and the{" "}
           <Link className="text-gold underline" href="/wiki/spells">spell list</Link> is searchable by class and level.
         </p>
