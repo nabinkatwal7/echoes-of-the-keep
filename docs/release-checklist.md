@@ -26,3 +26,5 @@ Use this before pointing a real group at a deployment. Default mode is private (
 
 - [ ] Watch logs for `"level":"error"`
 - [ ] Note the version in the commit you deployed
+
+- [ ] A person has created a hero and made one attack in combat using NVDA or VoiceOver, and noted any problems in docs/accessibility.md.
