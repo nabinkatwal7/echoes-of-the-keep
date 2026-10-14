@@ -3,6 +3,7 @@ import { Canvas, hashString, seeded } from "./canvas";
 import { HERO_CLASSES, HERO_H, HERO_W, folkSprite, heroSprite } from "./heroes";
 import { MONSTER_SHAPES, MON_H, MON_W, monsterSprite, shapeFor } from "./monsters";
 import { SCENE_H, SCENE_THEMES, SCENE_W, sceneSprite } from "./scenes";
+import { ICONS, ICON_SIZE } from "./icons";
 import { FIRE_H, FIRE_W, LEAF_H, LEAF_W, RIDGE_H, RIDGE_W, SKY_H, SKY_W, campfireSprite, foliageSprite, ridgeSprite, skySprite } from "./vista";
 import type { Sprite } from "./canvas";
 
@@ -120,5 +121,14 @@ describe("landing scene pieces", () => {
   });
   it("the two fire frames differ so the flame can dance", () => {
     expect(campfireSprite(0).rows.join("")).not.toBe(campfireSprite(1).rows.join(""));
+  });
+});
+
+describe("section icons", () => {
+  it("every icon is 12 by 12 and has pixels", () => {
+    for (const [name, s] of Object.entries(ICONS)) {
+      expect(problems(s, ICON_SIZE, ICON_SIZE), name).toEqual([]);
+      expect(filled(s), name).toBeGreaterThan(25);
+    }
   });
 });
