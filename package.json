@@ -18,7 +18,9 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "test:db": "cross-env RUN_DB_TESTS=1 vitest run tests",
-    "spells:coverage": "tsx scripts/spell-coverage.ts"
+    "spells:coverage": "tsx scripts/spell-coverage.ts",
+    "backup": "node scripts/backup.mjs",
+    "load-test": "node scripts/load-test.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

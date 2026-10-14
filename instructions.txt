@@ -115,17 +115,17 @@ Details for each phase: docs/phases/*.md
 [x] f96, High-level (5/10/15/20) scenario tests
 
 === PHASE 8: POLISH AND LAUNCH ===
-[ ] f97, Rules verification and playtests
+[~] f97, Rules verification and playtests
 [ ] f98, Onboarding, tutorial and learn-to-play page
 [ ] f99, Mobile and PWA polish
-[ ] f100, Accessibility audit (WCAG 2.2 AA)
-[ ] f101, Performance and load testing
+[~] f100, Accessibility audit (WCAG 2.2 AA)
+[~] f101, Performance and load testing
 [ ] f102, Homebrew content support
-[ ] f103, Backups, data export and account deletion
-[ ] f104, Security and privacy review
-[ ] f105, Monitoring, logging and runbooks
+[~] f103, Backups, data export and account deletion
+[~] f104, Security and privacy review
+[~] f105, Monitoring, logging and runbooks
 [~] f106, Licensing and attribution (SRD-only mode)
-[ ] f107, User docs and release checklist
+[~] f107, User docs and release checklist
 
 PARTIAL NOTES
 f85: light sources burn down with the clock and ambient light follows the time of day; falling, suffocation and starvation rules exist in the engine but have no table UI yet (the DM applies damage by hand)
@@ -142,6 +142,13 @@ f67: multiattack and flat/dice attacks are read from stat blocks; recharge and l
 f63: opportunity attackers are reported on movement; the attack itself is made by the player or DM with the Opportunity button
 f4: Playwright e2e not set up yet
 f15: only the 31 Appendix D creatures; SRD monsters still to import
+f97: scripted evening-at-the-table database test (tests/playtest.db.test.ts); no public rules-notes page yet
+f100: review in docs/accessibility.md; no high-contrast theme or dyslexia font option yet
+f101: scripts/load-test.mjs against a running server with demo data; no log virtualisation
+f103: account export and deletion, plus pnpm backup (pg_dump, keep 14); no campaign markdown export
+f104: review in docs/security-review.md; login throttle is per process and there is no password recovery
+f105: JSON logs, /api/health and docs/runbook.md
+f107: docs/release-checklist.md and the learn page; no separate player guide, DM guide or FAQ yet
 f106: SRD_ONLY hides non-SRD choices and handbook prose; the database still stores handbook wording, and racial trait sentences are still parsed in the creator
 f36: level-up is generic (HP average, ASI or feat, multiclass); subclass choice and new class features per level not applied yet
 f44: campaign name and premise only; house-rule settings not built yet
