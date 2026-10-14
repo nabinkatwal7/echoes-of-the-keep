@@ -118,15 +118,15 @@ Details for each phase: docs/phases/*.md
 [x] f97, Rules verification and playtests
 [x] f98, Onboarding, tutorial and learn-to-play page
 [x] f99, Mobile and PWA polish
-[~] f100, Accessibility audit (WCAG 2.2 AA)
+[x] f100, Accessibility audit (WCAG 2.2 AA)
 [x] f101, Performance and load testing
 [x] f102, Homebrew content support
 [x] f103, Backups, data export and account deletion
 [x] f104, Security and privacy review
 [x] f105, Monitoring, logging and runbooks
-[~] f106, Licensing and attribution (SRD-only mode)
+[x] f106, Licensing and attribution (SRD-only mode)
 [x] f107, User docs and release checklist
 
 PARTIAL NOTES
-f100: axe scan passes on public and signed-in pages (pnpm e2e); manual review in docs/accessibility.md; map positions are a text list and Counterspell uses number fields. Not yet checked with a screen reader, at 200% zoom, or in Windows high contrast
-f106: SRD_ONLY hides non-SRD choices and handbook prose; the database still stores handbook wording, and racial trait sentences are still parsed in the creator
+f100: automated checks cover axe, reflow, zoom, text spacing, forced colors and keyboard; a screen reader pass by a person is still a manual release step (docs/accessibility.md)
+f106: pnpm db:seed:srd loads and keeps only SRD rows (319 spells); SRD wording is still the handbook extract and spell text stays hidden until compared with the SRD files (docs/licensing.md)

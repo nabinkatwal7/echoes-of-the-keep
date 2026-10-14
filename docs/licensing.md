@@ -23,10 +23,14 @@ Set `CONTENT_LICENSE_MODE=SRD_ONLY` to restrict what players can choose and see 
 - Spells, equipment and creatures are matched by name against the SRD 5.1 lists (spacing and a proper-name prefix are ignored, so the extract's "Me lf's Acid Arrow" still counts). Direct links to anything else return 404. Search, the spell picker and the encounter list use the same filter. Homebrew rows (`source: HOMEBREW` or a campaign id) stay visible inside that campaign.
 - Wiki pages, including rules chapters, show a one-line note instead of handbook prose.
 
-**Still to do before a public launch** (f106):
+**Seeding for a public site.** Run `pnpm db:seed:srd` (same as `prisma db seed` with `CONTENT_LICENSE_MODE=SRD_ONLY`). It writes only SRD rows, empties class and subclass prose, writes no handbook chapters, and **deletes** anything else already in the database. On a test run it left 319 spells (the SRD's own count), 13 races, 12 subclasses, 1 background, 1 feat, 189 equipment rows and no rule sections. Deploy that database, not the full one.
 
-1. The database still holds handbook wording. The free-rules build hides it, but a public deploy should replace those rows with SRD text (re-run the content pipeline on SRD source files) so the prose is not sitting in the database at all.
-2. Racial trait sentences are still sent to the character creator, because ability bonuses and speed are parsed from them.
+What this does not prove:
+
+1. SRD rows still carry the text as extracted from the handbook PDF. Where the SRD covers an item the wording is the same, but the extract has spacing errors, and nobody has compared each entry with the SRD file. Spell descriptions stay hidden in the free-rules build for that reason. Before showing them, compare against the SRD text or re-import from the SRD files.
+2. Names are matched against the SRD name lists (`lib/srdCatalog.ts`), so a handbook item that shares an SRD name is kept even if its wording differs slightly.
+3. Racial trait sentences for the 13 SRD races still go to the character creator because ability bonuses and speed are read from them. They are SRD content.
+4. This is not legal advice (see below).
 
 ## Attribution to display
 

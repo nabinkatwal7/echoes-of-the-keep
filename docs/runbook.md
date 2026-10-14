@@ -6,7 +6,7 @@
 | --- | --- |
 | Start Postgres locally (Docker) | `pnpm db:up` |
 | Apply migrations | `pnpm exec prisma migrate deploy` |
-| Load the rules content | `pnpm db:seed` |
+| Load the rules content | `pnpm db:seed` (free-rules build: `pnpm db:seed:srd`, which also removes non-SRD rows) |
 | Development server | `pnpm dev` |
 | Production build and start | `pnpm build` then `pnpm start` |
 | Demo data (DM, player, campaign) | `pnpm exec tsx scripts/demo-seed.ts` |

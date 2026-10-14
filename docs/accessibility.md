@@ -27,11 +27,14 @@ A manual review against the success criteria that matter most for this interface
 2. Drag-free movement means moving a token is two clicks (select, then choose a square). That is accessible, but slow for long moves.
 3. Counterspell uses two number fields (the incoming spell's level, and the slot you spend) instead of browser prompts.
 4. Dice results in the chronicle are announced as a whole line; they could be shortened for speech.
-5. Not yet tested at 200% text zoom on every page, or with Windows high-contrast mode.
+5. Zoom, text spacing and forced colors are tested on the public pages only, not every signed-in page.
+6. No screen reader pass has been done. That needs a person with NVDA or VoiceOver; the steps are below and in the release checklist.
 
 ## Automated scan
 
 `pnpm e2e` runs axe-core (WCAG 2.0, 2.1 and 2.2 A/AA rules) on the public pages and, with the demo data seeded (`pnpm exec tsx scripts/demo-seed.ts`), on the heroes, account, campaign, table, combat, DM screen, world and journal pages. All pass. The first run found a real problem: the battle and exploration maps used `role="grid"` without rows, which screen readers cannot navigate. They are now labelled groups of buttons.
+
+The same suite checks, in a real browser: no sideways scrolling at 320 px (400% zoom) and 640 px (200% zoom), text-spacing overrides (WCAG 1.4.12), Windows-style forced-colors mode (axe stays clean and buttons keep their size), and that the first Tab stop is a visible skip link that moves focus to the page.
 
 ## How to check
 

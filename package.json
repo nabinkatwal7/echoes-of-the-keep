@@ -19,6 +19,7 @@
     "format": "prettier --write .",
     "test:db": "cross-env RUN_DB_TESTS=1 vitest run tests",
     "spells:coverage": "tsx scripts/spell-coverage.ts",
+    "db:seed:srd": "cross-env CONTENT_LICENSE_MODE=SRD_ONLY prisma db seed",
     "backup": "node scripts/backup.mjs",
     "purge:accounts": "tsx scripts/purge-deleted.ts",
     "load-test": "node scripts/load-test.mjs",
