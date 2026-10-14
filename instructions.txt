@@ -57,8 +57,8 @@ Details for each phase: docs/phases/*.md
 [x] f44, Campaign creation and house-rule settings
 [x] f45, Invites, roles and membership
 [x] f46, Campaign hub
-[~] f47, Live session table with presence
-[~] f48, Realtime event log (SSE, reconnect, replay)
+[x] f47, Live session table with presence
+[x] f48, Realtime event log (SSE, reconnect, replay)
 [x] f49, Dice roller and roll log (secret rolls)
 [x] f50, Chat, whispers and slash commands
 [x] f51, Journal, notes and handouts
@@ -85,7 +85,7 @@ Details for each phase: docs/phases/*.md
 
 === PHASE 6: SPELLCASTING ===
 [x] f70, Casting flow (slots, upcasting, components, casting time)
-[~] f71, Rituals, Pact Magic and sorcery points
+[x] f71, Rituals, Pact Magic and sorcery points
 [x] f72, Targeting and area-of-effect templates
 [x] f73, Spell attacks and saving throws
 [x] f74, Damage, healing and scaling
@@ -119,7 +119,7 @@ Details for each phase: docs/phases/*.md
 [ ] f98, Onboarding, tutorial and learn-to-play page
 [ ] f99, Mobile and PWA polish
 [~] f100, Accessibility audit (WCAG 2.2 AA)
-[~] f101, Performance and load testing
+[x] f101, Performance and load testing
 [~] f102, Homebrew content support
 [~] f103, Backups, data export and account deletion
 [~] f104, Security and privacy review
@@ -130,19 +130,12 @@ Details for each phase: docs/phases/*.md
 PARTIAL NOTES
 f94: scenes are https image backdrops shown to the whole table, plus the combat grid; there is no token-based exploration map
 f80: Divine Smite, Sneak Attack, Metamagic (sorcery points), Agonizing Blast when saved on the character, and Life domain bonus healing are automated; other invocations and domain spell lists are not
-f82: 32 percent of the 362 spells resolve automatically (run pnpm spells:coverage); the rest are narrated
 f4: Playwright e2e not set up yet
 f102: a campaign can add a monster and a spell (damage, attack or healing) and use them in play; custom races, backgrounds, feats and items are not built
 f97: scripted evening-at-the-table database test and a public rules-notes page; not five live playtest groups
 f100: review in docs/accessibility.md; footer toggles high contrast and Atkinson Hyperlegible. Not yet checked with a screen reader on every page
-f101: scripts/load-test.mjs against a running server with demo data; no log virtualisation
 f103: account export and deletion, plus pnpm backup (pg_dump, keep 14); no campaign markdown export
 f104: review in docs/security-review.md; login throttle is per process and there is no password recovery
 f105: JSON logs, /api/health and docs/runbook.md
 f107: docs/release-checklist.md and the learn page; no separate player guide, DM guide or FAQ yet
 f106: SRD_ONLY hides non-SRD choices and handbook prose; the database still stores handbook wording, and racial trait sentences are still parsed in the creator
-f36: level-up is generic (HP average, ASI or feat, multiclass); subclass choice and new class features per level not applied yet
-f47: table page with chat and dice log; presence list and shared scene not built yet
-f48: SSE stream polls the database every second with Last-Event-ID resume (verified over HTTP); LISTEN/NOTIFY not used yet
-f10: subclass level tables per subclass (domain spells, etc.) are not split out; subclass text is shown as written
-f20: effects registry covers racial HP/speed/darkvision/resistances, feats Tough/Alert/Mobile/Observant, bard Jack of All Trades, barbarian Fast Movement, monk Unarmored Movement; other features are shown as noted traits

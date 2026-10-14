@@ -259,7 +259,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
 
       <Ornament />
 
-      <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} prereq={prereqContext(c)} subclassAllow={srdOnly() ? SRD_SUBCLASSES : undefined} allowMulticlass={house.multiclass} allowFeats={house.feats} />
+      <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} prereq={prereqContext(c)} subclassAllow={srdOnly() ? SRD_SUBCLASSES : undefined} allowMulticlass={house.multiclass} allowFeats={house.feats} canUndo={Boolean(c.resources && typeof c.resources === "object" && !Array.isArray(c.resources) && (c.resources as { _undo?: string })._undo)} />
 
       <SheetTools id={c.id} />
 

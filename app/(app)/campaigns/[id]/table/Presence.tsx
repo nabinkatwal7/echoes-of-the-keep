@@ -15,15 +15,14 @@ export function Presence({ campaignId, userId }: { campaignId: string; userId: s
     const tick = async () => {
       if (document.visibilityState !== "visible") return;
       try {
-        await fetch(url, { method: "POST" });
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(url, { method: "POST", cache: "no-store" });
         if (res.ok && alive) setMembers(((await res.json()) as { members: Member[] }).members);
       } catch {
         // offline: try again next tick
       }
     };
     void tick();
-    const t = setInterval(tick, 15000);
+    const t = setInterval(tick, 400);
     return () => {
       alive = false;
       clearInterval(t);

@@ -5,6 +5,7 @@ import { Card } from "@/app/components/ui/Card";
 import { SourceText } from "@/app/components/SourceText";
 import { PageHeader } from "@/app/components/ui/PageHeader";
 import { getClass } from "@/lib/content/reference";
+import { featuresAt, SUBCLASS_FEATURES } from "@/engine/classes/features";
 import { SUBCLASS_LEVEL } from "@/engine/classes/subclasses";
 import { prisma } from "@/lib/prisma";
 import { srdWhere } from "@/lib/srd";
@@ -66,7 +67,7 @@ export default async function ClassPage({ params }: { params: Promise<{ index: s
                 <tr key={r.level} className="border-b border-borderSoft even:bg-white/[0.02]">
                   <td className="px-4 py-2 font-display text-goldBright">{ordinal(r.level)}</td>
                   <td className="px-4 py-2">{r.proficiencyBonus}</td>
-                  <td className="px-4 py-2 text-foreground/85">{r.columns}</td>
+                  <td className="px-4 py-2 text-foreground/85">{featuresAt(c.index, r.level).map((f) => f.name).join(", ") || "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -88,6 +89,14 @@ export default async function ClassPage({ params }: { params: Promise<{ index: s
                   <span className="text-gold transition group-open:rotate-45" aria-hidden>+</span>
                 </summary>
                 <div className="border-t border-border/60 px-5 py-4">
+                  <ul className="mb-4 flex flex-col gap-2">
+                    {(SUBCLASS_FEATURES[s.index] ?? []).map((f) => (
+                      <li key={`${f.level}-${f.name}`}>
+                        <span className="font-display text-goldBright">{ordinal(f.level)}. {f.name}. </span>
+                        <span className="text-sm text-foreground/85">{f.description}</span>
+                      </li>
+                    ))}
+                  </ul>
                   <SourceText text={s.text} />
                 </div>
               </details>

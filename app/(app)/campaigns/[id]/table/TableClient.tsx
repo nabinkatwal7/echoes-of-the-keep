@@ -33,6 +33,7 @@ export function TableClient({
   initial: TableEvent[];
 }) {
   const [events, setEvents] = useState<TableEvent[]>(initial);
+  const [windowed, setWindowed] = useState(200);
   const [connection, setConnection] = useState<Connection>("connecting");
   const [text, setText] = useState("");
   const [error, setError] = useState("");
@@ -95,8 +96,13 @@ export function TableClient({
               The table is quiet. Roll something, or say hello.
             </p>
           )}
+          {events.length > windowed && (
+            <button type="button" className="mb-2 text-sm text-gold underline" onClick={() => setWindowed((n) => n + 200)}>
+              Load earlier ({events.length - windowed} hidden)
+            </button>
+          )}
           <ul className="flex flex-col gap-2">
-            {events.map((e) => (
+            {events.slice(-windowed).map((e) => (
               <EventLine key={e.id} event={e} mine={e.actorId === userId} />
             ))}
           </ul>

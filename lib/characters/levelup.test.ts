@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyLevelUp, canLevelUp, improvementDue, type LevelUpStored } from "./levelup";
+import { applyLevelUp, canLevelUp, improvementDue, undoLevelUp, withUndoSnapshot, type LevelUpStored } from "./levelup";
 
 const fighter = (over: Partial<LevelUpStored> = {}): LevelUpStored => ({
   classes: [{ classIndex: "fighter", level: 1 }],
@@ -94,5 +94,25 @@ describe("applyLevelUp", () => {
     expect(r.ok && r.update.classes[0].subclassIndex).toBe("school-of-evocation");
     const w2 = fighter({ classes: [{ classIndex: "wizard", level: 2, subclassIndex: "school-of-evocation" }], baseScores: { str: 8, dex: 14, con: 14, int: 16, wis: 10, cha: 10 }, xp: 900 });
     expect(applyLevelUp(w2, { classIndex: "wizard" }).ok).toBe(true);
+  });
+
+  it("names the features gained at the new level, including the subclass", () => {
+    const l2 = fighter({ classes: [{ classIndex: "fighter", level: 2 }], xp: 900 });
+    const r = applyLevelUp(l2, { classIndex: "fighter", subclassIndex: "champion" });
+    expect(r.ok && r.gained).toEqual(["Martial Archetype", "Improved Critical"]);
+  });
+
+  it("undo restores the character from before the last level-up", () => {
+    const before = fighter();
+    const r = applyLevelUp(before, { classIndex: "fighter" });
+    if (!r.ok) throw new Error("level up failed");
+    const resources = withUndoSnapshot({}, before);
+    const undone = undoLevelUp({ ...before, ...r.update, resources });
+    expect(undone.ok).toBe(true);
+    if (!undone.ok) return;
+    expect(undone.update.classes).toEqual(before.classes);
+    expect(undone.update.currentHp).toBe(before.currentHp);
+    expect(undone.update.resources._undo).toBeUndefined();
+    expect(undoLevelUp({ ...before, resources: {} }).ok).toBe(false);
   });
 });

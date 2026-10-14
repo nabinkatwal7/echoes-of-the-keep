@@ -10,7 +10,7 @@ import { CLASS_RULES } from "@/engine/classes/rules";
 import { subclassDueAt, subclassesFor } from "@/engine/classes/subclasses";
 import { checkPrerequisites, type PrereqContext } from "@/engine/feats";
 import { XP_THRESHOLDS, levelForXp, type ClassLevel } from "@/engine/progression";
-import { addExperience, levelUpCharacter } from "@/lib/characters/actions";
+import { addExperience, levelUpCharacter, undoLastLevelUp } from "@/lib/characters/actions";
 import { improvementDue, totalLevel, type ImprovementChoice } from "@/lib/characters/levelup";
 
 const titleCase = (s: string) => s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -25,6 +25,7 @@ export function LevelUpPanel({
   subclassAllow,
   allowMulticlass = true,
   allowFeats = true,
+  canUndo = false,
 }: {
   id: string;
   xp: number;
@@ -35,6 +36,7 @@ export function LevelUpPanel({
   subclassAllow?: readonly string[];
   allowMulticlass?: boolean;
   allowFeats?: boolean;
+  canUndo?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -46,6 +48,7 @@ export function LevelUpPanel({
   const [picks, setPicks] = useState<Ability[]>([]);
   const [feat, setFeat] = useState("");
   const [subclass, setSubclass] = useState("");
+  const [gained, setGained] = useState<string[]>([]);
 
   const level = totalLevel(classes);
   const xpReady = levelForXp(xp) > level;
@@ -55,11 +58,12 @@ export function LevelUpPanel({
   const subclassDue = subclassDueAt(classIndex, (existing?.level ?? 0) + 1) && !existing?.subclassIndex;
   const progress = nextAt ? Math.min(100, Math.round(((xp - XP_THRESHOLDS[level - 1]) / (nextAt - XP_THRESHOLDS[level - 1])) * 100)) : 100;
 
-  function run(fn: () => Promise<{ ok: boolean; errors?: string[] }>) {
+  function run(fn: () => Promise<{ ok: boolean; errors?: string[]; gained?: string[] }>) {
     start(async () => {
       const r = await fn();
       if (r.ok) {
         setErrors([]);
+        setGained(r.gained ?? []);
         setOpen(false);
         router.refresh();
       } else setErrors(r.errors ?? []);
@@ -101,6 +105,11 @@ export function LevelUpPanel({
           Add XP
         </Button>
         {level < 20 && <Button onClick={() => setOpen(!open)}>{xpReady ? "Level up" : "Level up (milestone)"}</Button>}
+        {canUndo && (
+          <Button variant="secondary" disabled={pending} onClick={() => run(() => undoLastLevelUp(id))}>
+            Undo last level-up
+          </Button>
+        )}
       </div>
 
       {open && (
@@ -173,6 +182,9 @@ export function LevelUpPanel({
           <Button disabled={pending} onClick={levelUp}>
             {pending ? "Working…" : "Confirm level up"}
           </Button>
+          {gained.length > 0 && (
+            <p className="text-sm text-foreground/85">You gain {gained.join(", ")}.</p>
+          )}
         </div>
       )}
       {errors.length > 0 && (

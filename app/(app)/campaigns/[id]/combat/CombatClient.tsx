@@ -76,11 +76,7 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
             <Actions view={view} selected={selected} run={run} pending={pending} isDm={isDm} spellbooks={spellbooks} aim={aim} aiming={aiming} setAiming={setAiming} />
             <Card className="p-4">
               <h2 className="eyebrow mb-2">Combat log</h2>
-              {log.length === 0 ? <p className="text-sm text-muted">Nothing has happened yet.</p> : (
-                <ul className="flex max-h-96 flex-col gap-1.5 overflow-y-auto text-sm" role="log">
-                  {log.map((l) => <li key={l.id}>{l.text}</li>)}
-                </ul>
-              )}
+              <CombatLog log={log} />
             </Card>
           </div>
         </div>
@@ -88,6 +84,23 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
         <Card className="p-8 text-center text-muted">{isDm ? "Create an encounter to begin." : "The DM has not started an encounter."}</Card>
       )}
     </div>
+  );
+}
+
+function CombatLog({ log }: { log: LogLine[] }) {
+  const [shown, setShown] = useState(200);
+  const visible = log.slice(-shown);
+  return log.length === 0 ? <p className="text-sm text-muted">Nothing has happened yet.</p> : (
+    <>
+      {log.length > shown && (
+        <button type="button" className="mb-2 text-sm text-gold underline" onClick={() => setShown((n) => n + 200)}>
+          Load earlier ({log.length - shown} hidden)
+        </button>
+      )}
+      <ul className="flex max-h-96 flex-col gap-1.5 overflow-y-auto text-sm" role="log">
+        {visible.map((l) => <li key={l.id}>{l.text}</li>)}
+      </ul>
+    </>
   );
 }
 

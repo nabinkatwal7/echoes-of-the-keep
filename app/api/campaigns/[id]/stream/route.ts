@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { waitForCampaign } from "@/lib/campaigns/listen";
 import { getMembership, scanEvents } from "@/lib/campaigns/queries";
 
 export const dynamic = "force-dynamic";
@@ -23,12 +24,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   let last = Number(req.headers.get("last-event-id") ?? url.searchParams.get("after") ?? 0) || 0;
 
   const encoder = new TextEncoder();
-  let timer: ReturnType<typeof setInterval> | undefined;
   let heartbeat: ReturnType<typeof setInterval> | undefined;
-  let busy = false;
+  let stopped = false;
 
   const stop = () => {
-    clearInterval(timer);
+    stopped = true;
     clearInterval(heartbeat);
   };
 
@@ -37,26 +37,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       const send = (chunk: string) => controller.enqueue(encoder.encode(chunk));
       send("retry: 2000\n\n");
 
-      const tick = async () => {
-        if (busy) return;
-        busy = true;
-        try {
-          const { events, lastId } = await scanEvents(id, viewer, last);
-          for (const e of events) {
-            send(`id: ${e.id}\ndata: ${JSON.stringify({ ...e, createdAt: e.createdAt.toISOString() })}\n\n`);
+      const loop = async () => {
+        while (!stopped) {
+          try {
+            const { events, lastId } = await scanEvents(id, viewer, last);
+            for (const e of events) {
+              send(`id: ${e.id}\ndata: ${JSON.stringify({ ...e, createdAt: e.createdAt.toISOString() })}\n\n`);
+            }
+            // advance past hidden events too, otherwise they would be re-scanned on every poll
+            last = lastId;
+          } catch {
+            // transient DB error: the next wake (or a reconnect with Last-Event-ID) resumes
           }
-          // advance past hidden events too, otherwise they would be re-scanned on every poll
-          last = lastId;
-        } catch {
-          // transient DB error: the next poll (or a reconnect with Last-Event-ID) resumes
-        } finally {
-          busy = false;
+          if (stopped) break;
+          await waitForCampaign(id, POLL_MS);
         }
       };
 
-      timer = setInterval(tick, POLL_MS);
       heartbeat = setInterval(() => send(": keep-alive\n\n"), HEARTBEAT_MS);
-      void tick();
+      void loop();
       req.signal.addEventListener("abort", () => {
         stop();
         try {

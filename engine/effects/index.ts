@@ -1,4 +1,5 @@
 import type { DamageType } from "../damage";
+import { featuresKnown } from "../classes/features";
 import type { ClassLevel } from "../progression";
 
 /** Numeric and rule-level effects a character gets from race, feats and class features. */
@@ -97,6 +98,10 @@ export function collectEffects(i: EffectInput): Effects {
       out.speedBonus += level >= 18 ? 30 : level >= 14 ? 25 : level >= 10 ? 20 : level >= 6 ? 15 : 10;
       out.traits.push({ name: "Unarmored Movement", source: "monk", automated: true });
     }
+  }
+  for (const f of featuresKnown(i.classes)) {
+    if (out.traits.some((t) => t.name === f.name)) continue;
+    out.traits.push(f);
   }
   return out;
 }

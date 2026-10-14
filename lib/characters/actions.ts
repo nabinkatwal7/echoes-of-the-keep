@@ -11,7 +11,7 @@ import { STARTING_GOLD, STARTING_KITS } from "@/engine/classes/equipment";
 import { rollExpression } from "@/engine/dice";
 import { itemFromCatalog } from "./inventory";
 import { prereqContext } from "./derive";
-import { applyLevelUp, type LevelUpChoices } from "./levelup";
+import { applyLevelUp, undoLevelUp, withUndoSnapshot, type LevelUpChoices } from "./levelup";
 
 export type CreateResult = { ok: true; id: string } | { ok: false; errors: string[] };
 
@@ -95,7 +95,7 @@ export async function deleteCharacter(id: string) {
   revalidatePath("/characters");
 }
 
-export type ActionResult = { ok: true } | { ok: false; errors: string[] };
+export type ActionResult = { ok: true; gained?: string[] } | { ok: false; errors: string[] };
 
 /** Level up an owned character. `milestone` skips the XP requirement (until a DM controls leveling in campaigns). */
 export async function levelUpCharacter(id: string, choices: LevelUpChoices, milestone = false): Promise<ActionResult> {
@@ -116,6 +116,21 @@ export async function levelUpCharacter(id: string, choices: LevelUpChoices, mile
     if (!check.met) return { ok: false, errors: [`${feat.name} requires ${check.unmet.join(", ")}`] };
   }
   const result = applyLevelUp(c, choices, milestone);
+  if (!result.ok) return result;
+  await prisma.character.update({
+    where: { id },
+    data: { ...result.update, resources: withUndoSnapshot(c.resources, c) },
+  });
+  revalidatePath(`/characters/${id}`);
+  return { ok: true, gained: result.gained };
+}
+
+/** Put the character back to the state saved before the most recent level-up. */
+export async function undoLastLevelUp(id: string): Promise<ActionResult> {
+  const user = await requireUser();
+  const c = await prisma.character.findFirst({ where: { id, ownerId: user.id } });
+  if (!c) return { ok: false, errors: ["Character not found"] };
+  const result = undoLevelUp(c);
   if (!result.ok) return result;
   await prisma.character.update({ where: { id }, data: result.update });
   revalidatePath(`/characters/${id}`);

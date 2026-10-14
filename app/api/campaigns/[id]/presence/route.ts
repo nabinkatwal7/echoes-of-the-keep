@@ -21,15 +21,19 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const w = await who(params);
   if ("error" in w) return w.error;
   await prisma.campaignMember.updateMany({ where: { campaignId: w.id, userId: w.userId }, data: { lastSeenAt: new Date() } });
-  return new Response(null, { status: 204 });
+  return list(w.id);
+}
+
+async function list(campaignId: string) {
+  const members = await prisma.campaignMember.findMany({ where: { campaignId }, include: { user: { select: { displayName: true } } }, orderBy: { joinedAt: "asc" } });
+  const now = Date.now();
+  return Response.json({
+    members: members.map((m) => ({ id: m.userId, name: m.user.displayName, role: m.role, online: !!m.lastSeenAt && now - m.lastSeenAt.getTime() < ONLINE_MS })),
+  });
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const w = await who(params);
   if ("error" in w) return w.error;
-  const members = await prisma.campaignMember.findMany({ where: { campaignId: w.id }, include: { user: { select: { displayName: true } } }, orderBy: { joinedAt: "asc" } });
-  const now = Date.now();
-  return Response.json({
-    members: members.map((m) => ({ id: m.userId, name: m.user.displayName, role: m.role, online: !!m.lastSeenAt && now - m.lastSeenAt.getTime() < ONLINE_MS })),
-  });
+  return list(w.id);
 }
