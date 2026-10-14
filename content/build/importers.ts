@@ -90,7 +90,13 @@ export const importers: Importer[] = [
   },
   {
     name: "creatures",
-    load: () => z.array(creatureSchema).parse(extracted("creatures.json")),
+    load: () => {
+      const handbook = z.array(creatureSchema).parse(extracted("creatures.json"));
+      const srd = z.array(creatureSchema).parse(JSON.parse(readFileSync(path.join(__dirname, "..", "srd", "creatures.json"), "utf8")));
+      const byIndex = new Map(handbook.map((row) => [row.index, row]));
+      for (const row of srd) byIndex.set(row.index, row);
+      return [...byIndex.values()];
+    },
     write: (prisma, rows) => upsertAll(prisma.creature, rows),
   },
   {

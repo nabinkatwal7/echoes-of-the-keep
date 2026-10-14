@@ -19,7 +19,7 @@ Details for each phase: docs/phases/*.md
 [x] f12, Import equipment, packs, tools, mounts, trade goods, trinkets
 [x] f13, Import feats with machine-checkable prerequisites
 [x] f14, Import spells and class spell lists (fill the 2 missing spells)
-[~] f15, Import creatures and SRD monsters
+[x] f15, Import creatures and SRD monsters
 [x] f16, Rules text sections (chapters 7-10, gods, planes)
 [x] f17, Wiki list and detail pages for every content type
 [x] f18, Global search (command palette)
@@ -79,7 +79,7 @@ Details for each phase: docs/phases/*.md
 [x] f64, Ready action and reactions
 [x] f65, Mounted and underwater combat
 [x] f66, Combat log with DM undo
-[~] f67, Monster actions (multiattack, recharge, legendary)
+[x] f67, Monster actions (multiattack, recharge, legendary)
 [x] f68, Mobile-friendly player turn panel
 [x] f69, Encounter end and rewards hand-off
 
@@ -106,7 +106,7 @@ Details for each phase: docs/phases/*.md
 [x] f87, Social interaction and NPC attitudes
 [x] f88, Rest management for the party
 [x] f89, Downtime activities
-[~] f90, Monster library and encounter difficulty builder
+[x] f90, Monster library and encounter difficulty builder
 [x] f91, XP, milestones and inspiration
 [x] f92, Treasure, custom items and party stash
 [x] f93, NPCs, locations and quests
@@ -131,10 +131,7 @@ PARTIAL NOTES
 f94: scenes are https image backdrops shown to the whole table, plus the combat grid; there is no token-based exploration map
 f80: Divine Smite, Sneak Attack, Metamagic (sorcery points), Agonizing Blast when saved on the character, and Life domain bonus healing are automated; other invocations and domain spell lists are not
 f82: 32 percent of the 362 spells resolve automatically (run pnpm spells:coverage); the rest are narrated
-f67: multiattack, recharge (d6 at the start of the turn) and legendary actions are read from the stat block; the shared library still lacks the SRD dragons those lines were written for
-f90: encounter builder uses the Basic Rules XP thresholds for parties of 3–6 at levels 1–20; the monster list is still only the 31 Appendix D creatures plus campaign homebrew
 f4: Playwright e2e not set up yet
-f15: only the 31 Appendix D creatures; SRD monsters still to import
 f102: a campaign can add a monster and a spell (damage, attack or healing) and use them in play; custom races, backgrounds, feats and items are not built
 f97: scripted evening-at-the-table database test and a public rules-notes page; not five live playtest groups
 f100: review in docs/accessibility.md; footer toggles high contrast and Atkinson Hyperlegible. Not yet checked with a screen reader on every page
