@@ -6,6 +6,7 @@ import { applyDamage, deathSave, heal, type Vitals } from "@/engine/damage";
 import { fromCopper, parseCostCp, pay, purseValueCp, type Purse } from "@/engine/economy";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { safeImageUrl } from "@/lib/safeUrl";
 import { audit, editable } from "./access";
 import { toEngineInput } from "./derive";
 import { customItem, itemFromCatalog, setEquipped, type InventoryItem } from "./inventory";
@@ -205,4 +206,16 @@ export async function saveNotes(characterId: string, notes: string): Promise<Res
 export async function rollDeathSave(characterId: string): Promise<Result> {
   const natural = Math.floor(Math.random() * 20) + 1;
   return changeHitPoints(characterId, { kind: "death-save", natural });
+}
+
+/** Set (or clear) the hero's portrait. Only a plain https link to an image file is accepted. */
+export async function setPortrait(characterId: string, url: string): Promise<Result> {
+  const user = await requireUser();
+  const c = await editable(characterId, user.id);
+  if (!c) return fail("Character not found");
+  const clean = url.trim();
+  if (!safeImageUrl(clean)) return fail("Use an https link to a png, jpg, webp, gif or avif image");
+  await prisma.character.update({ where: { id: characterId }, data: { portraitUrl: clean } });
+  revalidatePath(`/characters/${characterId}`);
+  return { ok: true };
 }

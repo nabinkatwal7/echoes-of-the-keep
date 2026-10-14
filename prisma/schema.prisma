@@ -197,6 +197,8 @@ model Character {
   inspiration        Boolean             @default(false)
   /// penalty to d20 tests after being raised from the dead; fades by 1 per long rest
   rezPenalty         Int                 @default(0)
+  /// https link to a portrait image
+  portraitUrl        String              @default("")
   currentHp          Int
   tempHp             Int                 @default(0)
   hitDiceSpent       Json                @default("{}")

@@ -200,6 +200,15 @@ h1, h2, h3, h4, .font-display {
   * { color: #000 !important; text-shadow: none !important; }
   .eyebrow, .rune-label { color: #333 !important; }
   a { text-decoration: none; }
+  @page { size: A4; margin: 12mm; }
+  /* keep each panel on one page and let tables and lists breathe */
+  .panel, .panel-flat, article section, table, li { break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid; }
+  article { padding-bottom: 0 !important; }
+  img { max-width: 100%; filter: none !important; }
+  /* progress bars and badges print as plain outlines */
+  [role="progressbar"] { border-color: #666 !important; }
+  [role="progressbar"] > div { background: #666 !important; }
 }
 
 /* Skip link: hidden until it receives keyboard focus */

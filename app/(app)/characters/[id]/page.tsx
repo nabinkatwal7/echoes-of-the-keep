@@ -31,6 +31,7 @@ import { CASTING_ABILITY } from "@/engine/spells";
 import { resourceViews, slotViews } from "@/lib/characters/play";
 import { ClassOptions } from "./ClassOptions";
 import { SheetCache } from "@/app/components/SheetCache";
+import { MobileHpBar } from "./MobileHpBar";
 import { VitalsPanel } from "./VitalsPanel";
 import type { InventoryItem } from "@/lib/characters/inventory";
 import type { Purse } from "@/engine/economy";
@@ -111,16 +112,21 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
   }
 
   return (
-    <article className="flex flex-col gap-8">
+    <article className="flex flex-col gap-8 pb-24 md:pb-0">
       <Link href="/characters" className="eyebrow hover:text-goldBright">
         ← All heroes
       </Link>
 
       {/* header */}
       <header className="panel flex flex-wrap items-center gap-6 p-6">
-        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-2 border-gold/70 bg-black/40 text-6xl text-gold shadow-[0_0_30px_rgba(201,162,75,0.25)]">
-          <Icon />
-        </div>
+        {c.portraitUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={c.portraitUrl} alt={`Portrait of ${c.name}`} referrerPolicy="no-referrer" className="h-24 w-24 shrink-0 rounded-full border-2 border-gold/70 object-cover shadow-[0_0_30px_rgba(201,162,75,0.25)]" />
+        ) : (
+          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-2 border-gold/70 bg-black/40 text-6xl text-gold shadow-[0_0_30px_rgba(201,162,75,0.25)]">
+            <Icon />
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <p className="eyebrow">{titleCase(c.backgroundIndex)}</p>
           <h1 className="gilded text-4xl font-bold">{c.name}</h1>
@@ -141,6 +147,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
         </div>
       </header>
 
+      <MobileHpBar id={c.id} hp={c.currentHp} maxHp={d.maxHp} />
       <VitalsPanel
         id={c.id}
         hp={c.currentHp}
@@ -278,7 +285,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
 
       <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} prereq={prereqContext(c)} subclassAllow={srdOnly() ? SRD_SUBCLASSES : undefined} allowMulticlass={house.multiclass} allowFeats={house.feats} canUndo={Boolean(c.resources && typeof c.resources === "object" && !Array.isArray(c.resources) && (c.resources as { _undo?: string })._undo)} />
 
-      <SheetTools id={c.id} />
+      <SheetTools id={c.id} portraitUrl={c.portraitUrl} />
 
       <form action={remove} className="no-print">
         <Button variant="danger">Retire this hero</Button>

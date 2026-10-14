@@ -10,6 +10,7 @@ import { requireUser } from "@/lib/auth";
 import { audit, editable } from "@/lib/characters/access";
 import { prisma } from "@/lib/prisma";
 import { homebrewSpellFields, type HomebrewSpellInput } from "./homebrewSpell";
+import { safeImageUrl } from "@/lib/safeUrl";
 import { dm, fail, say, touchWorld, type Result } from "./guard";
 
 const text = (s: string, max: number) => s.trim().slice(0, max);
@@ -58,17 +59,6 @@ export async function deleteWorldItem(campaignId: string, kind: "npc" | "locatio
 }
 
 // ---------------------------------------------------------------- locations and scenes
-
-/** Backdrops must be plain https images so a scene cannot point at anything else. */
-const safeImageUrl = (u: string) => {
-  if (!u) return true;
-  try {
-    const url = new URL(u);
-    return url.protocol === "https:" && /\.(png|jpe?g|webp|gif|avif)$/i.test(url.pathname);
-  } catch {
-    return false;
-  }
-};
 
 export async function saveLocation(campaignId: string, input: { id?: string; name: string; description?: string; imageUrl?: string }): Promise<Result<{ id: string }>> {
   const d = await dm(campaignId);

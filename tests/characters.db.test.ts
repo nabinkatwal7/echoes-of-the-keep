@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { cleanup, makeUser, RUN_DB, signInAs } from "./db";
 import { createCharacter, levelUpCharacter, addExperience } from "@/lib/characters/actions";
-import { addCatalogItem, changeHitPoints, setCurrency, setItemEquipped, addCustomItem, sellItem } from "@/lib/characters/sheetActions";
+import { addCatalogItem, changeHitPoints, setCurrency, setItemEquipped, addCustomItem, sellItem, setPortrait } from "@/lib/characters/sheetActions";
 import { deriveStored } from "@/lib/characters/derive";
 import type { InventoryItem } from "@/lib/characters/inventory";
 import { prisma } from "@/lib/prisma";
@@ -136,5 +136,18 @@ describe.skipIf(!RUN_DB)("characters (database)", () => {
     expect(events).toHaveLength(1);
     expect((events[0].payload as { text: string }).text).toMatch(/takes 2 damage \(5 → 3 HP\)/);
     signInAs(owner);
+  });
+
+  it("sets a portrait from an https image link, owner only", async () => {
+    expect((await setPortrait(id, "javascript:alert(1)")).ok).toBe(false);
+    expect((await setPortrait(id, "http://example.com/a.png")).ok).toBe(false);
+    expect((await setPortrait(id, "https://example.com/hero.webp")).ok).toBe(true);
+    expect((await prisma.character.findUniqueOrThrow({ where: { id } })).portraitUrl).toBe("https://example.com/hero.webp");
+    const stranger = await makeUser("pstranger");
+    signInAs(stranger);
+    expect((await setPortrait(id, "https://example.com/other.png")).ok).toBe(false);
+    signInAs(owner);
+    expect((await setPortrait(id, "")).ok).toBe(true);
+    expect((await prisma.character.findUniqueOrThrow({ where: { id } })).portraitUrl).toBe("");
   });
 });
