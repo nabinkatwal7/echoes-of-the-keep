@@ -7,9 +7,9 @@ import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Select } from "@/app/components/ui/Input";
 import {
-  addConditionTo, addMonster, addParty, adjustHitPoints, attack, createEncounter, endEncounter, endTurn, grappleOrShove, moveCombatant,
+  addConditionTo, addMonster, addParty, adjustHitPoints, applyFall, attack, createEncounter, endEncounter, endTurn, grappleOrShove, moveCombatant,
   removeCombatant, removeConditionFrom, setEnvironment, signalReady, standFromProne, startEncounter, takeAction, toggleMount, undoLast, takeReaction,
-  useLegendary, useRecharge,
+  starve, suffocate, useLegendary, useRecharge,
 } from "@/lib/combat/actions";
 import type { CombatantView, EncounterView } from "@/lib/combat/view";
 import type { Spellbook } from "@/lib/combat/spellList";
@@ -359,6 +359,9 @@ function Actions({ view, selected, run, pending, isDm, spellbooks, aim, aiming, 
             <Button variant="danger" className="px-3" disabled={pending} onClick={() => run(() => adjustHitPoints(me.id, "damage", amount))}>Damage</Button>
             <Button variant="secondary" className="px-3" disabled={pending} onClick={() => run(() => adjustHitPoints(me.id, "heal", amount))}>Heal</Button>
             <Button variant="secondary" className="px-3" disabled={pending} onClick={() => run(() => adjustHitPoints(me.id, "temp", amount))}>Temp</Button>
+            <Button variant="secondary" className="px-3" disabled={pending} onClick={() => run(() => applyFall(me.id, amount))}>Fall (ft)</Button>
+            <Button variant="secondary" className="px-3" disabled={pending} onClick={() => run(() => suffocate(me.id))}>Suffocate</Button>
+            <Button variant="secondary" className="px-3" disabled={pending} onClick={() => run(() => starve(me.id))}>Starve</Button>
           </div>
           <div className="flex gap-2">
             <Select aria-label="Condition" value={condition} onChange={(e) => setCondition(e.target.value)}>

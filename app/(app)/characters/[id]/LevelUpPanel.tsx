@@ -23,6 +23,8 @@ export function LevelUpPanel({
   ownedFeats,
   prereq,
   subclassAllow,
+  allowMulticlass = true,
+  allowFeats = true,
 }: {
   id: string;
   xp: number;
@@ -31,6 +33,8 @@ export function LevelUpPanel({
   ownedFeats: string[];
   prereq: PrereqContext;
   subclassAllow?: readonly string[];
+  allowMulticlass?: boolean;
+  allowFeats?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -103,7 +107,7 @@ export function LevelUpPanel({
         <div className="flex flex-col gap-4 border-t border-border/60 pt-4">
           <Field label="Class for the new level">
             <Select value={classIndex} onChange={(e) => setClassIndex(e.target.value)}>
-              {Object.keys(CLASS_RULES).map((c) => (
+              {Object.keys(CLASS_RULES).filter((c) => allowMulticlass || classes.some((x) => x.classIndex === c)).map((c) => (
                 <option key={c} value={c}>
                   {titleCase(c)}
                   {classes.some((x) => x.classIndex === c) ? "" : " (multiclass)"}
@@ -129,9 +133,11 @@ export function LevelUpPanel({
                 <Button variant={kind === "asi" ? "primary" : "secondary"} onClick={() => setKind("asi")}>
                   Ability Score Improvement
                 </Button>
+                {allowFeats && (
                 <Button variant={kind === "feat" ? "primary" : "secondary"} onClick={() => setKind("feat")}>
                   Feat
                 </Button>
+                )}
               </div>
               {kind === "asi" ? (
                 <div className="flex flex-wrap items-center gap-2">

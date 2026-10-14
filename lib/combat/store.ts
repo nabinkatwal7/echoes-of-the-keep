@@ -96,6 +96,7 @@ export function cmbToData(c: Cmb, prev: Combatant): Prisma.CombatantUpdateInput 
       legendary: c.legendary,
       mounted: !!c.mounted,
       mountSpeed: c.mountSpeed,
+      exhaustion: c.exhaustion ?? extra.exhaustion,
     } as unknown as Prisma.InputJsonValue,
   };
 }

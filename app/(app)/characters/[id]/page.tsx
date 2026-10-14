@@ -14,6 +14,7 @@ import { requireUser } from "@/lib/auth";
 import { deleteCharacter } from "@/lib/characters/actions";
 import { deriveStored, prereqContext } from "@/lib/characters/derive";
 import { getOwnedCharacter } from "@/lib/characters/queries";
+import { combineHouseRules, readHouseRules } from "@/lib/campaigns/houseRules";
 import { prisma } from "@/lib/prisma";
 import { SRD_SUBCLASSES, showCreature, showSpell, srdOnly, srdWhere } from "@/lib/srd";
 import { InventoryPanel } from "./InventoryPanel";
@@ -60,7 +61,9 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
   // spellcasting: one section per caster class, with the spells that class could choose
   const spellState = (c.spells ?? {}) as { byClass?: Record<string, SpellSelection>; concentration?: { spell: string; name: string } | null };
   const casterClasses = classes.filter((k) => CASTER_KIND[k.classIndex] && maxSpellLevel(k.classIndex, k.level) > 0);
-  const campaignIds = (await prisma.campaignCharacter.findMany({ where: { characterId: c.id }, select: { campaignId: true } })).map((l) => l.campaignId);
+  const links = await prisma.campaignCharacter.findMany({ where: { characterId: c.id }, select: { campaignId: true, campaign: { select: { settings: true } } } });
+  const campaignIds = links.map((l) => l.campaignId);
+  const house = combineHouseRules(links.map((l) => readHouseRules(l.campaign.settings)));
   const options = casterClasses.length
     ? await prisma.spell.findMany({
         where: {
@@ -256,7 +259,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
 
       <Ornament />
 
-      <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} prereq={prereqContext(c)} subclassAllow={srdOnly() ? SRD_SUBCLASSES : undefined} />
+      <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} prereq={prereqContext(c)} subclassAllow={srdOnly() ? SRD_SUBCLASSES : undefined} allowMulticlass={house.multiclass} allowFeats={house.feats} />
 
       <SheetTools id={c.id} />
 

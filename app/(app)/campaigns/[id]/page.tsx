@@ -6,6 +6,8 @@ import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
 import { LinkButton } from "@/app/components/ui/Button";
 import { PageHeader } from "@/app/components/ui/PageHeader";
+import { HouseRulesForm } from "./HouseRulesForm";
+import { readHouseRules } from "@/lib/campaigns/houseRules";
 import { requireUser } from "@/lib/auth";
 import { getCampaignForMember } from "@/lib/campaigns/queries";
 import { listCharacters } from "@/lib/characters/queries";
@@ -56,6 +58,7 @@ export default async function CampaignHub({ params }: { params: Promise<{ id: st
 
       <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         <section className="flex flex-col gap-4">
+          {isDm && <HouseRulesForm campaignId={campaign.id} initial={readHouseRules(campaign.settings)} />}
           <h2 className="eyebrow">The party</h2>
           {campaign.characters.length === 0 ? (
             <Card flat className="text-center text-muted">No heroes have joined yet.</Card>

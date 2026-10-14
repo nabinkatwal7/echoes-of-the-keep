@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { combineHouseRules, readHouseRules } from "@/lib/campaigns/houseRules";
 import { srdViolations } from "@/lib/srd";
 import { requireUser } from "@/lib/auth";
 import { buildCharacter, type CreatorChoices } from "./build";
@@ -101,6 +102,11 @@ export async function levelUpCharacter(id: string, choices: LevelUpChoices, mile
   const user = await requireUser();
   const c = await prisma.character.findFirst({ where: { id, ownerId: user.id } });
   if (!c) return { ok: false, errors: ["Character not found"] };
+  const links = await prisma.campaignCharacter.findMany({ where: { characterId: id }, select: { campaign: { select: { settings: true } } } });
+  const house = combineHouseRules(links.map((l) => readHouseRules(l.campaign.settings)));
+  const already = (c.classes as { classIndex: string }[]).some((k) => k.classIndex === choices.classIndex);
+  if (!house.multiclass && !already) return { ok: false, errors: ["This campaign does not allow multiclassing"] };
+  if (!house.feats && choices.improvement?.kind === "feat") return { ok: false, errors: ["This campaign does not allow feats"] };
   const outside = srdViolations({ subclassIndex: choices.subclassIndex, feats: choices.improvement?.kind === "feat" ? [choices.improvement.feat] : [] });
   if (outside.length) return { ok: false, errors: outside };
   if (choices.improvement?.kind === "feat") {

@@ -101,7 +101,7 @@ Details for each phase: docs/phases/*.md
 === PHASE 7: EXPLORATION AND DM TOOLKIT ===
 [x] f83, In-game clock
 [x] f84, Travel, pace and special movement
-[~] f85, Hazards, light sources and objects
+[x] f85, Hazards, light sources and objects
 [x] f86, Skill check helpers (group, contested, passive)
 [x] f87, Social interaction and NPC attitudes
 [x] f88, Rest management for the party
@@ -128,7 +128,6 @@ Details for each phase: docs/phases/*.md
 [~] f107, User docs and release checklist
 
 PARTIAL NOTES
-f85: light sources burn down with the clock and ambient light follows the time of day; falling, suffocation and starvation rules exist in the engine but have no table UI yet (the DM applies damage by hand)
 f94: scenes are https image backdrops shown to the whole table, plus the combat grid; there is no token-based exploration map
 f80: Divine Smite, Sneak Attack, Metamagic (sorcery points), Agonizing Blast when saved on the character, and Life domain bonus healing are automated; other invocations and domain spell lists are not
 f82: 32 percent of the 362 spells resolve automatically (run pnpm spells:coverage); the rest are narrated
@@ -146,7 +145,6 @@ f105: JSON logs, /api/health and docs/runbook.md
 f107: docs/release-checklist.md and the learn page; no separate player guide, DM guide or FAQ yet
 f106: SRD_ONLY hides non-SRD choices and handbook prose; the database still stores handbook wording, and racial trait sentences are still parsed in the creator
 f36: level-up is generic (HP average, ASI or feat, multiclass); subclass choice and new class features per level not applied yet
-f44: campaign name and premise only; house-rule settings not built yet
 f47: table page with chat and dice log; presence list and shared scene not built yet
 f48: SSE stream polls the database every second with Last-Event-ID resume (verified over HTTP); LISTEN/NOTIFY not used yet
 f10: subclass level tables per subclass (domain spells, etc.) are not split out; subclass text is shown as written

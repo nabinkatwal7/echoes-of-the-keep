@@ -2,6 +2,7 @@
 
 import type { Combatant, Prisma } from "@prisma/client";
 import { rollDamage, rollInitiative, standUp, type Cover } from "@/engine/combat";
+import { fallDamage } from "@/engine/exploration";
 import { mountMoveCost } from "@/engine/combat/environment";
 import { spendLegendary, spendRecharge } from "@/engine/combat/special";
 import { rollD20 } from "@/engine/dice";
@@ -9,6 +10,7 @@ import { moveCost, opportunityAttackers, distanceFeet, withinFiveFeet as adjacen
 import { addCondition, isCondition, removeCondition } from "@/engine/conditions/timers";
 import { heal } from "@/engine/damage";
 import { xpForChallenge } from "@/engine/xp";
+import { isFlanking, readHouseRules } from "@/lib/campaigns/houseRules";
 import { requireUser } from "@/lib/auth";
 import { roleIn } from "./store";
 import { prisma } from "@/lib/prisma";
@@ -406,12 +408,21 @@ export async function attack(req: AttackRequest): Promise<Result> {
     bonusDamage.push({ dice: `${Math.ceil(rogue / 2)}d6`, label: "Sneak Attack" });
   }
 
+  let flank = false;
+  if (both) {
+    const campaign = await prisma.campaign.findUnique({ where: { id: enc.campaignId }, select: { settings: true } });
+    if (readHouseRules(campaign?.settings).flanking) {
+      const allies = enc.combatants.filter((r) => r.id !== row.id && sideOf(r) === sideOf(row) && !r.defeated && r.x !== null && r.y !== null);
+      flank = isFlanking({ x: attacker.x!, y: attacker.y! }, { x: target.x!, y: target.y! }, allies.map((r) => ({ x: r.x!, y: r.y! })));
+    }
+  }
+
   let out;
   try {
     out = resolveAttackAction(attacker, target, profile, {
       cover: req.cover, withinFiveFeet: near, distanceFeet: dist, offHand: req.offHand, reaction: req.reaction,
       underwater: !!(enc.environment as { underwater?: boolean } | null)?.underwater,
-      extraAdvantage: req.advantage ? 1 : 0, extraDisadvantage: req.disadvantage ? 1 : 0, bonusDamage,
+      extraAdvantage: (req.advantage ? 1 : 0) + (flank ? 1 : 0), extraDisadvantage: req.disadvantage ? 1 : 0, bonusDamage,
     });
   } catch (e) {
     return fail((e as Error).message);
@@ -584,6 +595,51 @@ export async function adjustHitPoints(targetId: string, kind: "damage" | "heal" 
       dmOnly: row.hidden,
     });
   }
+  refresh(ctx.enc.campaignId);
+  return { ok: true };
+}
+
+/** Falling: 1d6 bludgeoning per 10 feet, maximum 20d6, and the creature lands prone. */
+export async function applyFall(combatantId: string, feet: number): Promise<Result> {
+  const row = await prisma.combatant.findUnique({ where: { id: combatantId } });
+  if (!row) return fail("Combatant not found");
+  const ctx = await context(row.encounterId);
+  if (!isCtx(ctx)) return ctx;
+  if (!ctx.isDm) return fail("Only the DM can apply a fall");
+  if (!Number.isInteger(feet) || feet < 10 || feet > 10000) return fail("Enter the fall in feet, at least 10");
+  const rolled = fallDamage(feet);
+  const c = rowToCmb(row);
+  const hit = absorbDamage(c, rolled.damage);
+  const conditions = hit.cmb.conditions.some((k) => k.condition === "prone") ? hit.cmb.conditions : addCondition(hit.cmb.conditions, { condition: "prone" });
+  await commit(ctx.enc, ctx.user, { update: [{ ...hit.cmb, conditions }], lines: [`${c.name} falls ${feet} ft for ${rolled.damage} bludgeoning damage (${rolled.dice}d6) and lands prone`, ...hit.lines], dmOnly: row.hidden });
+  refresh(ctx.enc.campaignId);
+  return { ok: true };
+}
+
+/** A creature that can no longer hold its breath drops to 0 hit points. */
+export async function suffocate(combatantId: string): Promise<Result> {
+  const row = await prisma.combatant.findUnique({ where: { id: combatantId } });
+  if (!row) return fail("Combatant not found");
+  const ctx = await context(row.encounterId);
+  if (!isCtx(ctx)) return ctx;
+  if (!ctx.isDm) return fail("Only the DM can do that");
+  const c = rowToCmb(row);
+  const hit = absorbDamage(c, c.hp + c.tempHp);
+  await commit(ctx.enc, ctx.user, { update: [hit.cmb], lines: [`${c.name} runs out of breath and drops to 0 hit points`, ...hit.lines], dmOnly: row.hidden });
+  refresh(ctx.enc.campaignId);
+  return { ok: true };
+}
+
+/** One level of exhaustion, the usual result of going without food long enough. */
+export async function starve(combatantId: string): Promise<Result> {
+  const row = await prisma.combatant.findUnique({ where: { id: combatantId } });
+  if (!row) return fail("Combatant not found");
+  const ctx = await context(row.encounterId);
+  if (!isCtx(ctx)) return ctx;
+  if (!ctx.isDm) return fail("Only the DM can do that");
+  const c = rowToCmb(row);
+  const exhaustion = Math.min(6, (c.exhaustion ?? 0) + 1);
+  await commit(ctx.enc, ctx.user, { update: [{ ...c, exhaustion }], lines: [`${c.name} gains a level of exhaustion (${exhaustion})`], dmOnly: row.hidden });
   refresh(ctx.enc.campaignId);
   return { ok: true };
 }

@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseMessage } from "./commands";
 import { getMembership } from "./queries";
+import { readHouseRules, type HouseRules } from "./houseRules";
 import { newInviteCode } from "./visibility";
 
 export type Result<T = object> = ({ ok: true } & T) | { ok: false; errors: string[] };
@@ -122,5 +123,22 @@ export async function postMessage(campaignId: string, input: string): Promise<Re
       break;
     }
   }
+  return { ok: true };
+}
+
+/** The DM's switches for this campaign. The character sheet and the fight read the same object. */
+export async function updateHouseRules(campaignId: string, rules: HouseRules): Promise<Result> {
+  const user = await requireUser();
+  const membership = await getMembership(campaignId, user.id);
+  if (!membership || membership.role !== "DM") return { ok: false, errors: ["Only the DM can change the rules"] };
+  const current = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { settings: true } });
+  if (!current) return { ok: false, errors: ["Campaign not found"] };
+  const prev = current.settings && typeof current.settings === "object" ? (current.settings as Record<string, unknown>) : {};
+  const next = readHouseRules(rules);
+  await prisma.campaign.update({
+    where: { id: campaignId },
+    data: { settings: { ...prev, ...next } },
+  });
+  revalidatePath(`/campaigns/${campaignId}`);
   return { ok: true };
 }
