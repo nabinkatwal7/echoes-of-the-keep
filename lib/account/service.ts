@@ -3,6 +3,7 @@ import { exportCharacter } from "@/lib/characters/portable";
 import { checkCredentials, hashPassword, MIN_PASSWORD_LENGTH, verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 import { HOLD_MS } from "./throttle";
+import { deleteSoloGamesOf } from "@/lib/solo/cleanup";
 
 export type Outcome = { ok: true } | { ok: false; error: string };
 
@@ -50,7 +51,9 @@ export async function removeAccount(userId: string, password: string, typedUsern
 /** Permanently delete accounts whose 14-day hold has passed (heroes, journal and the campaigns they run go with them). Returns how many. */
 export async function purgeExpiredAccounts(now = Date.now()): Promise<number> {
   const cutoff = new Date(now - HOLD_MS);
-  const r = await prisma.user.deleteMany({ where: { deletedAt: { not: null, lt: cutoff } } });
+  const due = await prisma.user.findMany({ where: { deletedAt: { not: null, lt: cutoff } }, select: { id: true } });
+  for (const u of due) await deleteSoloGamesOf(u.id);
+  const r = await prisma.user.deleteMany({ where: { id: { in: due.map((u) => u.id) } } });
   return r.count;
 }
 

@@ -1,6 +1,7 @@
 import { WINDOW_MS, holdExpired, isThrottled } from "@/lib/account/throttle";
 import { verifyPassword } from "@/lib/password";
 import { logger } from "@/lib/log";
+import { deleteSoloGamesOf } from "@/lib/solo/cleanup";
 import { prisma } from "@/lib/prisma";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -44,6 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
         if (user.deletedAt) {
           if (holdExpired(user.deletedAt)) {
+            await deleteSoloGamesOf(user.id);
             await prisma.user.delete({ where: { id: user.id } });
             return null;
           }

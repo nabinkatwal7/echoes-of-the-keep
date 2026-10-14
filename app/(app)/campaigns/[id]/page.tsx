@@ -6,6 +6,7 @@ import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
 import { LinkButton } from "@/app/components/ui/Button";
 import { PageHeader } from "@/app/components/ui/PageHeader";
+import { readSolo } from "@/lib/solo/config";
 import { CallLink } from "@/app/components/CallLink";
 import { callLinkOf } from "@/lib/campaigns/call";
 import { CallLinkForm } from "./CallLinkForm";
@@ -43,6 +44,11 @@ export default async function CampaignHub({ params }: { params: Promise<{ id: st
       <Link href="/campaigns" className="eyebrow mb-4 inline-block hover:text-goldBright">
         ← All campaigns
       </Link>
+      {readSolo(campaign.settings)?.humanId === user.id && (
+        <p className="mb-4 rounded border border-gold/50 bg-gold/10 px-3 py-2 text-sm">
+          This is a solo game. <Link className="underline" href={`/campaigns/${campaign.id}/solo`}>Open the solo page</Link> to continue the story.
+        </p>
+      )}
       <PageHeader
         eyebrow={isDm ? "You are the Dungeon Master" : "Campaign"}
         title={campaign.name}

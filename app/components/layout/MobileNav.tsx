@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/characters", label: "Heroes" },
   { href: "/homebrew", label: "Homebrew" },
   { href: "/campaigns", label: "Campaigns" },
+  { href: "/solo", label: "Solo play" },
 ];
 
 export function MobileNav({

@@ -13,6 +13,8 @@ model User {
   /// lowercase login name, 3-24 characters: a-z, 0-9, underscore
   username     String           @unique
   displayName  String
+  /// a computer-played character or Dungeon Master in a solo game; cannot sign in
+  isBot        Boolean          @default(false)
   /// scrypt hash, see lib/password.ts
   passwordHash String
   createdAt    DateTime         @default(now())

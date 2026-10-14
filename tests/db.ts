@@ -7,10 +7,11 @@ export const RUN_DB = process.env.RUN_DB_TESTS === "1";
 export const current = { id: "", name: "" };
 
 // Server actions call requireUser(); tests choose who is "signed in" by setting `current`.
-vi.mock("@/lib/auth", () => ({
-  requireUser: async () => ({ id: current.id, name: current.name }),
-  getUser: async () => ({ id: current.id, name: current.name }),
-}));
+vi.mock("@/lib/auth", async () => {
+  const { actingAs } = await import("@/lib/actAs");
+  const who = () => actingAs() ?? { id: current.id, name: current.name };
+  return { requireUser: async () => who(), getUser: async () => who() };
+});
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 
 const created: string[] = [];

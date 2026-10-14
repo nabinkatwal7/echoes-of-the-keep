@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -13,6 +13,7 @@ import {
 } from "@/lib/combat/actions";
 import type { CombatantView, EncounterView } from "@/lib/combat/view";
 import type { Spellbook } from "@/lib/combat/spellList";
+import { autoStep } from "@/lib/combat/autoActions";
 import { SpellPanel } from "./SpellPanel";
 
 export type LogLine = { id: number; text: string };
@@ -26,12 +27,14 @@ type Props = {
   spellbooks: Record<string, Spellbook>;
   /** newest campaign event when the page was built, so the live stream only delivers what comes after */
   lastEventId?: number;
+  /** solo play: the computer plays some turns for you */
+  solo?: { mode: "player" | "dm"; autoMonsters: boolean; aiTurn: boolean } | null;
 };
 
 const CONDITIONS = ["blinded", "charmed", "deafened", "frightened", "grappled", "incapacitated", "invisible", "paralyzed", "petrified", "poisoned", "prone", "restrained", "stunned", "unconscious"];
 const HEALTH_TONE: Record<string, "emerald" | "gold" | "ember" | "crimson" | "neutral"> = { Unhurt: "emerald", Scratched: "emerald", Bloodied: "gold", Wounded: "ember", "Near death": "crimson", Defeated: "neutral" };
 
-export function CombatClient({ campaignId, isDm, encounters, view, log, creatures, spellbooks, lastEventId = 0 }: Props) {
+export function CombatClient({ campaignId, isDm, encounters, view, log, creatures, spellbooks, lastEventId = 0, solo = null }: Props) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
@@ -67,6 +70,33 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
     };
   }, [router, campaignId, lastEventId]);
 
+  // Solo play: when it is the computer's turn, play turns (one at a time so you can follow along) until it is yours.
+  const [playing, setPlaying] = useState(false);
+  const lastPlayed = useRef("");
+  const turnKey = view ? `${view.id}:${view.round}:${view.activeIndex}:${view.state}` : "";
+  useEffect(() => {
+    if (!solo?.aiTurn || !view || view.state !== "ACTIVE" || playing || lastPlayed.current === turnKey) return;
+    lastPlayed.current = turnKey;
+    setPlaying(true);
+    const id = view.id;
+    const t = setTimeout(async () => {
+      // one computer turn at a time, refreshing between them so you can watch what happens
+      for (let i = 0; i < 40; i++) {
+        const r = await autoStep(id);
+        if (!r.ok) {
+          setError(r.errors[0]);
+          break;
+        }
+        router.refresh();
+        if (r.waiting) break;
+        await new Promise((resolve) => setTimeout(resolve, 900));
+      }
+      setPlaying(false);
+      router.refresh();
+    }, 600);
+    void t; // not cleared on re-render: setting `playing` re-runs this effect and must not cancel the loop
+  }, [solo?.aiTurn, turnKey, playing, view, router]);
+
   function run(fn: () => Promise<{ ok: boolean; errors?: string[]; id?: string }>, after?: (id?: string) => void) {
     start(async () => {
       const r = await fn();
@@ -83,6 +113,12 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
       {error && (
         <p role="alert" className="rounded border border-crimson/60 bg-crimson/10 px-3 py-2 text-sm text-danger">
           {error}
+        </p>
+      )}
+      {solo && view?.state === "ACTIVE" && (
+        <p role="status" className="rounded border border-gold/50 bg-gold/10 px-3 py-2 text-sm">
+          {playing ? "The computer is playing its turns…" : solo.aiTurn ? "The computer is about to act." : "Your turn."}{" "}
+          {!playing && solo.aiTurn && <Button variant="secondary" className="ml-2 min-h-8 px-3" onClick={() => { lastPlayed.current = ""; router.refresh(); }}>Play now</Button>}
         </p>
       )}
       <EncounterPicker campaignId={campaignId} isDm={isDm} encounters={encounters} current={view?.id} run={run} pending={pending} />
@@ -120,9 +156,11 @@ function CombatLog({ log }: { log: LogLine[] }) {
           Load earlier ({log.length - shown} hidden)
         </button>
       )}
-      <ul className="flex max-h-96 flex-col gap-1.5 overflow-y-auto text-sm" role="log">
-        {visible.map((l) => <li key={l.id}>{l.text}</li>)}
-      </ul>
+      <div role="log" className="max-h-96 overflow-y-auto">
+        <ul className="flex flex-col gap-1.5 text-sm">
+          {visible.map((l) => <li key={l.id}>{l.text}</li>)}
+        </ul>
+      </div>
     </>
   );
 }

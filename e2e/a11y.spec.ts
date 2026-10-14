@@ -112,3 +112,42 @@ test("the character sheet passes axe and fits a phone without sideways scrolling
   results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
 });
+
+// Solo play, through the real screens: start a game, move the story along, scan each page, then delete the game.
+test("solo play: create a game, read the story, and the pages pass axe", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel(/username/i).fill("demo_player");
+  await page.getByLabel(/password/i).fill("demo-password-1");
+  await page.getByRole("button", { name: /sign in|enter|log in/i }).click();
+  await page.waitForURL(/\/characters/, { timeout: 10_000 }).catch(() => {});
+  test.skip(!/\/characters/.test(page.url()), "demo data is not seeded");
+
+  const scan = async (label: string) => {
+    const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+    expect(r.violations.map((v) => `${v.id}: ${v.nodes[0]?.target.join(" ")}`), label).toEqual([]);
+  };
+
+  await page.goto("/solo");
+  await scan("/solo");
+  await page.getByRole("button", { name: /^begin$/i }).click();
+  await page.waitForURL(/\/campaigns\/[^/]+\/solo/, { timeout: 60_000 });
+  await expect(page.getByRole("heading", { name: /what next/i })).toBeVisible();
+  await scan("solo game page");
+
+  await page.getByRole("button", { name: /begin the story/i }).click();
+  await expect(page.getByText(/by dusk|word reaches|finds the party/i).first()).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("button", { name: /face the first foes/i }).click();
+  await page.waitForURL(/\/combat/, { timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: "Combat", exact: true })).toBeVisible();
+  // the computer plays its turns by itself: if it is the player's turn first, end it and watch the others act
+  const endTurn = page.getByRole("button", { name: /^end turn$/i });
+  await page.waitForTimeout(1500);
+  if (await endTurn.isVisible()) await endTurn.click();
+  await expect(page.getByText(/ends their turn/i).first()).toBeVisible({ timeout: 30_000 });
+  await scan("combat page in a solo fight");
+
+  page.once("dialog", (d) => void d.accept());
+  await page.goto(page.url().replace(/\/combat.*/, "/solo"));
+  await page.getByRole("button", { name: /delete this game/i }).click();
+  await page.waitForURL(/\/solo$/, { timeout: 15_000 });
+});

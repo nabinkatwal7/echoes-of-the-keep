@@ -130,3 +130,6 @@ Details for each phase: docs/phases/*.md
 PARTIAL NOTES
 f100: automated checks cover axe, reflow, zoom, text spacing, forced colors and keyboard; a screen reader pass by a person is still a manual release step (docs/accessibility.md)
 f106: pnpm db:seed:srd loads and keeps only SRD rows (319 spells); SRD wording is still the handbook extract and spell text stays hidden until compared with the SRD files (docs/licensing.md)
+
+SOLO PLAY (added after the original list)
+[x] f108, Solo games: play as a player with a computer DM and companions, or as the DM with computer heroes (docs/solo-play.md)

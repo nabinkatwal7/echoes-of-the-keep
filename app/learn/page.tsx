@@ -45,6 +45,13 @@ const steps = [
     ],
   },
   {
+    title: "No group? Play solo",
+    body: [
+      "Open Solo play and choose a seat. As a player you control one hero while a computer Dungeon Master runs a short adventure and computer companions fight beside you. As the Dungeon Master you run the world and computer heroes play the party.",
+      "It is the quickest way to learn the rules: the computer shows its reasoning in the combat log, and nothing is lost if you make a mistake.",
+    ],
+  },
+  {
     title: "6. Running or joining a campaign",
     body: [
       "The DM creates a campaign and shares the invite code. Players join with the code and attach a hero. The Table is where chat and dice rolls appear for everyone; secret rolls and whispers are only shown to the people meant to see them.",

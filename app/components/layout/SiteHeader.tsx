@@ -12,6 +12,7 @@ export const NAV = [
   { href: "/characters", label: "Heroes" },
   { href: "/homebrew", label: "Homebrew" },
   { href: "/campaigns", label: "Campaigns" },
+  { href: "/solo", label: "Solo play" },
 ] as const;
 
 export async function SiteHeader() {

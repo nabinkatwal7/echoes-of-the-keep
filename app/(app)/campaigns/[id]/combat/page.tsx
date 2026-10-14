@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { spellbookFor, type Spellbook } from "@/lib/combat/spellList";
 import { CallLink } from "@/app/components/CallLink";
 import { callLinkOf } from "@/lib/campaigns/call";
+import { controllerOf, readSolo } from "@/lib/solo/config";
 import { CombatClient, type LogLine } from "./CombatClient";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,16 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
   }
 
   const creatures = await listEncounterCreatures(id);
+  // solo play: is the creature whose turn it is one the computer plays?
+  const solo = readSolo(campaign.settings);
+  let aiTurn = false;
+  if (solo && solo.humanId === user.id && enc?.state === "ACTIVE") {
+    const row = enc.combatants[enc.activeIndex];
+    if (row) {
+      const owner = row.characterId ? (await prisma.character.findUnique({ where: { id: row.characterId }, select: { ownerId: true } }))?.ownerId ?? null : null;
+      aiTurn = controllerOf(solo, { kind: row.kind, characterOwnerId: owner }, campaign.dmId).who !== "human";
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -68,6 +79,7 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
         view={view}
         log={log}
         lastEventId={latest?.id ?? 0}
+        solo={solo && solo.humanId === user.id ? { mode: solo.mode, autoMonsters: solo.autoMonsters, aiTurn } : null}
         spellbooks={spellbooks}
         creatures={creatures.map((c) => ({ index: c.index, label: `${c.name} (CR ${String(c.challenge ?? "?").split(" ")[0]})`, name: c.name, type: c.type, challenge: c.challenge }))}
       />
