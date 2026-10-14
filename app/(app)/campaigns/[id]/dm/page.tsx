@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { getCampaignForMember } from "@/lib/campaigns/queries";
 import { deriveStored, type StoredCharacter } from "@/lib/characters/derive";
 import { sessionState } from "@/lib/journal/queries";
+import { listEncounterCreatures } from "@/lib/content/gear";
 import { prisma } from "@/lib/prisma";
 import { SessionPanel } from "../SessionPanel";
 import { DmTools } from "./DmTools";
@@ -41,7 +42,7 @@ export default async function DmScreen({ params }: { params: Promise<{ id: strin
     };
   });
   const camp = await prisma.campaign.findUniqueOrThrow({ where: { id } });
-  const creatures = await prisma.creature.findMany({ where: { OR: [{ campaignId: null }, { campaignId: id }] }, select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } });
+  const creatures = await listEncounterCreatures(id);
   const world = (camp.world ?? {}) as { lights?: { id: string; kind: string; remainingMinutes: number; lit: boolean }[] };
   const [{ active, last }, conditions, encounter] = await Promise.all([
     sessionState(id),

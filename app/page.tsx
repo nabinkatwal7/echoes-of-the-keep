@@ -9,6 +9,7 @@ import { Ornament } from "./components/ui/Ornament";
 import { getUser } from "@/lib/auth";
 import { spellLevelLabel } from "@/lib/content/spells";
 import { prisma } from "@/lib/prisma";
+import { spellInSrd, srdOnly } from "@/lib/srd";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +22,14 @@ export default async function Home() {
     prisma.feat.count(),
   ]);
 
-  // spell of the day: stable for a calendar day
+  // spell of the day: stable for a calendar day, and only a free-rules spell when that mode is on
   const day = Math.floor(Date.now() / 86_400_000);
-  const featured = spellCount ? (await prisma.spell.findMany({ orderBy: { index: "asc" }, skip: day % spellCount, take: 1 }))[0] : null;
+  const pool = srdOnly()
+    ? (await prisma.spell.findMany({ orderBy: { index: "asc" } })).filter((s) => spellInSrd(s.name))
+    : spellCount
+      ? await prisma.spell.findMany({ orderBy: { index: "asc" }, skip: day % spellCount, take: 1 })
+      : [];
+  const featured = srdOnly() ? pool[day % Math.max(pool.length, 1)] : pool[0];
   const school = featured ? schoolStyle(featured.school) : null;
 
   const pillars = [
@@ -101,7 +107,7 @@ export default async function Home() {
                 <h3 className={`font-display text-2xl uppercase tracking-[0.1em] ${school.text}`}>{featured.name}</h3>
                 <span className="italic text-muted">{spellLevelLabel(featured.level, featured.school)}</span>
               </div>
-              <p className="line-clamp-3 text-foreground/85">{featured.description}</p>
+              {!srdOnly() && <p className="line-clamp-3 text-foreground/85">{featured.description}</p>}
               <div className="flex flex-wrap gap-2">
                 {featured.concentration && <Badge tone="gold">Concentration</Badge>}
                 {featured.ritual && <Badge tone="emerald">Ritual</Badge>}

@@ -1,5 +1,5 @@
 import { GiAnvil } from "react-icons/gi";
-import { Prose } from "@/app/components/Prose";
+import { SourceText } from "@/app/components/SourceText";
 import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
 import { PageHeader } from "@/app/components/ui/PageHeader";
@@ -20,7 +20,7 @@ export default async function FeatsPage() {
               <h2 className="font-display text-lg uppercase tracking-[0.12em] text-goldBright">{f.name}</h2>
               {f.prerequisite && <Badge tone="crimson">Requires {f.prerequisite}</Badge>}
             </div>
-            <Prose text={f.description.replace(/^Prerequisite:.*\n?/, "")} className="text-sm" />
+            <SourceText text={f.description.replace(/^Prerequisite:.*\n?/, "")} className="text-sm" />
           </Card>
         ))}
       </div>

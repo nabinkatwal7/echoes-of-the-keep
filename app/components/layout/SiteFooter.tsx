@@ -7,6 +7,7 @@ export function SiteFooter() {
         <D20 className="h-6 w-6 text-gold/70" />
         <p>An unofficial fan project. Not affiliated with or endorsed by Wizards of the Coast.</p>
         <p className="text-xs">Rules content belongs to its owners and is shown for personal use.</p>
+        <p className="text-xs"><a className="underline hover:text-goldBright" href="/legal">Legal and attribution</a></p>
       </div>
     </footer>
   );

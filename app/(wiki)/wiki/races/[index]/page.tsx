@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { raceIcon } from "@/app/components/icons";
-import { Prose } from "@/app/components/Prose";
+import { SourceText } from "@/app/components/SourceText";
 import { Card } from "@/app/components/ui/Card";
 import { PageHeader } from "@/app/components/ui/PageHeader";
 import { getRace } from "@/lib/content/reference";
@@ -28,7 +28,7 @@ export default async function RacePage({ params }: { params: Promise<{ index: st
       </div>
       {r.text && (
         <Card flat className="mb-8">
-          <Prose text={r.text} />
+          <SourceText text={r.text} />
         </Card>
       )}
       <h2 className="eyebrow mb-3">Racial traits</h2>

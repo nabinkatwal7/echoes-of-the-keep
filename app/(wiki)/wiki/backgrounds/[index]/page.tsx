@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GiQuillInk } from "react-icons/gi";
-import { Prose } from "@/app/components/Prose";
+import { SourceText } from "@/app/components/SourceText";
 import { Card } from "@/app/components/ui/Card";
 import { PageHeader } from "@/app/components/ui/PageHeader";
 import { getBackground } from "@/lib/content/reference";
@@ -42,7 +42,7 @@ export default async function BackgroundPage({ params }: { params: Promise<{ ind
         )}
       </div>
       <Card className="p-7">
-        <Prose text={b.text} />
+        <SourceText text={b.text} />
       </Card>
     </article>
   );

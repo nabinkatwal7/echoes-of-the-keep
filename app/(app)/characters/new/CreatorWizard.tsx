@@ -51,7 +51,7 @@ function Choice({ selected, onClick, children, disabled }: { selected: boolean; 
   );
 }
 
-export function CreatorWizard({ data }: { data: WizardData }) {
+export function CreatorWizard({ data, subclassAllow }: { data: WizardData; subclassAllow?: readonly string[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [step, setStep] = useState(0);
@@ -260,7 +260,7 @@ export function CreatorWizard({ data }: { data: WizardData }) {
               <div className="rounded border border-gold/40 bg-gold/5 p-4">
                 <p className="mb-3 text-sm">A {titleCase(classIndex)} chooses a subclass at 1st level:</p>
                 <div className="flex flex-wrap gap-2">
-                  {subclassesFor(classIndex).map((s) => (
+                  {subclassesFor(classIndex).filter((s) => !subclassAllow || subclassAllow.includes(s.index)).map((s) => (
                     <Button key={s.index} variant={subclassIndex === s.index ? "primary" : "secondary"} onClick={() => setSubclassIndex(s.index)}>
                       {s.name}
                     </Button>

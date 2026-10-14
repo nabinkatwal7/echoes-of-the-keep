@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { schoolStyle } from "@/app/components/icons";
-import { Prose } from "@/app/components/Prose";
+import { SourceText } from "@/app/components/SourceText";
 import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
 import { Ornament } from "@/app/components/ui/Ornament";
 import { getSpell, spellLevelLabel } from "@/lib/content/spells";
+import { srdOnly } from "@/lib/srd";
 
 export const dynamic = "force-dynamic";
 
@@ -55,9 +56,9 @@ export default async function SpellPage({ params }: { params: Promise<{ index: s
 
         <Ornament />
 
-        <Prose text={spell.description} />
+        <SourceText text={spell.description} />
 
-        {spell.higherLevels && (
+        {spell.higherLevels && !srdOnly() && (
           <div className="rounded border border-gold/40 bg-gold/5 p-4">
             <p className="rune-label mb-1 text-gold">At higher levels</p>
             <p>{spell.higherLevels}</p>

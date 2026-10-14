@@ -22,6 +22,7 @@ export function LevelUpPanel({
   feats,
   ownedFeats,
   prereq,
+  subclassAllow,
 }: {
   id: string;
   xp: number;
@@ -29,6 +30,7 @@ export function LevelUpPanel({
   feats: { index: string; name: string; prerequisite: string | null }[];
   ownedFeats: string[];
   prereq: PrereqContext;
+  subclassAllow?: readonly string[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -113,7 +115,7 @@ export function LevelUpPanel({
             <Field label="Subclass">
               <Select value={subclass} onChange={(e) => setSubclass(e.target.value)}>
                 <option value="">Choose a subclass</option>
-                {subclassesFor(classIndex).map((s) => (
+                {subclassesFor(classIndex).filter((s) => !subclassAllow || subclassAllow.includes(s.index)).map((s) => (
                   <option key={s.index} value={s.index}>
                     {s.name}
                   </option>

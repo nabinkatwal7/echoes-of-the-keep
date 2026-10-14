@@ -2,6 +2,7 @@ import { parseSkillList } from "@/engine/classes/rules";
 import { requireUser } from "@/lib/auth";
 import { BASE_RACES, SUBRACES } from "@/lib/rules/race";
 import { prisma } from "@/lib/prisma";
+import { SRD_SUBCLASSES, srdOnly, srdWhere } from "@/lib/srd";
 import { CreatorWizard, type WizardData } from "./CreatorWizard";
 
 export const dynamic = "force-dynamic";
@@ -16,26 +17,26 @@ export default async function NewCharacterPage() {
   await requireUser();
   const [races, backgrounds, alignments, feats] = await Promise.all([
 
-    prisma.race.findMany(),
-    prisma.background.findMany({ orderBy: { name: "asc" } }),
+    prisma.race.findMany({ where: srdWhere("race") }),
+    prisma.background.findMany({ where: srdWhere("background"), orderBy: { name: "asc" } }),
     prisma.alignment.findMany({ orderBy: { name: "asc" } }),
-    prisma.feat.findMany({ orderBy: { name: "asc" }, select: { index: true, name: true, prerequisite: true } }),
+    prisma.feat.findMany({ where: srdWhere("feat"), orderBy: { name: "asc" }, select: { index: true, name: true, prerequisite: true } }),
   ]);
   const byIndex = new Map(races.map((r) => [r.index, r]));
 
   const data: WizardData = {
-    races: BASE_RACES.map((index) => {
-      const r = byIndex.get(index)!;
-      return {
+    races: BASE_RACES.flatMap((index) => {
+      const r = byIndex.get(index);
+      if (!r) return [];
+      return [{
         index,
         name: r.name,
         traits: slim(r.traits as Traits),
-        subraces: (SUBRACES[index] ?? []).map((s) => ({
-          index: s,
-          name: byIndex.get(s)!.name,
-          traits: slim(byIndex.get(s)!.traits as Traits),
-        })),
-      };
+        subraces: (SUBRACES[index] ?? []).flatMap((s) => {
+          const sub = byIndex.get(s);
+          return sub ? [{ index: s, name: sub.name, traits: slim(sub.traits as Traits) }] : [];
+        }),
+      }];
     }),
     backgrounds: backgrounds.map((b) => ({
       index: b.index,
@@ -47,5 +48,5 @@ export default async function NewCharacterPage() {
     feats,
   };
 
-  return <CreatorWizard data={data} />;
+  return <CreatorWizard data={data} subclassAllow={srdOnly() ? SRD_SUBCLASSES : undefined} />;
 }

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { classIcon } from "@/app/components/icons";
-import { Prose } from "@/app/components/Prose";
 import { Card } from "@/app/components/ui/Card";
+import { SourceText } from "@/app/components/SourceText";
 import { PageHeader } from "@/app/components/ui/PageHeader";
 import { getClass } from "@/lib/content/reference";
 import { SUBCLASS_LEVEL } from "@/engine/classes/subclasses";
 import { prisma } from "@/lib/prisma";
+import { srdWhere } from "@/lib/srd";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function ClassPage({ params }: { params: Promise<{ index: s
   const c = await getClass((await params).index);
   if (!c) notFound();
   const Icon = classIcon(c.index);
-  const subclasses = await prisma.subclass.findMany({ where: { classIndex: c.index }, orderBy: { name: "asc" } });
+  const subclasses = await prisma.subclass.findMany({ where: { classIndex: c.index, ...srdWhere("subclass") }, orderBy: { name: "asc" } });
   const prof = c.proficiencies as Record<string, string | null>;
   const rows = c.levelTable as Row[];
   const facts: [string, string][] = [
@@ -87,7 +88,7 @@ export default async function ClassPage({ params }: { params: Promise<{ index: s
                   <span className="text-gold transition group-open:rotate-45" aria-hidden>+</span>
                 </summary>
                 <div className="border-t border-border/60 px-5 py-4">
-                  <Prose text={s.text} />
+                  <SourceText text={s.text} />
                 </div>
               </details>
             ))}
@@ -98,7 +99,7 @@ export default async function ClassPage({ params }: { params: Promise<{ index: s
       <section>
         <h2 className="eyebrow mb-3">The {c.name}</h2>
         <Card className="p-7">
-          <Prose text={c.text} />
+          <SourceText text={c.text} />
         </Card>
       </section>
     </article>

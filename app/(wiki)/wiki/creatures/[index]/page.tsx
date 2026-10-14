@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Prose } from "@/app/components/Prose";
+import { SourceText } from "@/app/components/SourceText";
 import { abilityModifier } from "@/engine/abilities";
 import { getCreature } from "@/lib/content/gear";
 
@@ -82,7 +82,7 @@ export default async function CreaturePage({ params }: { params: Promise<{ index
             </>
           )}
           <div className="my-3 h-[3px] bg-gradient-to-r from-[#8b1e1e] via-[#c14a3a] to-transparent" />
-          <Prose text={body} className="text-[#2b1d12]" />
+          <SourceText text={body} className="text-[#2b1d12]" />
         </div>
       </div>
     </article>

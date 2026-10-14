@@ -1,5 +1,5 @@
 import { GiSkullCrossedBones } from "react-icons/gi";
-import { Prose } from "@/app/components/Prose";
+import { SourceText } from "@/app/components/SourceText";
 import { Card } from "@/app/components/ui/Card";
 import { PageHeader } from "@/app/components/ui/PageHeader";
 import { getConditions } from "@/lib/content/reference";
@@ -16,7 +16,7 @@ export default async function ConditionsPage() {
         {conditions.map((c) => (
           <Card key={c.index} id={c.index} className="flex flex-col gap-3">
             <h2 className="font-display text-lg uppercase tracking-[0.12em] text-danger">{c.name}</h2>
-            <Prose text={c.description} className="text-sm" />
+            <SourceText text={c.description} className="text-sm" />
           </Card>
         ))}
       </div>

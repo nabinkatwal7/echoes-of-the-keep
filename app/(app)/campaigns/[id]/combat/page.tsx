@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { getCampaignForMember } from "@/lib/campaigns/queries";
 import { buildEncounterView } from "@/lib/combat/view";
 import { loadEncounter } from "@/lib/combat/store";
+import { listEncounterCreatures } from "@/lib/content/gear";
 import { prisma } from "@/lib/prisma";
 import { spellbookFor, type Spellbook } from "@/lib/combat/spellList";
 import { CombatClient, type LogLine } from "./CombatClient";
@@ -45,7 +46,7 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
       .map((r) => ({ id: r.id, text: String((r.payload as { text?: string }).text ?? "") }));
   }
 
-  const creatures = isDm ? await prisma.creature.findMany({ where: { OR: [{ campaignId: null }, { campaignId: id }] }, select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } }) : [];
+  const creatures = isDm ? await listEncounterCreatures(id) : [];
 
   return (
     <div className="flex flex-col gap-4">

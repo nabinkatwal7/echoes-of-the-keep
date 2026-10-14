@@ -6,6 +6,7 @@ import { CASTER_KIND, CLASS_NAME, validateSpellSelection, type SpellMeta, type S
 import { CASTING_ABILITY } from "@/engine/spells";
 import type { ClassLevel } from "@/engine/progression";
 import { requireUser } from "@/lib/auth";
+import { spellInSrd, srdOnly, srdViolations } from "@/lib/srd";
 import { prisma } from "@/lib/prisma";
 import { editable } from "./access";
 import { auditStored, type AuditIssue } from "./audit";
@@ -29,6 +30,19 @@ export async function importCharacter(text: string): Promise<ImportActionResult>
   if (!race) return { ok: false, errors: [`Unknown race: ${c.raceIndex}`] };
   if (!background) return { ok: false, errors: [`Unknown background: ${c.backgroundIndex}`] };
   if (feats.length !== new Set(c.feats).size) return { ok: false, errors: ["The file references a feat that does not exist"] };
+  const outside = [
+    ...srdViolations({ raceIndex: c.raceIndex, subraceIndex: c.subraceIndex, backgroundIndex: c.backgroundIndex, feats: c.feats }),
+    ...c.classes.flatMap((k) => (k.subclassIndex && srdViolations({ subclassIndex: k.subclassIndex }).length ? ["That subclass is not part of the free rules (SRD)"] : [])),
+  ];
+  if (outside.length) return { ok: false, errors: outside };
+  if (srdOnly()) {
+    const byClass = (c.spells as { byClass?: Record<string, { known?: string[]; prepared?: string[]; spellbook?: string[] }> }).byClass ?? {};
+    const indexes = [...new Set(Object.values(byClass).flatMap((s) => [...(s.known ?? []), ...(s.prepared ?? []), ...(s.spellbook ?? [])]))];
+    if (indexes.length) {
+      const spells = await prisma.spell.findMany({ where: { index: { in: indexes } }, select: { name: true } });
+      if (spells.some((s) => !spellInSrd(s.name))) return { ok: false, errors: ["That spell is not part of the free rules (SRD)"] };
+    }
+  }
 
   const row = await prisma.character.create({
     data: {

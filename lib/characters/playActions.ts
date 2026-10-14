@@ -8,6 +8,7 @@ import { canLongRest, longRest, shortRest, spendResource } from "@/engine/rest";
 import type { ClassLevel } from "@/engine/progression";
 import { fadePenalty } from "@/engine/world";
 import { requireUser } from "@/lib/auth";
+import { spellInSrd, srdOnly } from "@/lib/srd";
 import { prisma } from "@/lib/prisma";
 import { audit, editable } from "./access";
 import { toEngineInput } from "./derive";
@@ -93,6 +94,7 @@ export async function saveSpellSelection(characterId: string, classIndex: string
 
   const wanted = [...new Set([...selection.known, ...selection.prepared, ...selection.spellbook])];
   const rows = await prisma.spell.findMany({ where: { index: { in: wanted } }, select: { index: true, name: true, level: true, classes: true } });
+  if (srdOnly() && rows.some((r) => !spellInSrd(r.name))) return fail("That spell is not part of the free rules (SRD)");
   const catalog = new Map<string, SpellMeta>(rows.map((r) => [r.index, r]));
   const errors = validateSpellSelection(classIndex, level, finalScores(c)[ability], selection, catalog);
   if (errors.length) return { ok: false, errors };

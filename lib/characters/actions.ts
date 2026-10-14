@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { srdViolations } from "@/lib/srd";
 import { requireUser } from "@/lib/auth";
 import { buildCharacter, type CreatorChoices } from "./build";
 import { checkPrerequisites } from "@/engine/feats";
@@ -18,6 +19,8 @@ export type StartingEquipment = "kit" | "gold" | "none";
 
 export async function createCharacter(choices: CreatorChoices, startingEquipment: StartingEquipment = "kit"): Promise<CreateResult> {
   const user = await requireUser();
+  const outside = srdViolations({ raceIndex: choices.raceIndex, subraceIndex: choices.subraceIndex, backgroundIndex: choices.backgroundIndex, subclassIndex: choices.subclassIndex, feats: choices.variantFeat ? [choices.variantFeat] : [] });
+  if (outside.length) return { ok: false, errors: outside };
 
   const [race, subrace, background] = await Promise.all([
     prisma.race.findUnique({ where: { index: choices.raceIndex } }),
@@ -98,6 +101,8 @@ export async function levelUpCharacter(id: string, choices: LevelUpChoices, mile
   const user = await requireUser();
   const c = await prisma.character.findFirst({ where: { id, ownerId: user.id } });
   if (!c) return { ok: false, errors: ["Character not found"] };
+  const outside = srdViolations({ subclassIndex: choices.subclassIndex, feats: choices.improvement?.kind === "feat" ? [choices.improvement.feat] : [] });
+  if (outside.length) return { ok: false, errors: outside };
   if (choices.improvement?.kind === "feat") {
     const feat = await prisma.feat.findUnique({ where: { index: choices.improvement.feat } });
     if (!feat) return { ok: false, errors: ["Unknown feat"] };

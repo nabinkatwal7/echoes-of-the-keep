@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GiScrollUnfurled } from "react-icons/gi";
-import { Prose } from "@/app/components/Prose";
+import { SourceText } from "@/app/components/SourceText";
 import { Card } from "@/app/components/ui/Card";
 import { PageHeader } from "@/app/components/ui/PageHeader";
 import { getRuleSections } from "@/lib/content/rules";
@@ -44,7 +44,7 @@ export default async function RuleChapterPage({ params }: { params: Promise<{ ch
           {sections.map((s) => (
             <Card key={s.id} id={s.slug} className="scroll-mt-24 p-6">
               <h2 className="mb-3 font-display text-xl uppercase tracking-[0.1em] text-goldBright">{s.title}</h2>
-              <Prose text={s.body} />
+              <SourceText text={s.body} />
             </Card>
           ))}
         </div>

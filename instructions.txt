@@ -124,7 +124,7 @@ Details for each phase: docs/phases/*.md
 [ ] f103, Backups, data export and account deletion
 [ ] f104, Security and privacy review
 [ ] f105, Monitoring, logging and runbooks
-[ ] f106, Licensing and attribution (SRD-only mode)
+[~] f106, Licensing and attribution (SRD-only mode)
 [ ] f107, User docs and release checklist
 
 PARTIAL NOTES
@@ -142,6 +142,7 @@ f67: multiattack and flat/dice attacks are read from stat blocks; recharge and l
 f63: opportunity attackers are reported on movement; the attack itself is made by the player or DM with the Opportunity button
 f4: Playwright e2e not set up yet
 f15: only the 31 Appendix D creatures; SRD monsters still to import
+f106: SRD_ONLY hides non-SRD choices and handbook prose; the database still stores handbook wording, and racial trait sentences are still parsed in the creator
 f36: level-up is generic (HP average, ASI or feat, multiclass); subclass choice and new class features per level not applied yet
 f44: campaign name and premise only; house-rule settings not built yet
 f47: table page with chat and dice log; presence list and shared scene not built yet

@@ -15,6 +15,7 @@ import { deleteCharacter } from "@/lib/characters/actions";
 import { deriveStored, prereqContext } from "@/lib/characters/derive";
 import { getOwnedCharacter } from "@/lib/characters/queries";
 import { prisma } from "@/lib/prisma";
+import { SRD_SUBCLASSES, showCreature, showSpell, srdOnly, srdWhere } from "@/lib/srd";
 import { InventoryPanel } from "./InventoryPanel";
 import { LevelUpPanel } from "./LevelUpPanel";
 import { CompanionsPanel } from "./CompanionsPanel";
@@ -50,7 +51,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
 
   const d = deriveStored(c);
   const catalog = await prisma.equipmentItem.findMany({ select: { index: true, name: true, cost: true, category: true }, orderBy: { name: "asc" } });
-  const feats = await prisma.feat.findMany({ select: { index: true, name: true, prerequisite: true }, orderBy: { name: "asc" } });
+  const feats = await prisma.feat.findMany({ where: srdWhere("feat"), select: { index: true, name: true, prerequisite: true }, orderBy: { name: "asc" } });
   const classes = c.classes as { classIndex: string; level: number; subclassIndex?: string }[];
   const subclassNames = classes.map((k) => SUBCLASSES.find((s) => s.index === k.subclassIndex)?.name).filter(Boolean);
   const proficient = new Set(c.skillProficiencies as Skill[]);
@@ -73,10 +74,10 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
     limits: spellLimits(k.classIndex, k.level, d.abilities[CASTING_ABILITY[k.classIndex]].score)!,
     maxSpellLevel: maxSpellLevel(k.classIndex, k.level),
     selection: spellState.byClass?.[k.classIndex] ?? { known: [], prepared: [], spellbook: [] },
-    options: options.filter((o) => o.classes.includes(CLASS_NAME[k.classIndex]) && o.level <= maxSpellLevel(k.classIndex, k.level)),
+    options: options.filter((o) => showSpell(o.name) && o.classes.includes(CLASS_NAME[k.classIndex]) && o.level <= maxSpellLevel(k.classIndex, k.level)),
   }));
   const slots = slotViews(c);
-  const creatures = await prisma.creature.findMany({ where: { campaignId: null }, select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } });
+  const creatures = (await prisma.creature.findMany({ where: { campaignId: null }, select: { index: true, name: true, challenge: true }, orderBy: { name: "asc" } })).filter((c) => showCreature(c.name));
   const companionKinds: CompanionKind[] = [];
   if (classes.some((k) => k.classIndex === "druid")) companionKinds.push("wild-shape");
   if (classes.some((k) => k.classIndex === "ranger" && k.subclassIndex === "beast-master")) companionKinds.push("beast-companion");
@@ -249,7 +250,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
 
       <Ornament />
 
-      <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} prereq={prereqContext(c)} />
+      <LevelUpPanel id={c.id} xp={c.xp} classes={classes} feats={feats} ownedFeats={c.feats as string[]} prereq={prereqContext(c)} subclassAllow={srdOnly() ? SRD_SUBCLASSES : undefined} />
 
       <SheetTools id={c.id} />
 
