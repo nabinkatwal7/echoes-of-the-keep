@@ -63,15 +63,16 @@ export function monsterStats(m: MonsterRow) {
   const ab = (m.abilities ?? { str: 10, dex: 10 }) as { str: number; dex: number };
   const actions = parseMonsterActions(m.text);
   const dexMod = abilityModifier(ab.dex);
-  const walk = /^(\d+)/.exec(m.speed ?? "")?.[1];
+  // the fastest listed speed (walk, fly or swim): a ghost walks 0 ft. but flies 60
   const full = (m.abilities ?? {}) as Record<string, number>;
   const saves = Object.fromEntries((["str", "dex", "con", "int", "wis", "cha"] as const).map((k) => [k, abilityModifier(full[k] ?? 10)]));
   const defenses: CombatDefenses = { ...parseDefenses(m.damageResistances), athletics: abilityModifier(ab.str), acrobatics: dexMod, saves };
+  const speeds = [...(m.speed ?? "").matchAll(/(\d+)\s*ft/g)].map((x) => Number(x[1]));
   const hp = Number(/^(\d+)/.exec(m.hitPoints ?? "")?.[1] ?? 1);
   return {
     ac: Number(/^(\d+)/.exec(m.armorClass ?? "")?.[1] ?? 10),
     hp,
-    speed: walk ? Number(walk) : 30,
+    speed: speeds.length ? Math.max(...speeds) : 30,
     dexMod,
     attacks: monsterProfiles(actions.attacks),
     attacksPerAction: actions.multiattack?.count ?? 1,

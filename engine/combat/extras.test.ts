@@ -100,3 +100,18 @@ describe("underwater and mounted", () => {
     expect(mountMoveCost(30)).toBe(15);
   });
 });
+
+describe("more stat block wording", () => {
+  const text = (s: string) => parseMonsterActions(s);
+  it("reads Melee or Ranged attacks as two ways to attack", () => {
+    const a = text("Dagger. Melee or Ranged Weapon Attack: +5 to hit, reach 5 ft. or range 20/60 ft., one target. Hit: 4 (1d4 + 2) piercing damage.").attacks;
+    expect(a.map((x) => [x.name, x.melee, x.reach ?? x.range?.normal])).toEqual([["Dagger", true, 5], ["Dagger (thrown)", false, 20]]);
+  });
+  it("reads spell attacks and a bonus with a note in brackets", () => {
+    expect(text("Touch. Melee Spell Attack: +4 to hit, reach 5 ft., one creature. Hit: 10 (3d6) necrotic damage. The target must succeed on a save.").attacks[0]).toMatchObject({ name: "Touch", toHit: 4, damage: "3d6", damageType: "necrotic" });
+    expect(text("Club. Melee Weapon Attack: +2 to hit (+6 to hit with shillelagh), reach 5 ft., one target. Hit: 2 (1d4) bludgeoning damage.").attacks[0].toHit).toBe(2);
+  });
+  it("skips attacks that only grapple or restrain", () => {
+    expect(text("Smother. Melee Weapon Attack: +5 to hit, reach 5 ft., one Medium or smaller creature. Hit: The creature is grappled (escape DC 13).").attacks).toEqual([]);
+  });
+});
