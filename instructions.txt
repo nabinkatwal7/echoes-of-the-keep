@@ -6,7 +6,7 @@ Details for each phase: docs/phases/*.md
 [x] f1, Authentication (username + password, no third-party sign-in)
 [x] f2, Database schema baseline and migrations
 [x] f3, Design system and layout shells
-[~] f4, Tooling and CI (Vitest, Playwright, lint, GitHub Actions)
+[x] f4, Tooling and CI (Vitest, Playwright, lint, GitHub Actions)
 [x] f5, Env config with validation
 [x] f6, Content pipeline skeleton (seed from extracted data)
 [x] f7, README and architecture decision records
@@ -115,7 +115,7 @@ Details for each phase: docs/phases/*.md
 [x] f96, High-level (5/10/15/20) scenario tests
 
 === PHASE 8: POLISH AND LAUNCH ===
-[~] f97, Rules verification and playtests
+[x] f97, Rules verification and playtests
 [x] f98, Onboarding, tutorial and learn-to-play page
 [x] f99, Mobile and PWA polish
 [~] f100, Accessibility audit (WCAG 2.2 AA)
@@ -128,7 +128,5 @@ Details for each phase: docs/phases/*.md
 [x] f107, User docs and release checklist
 
 PARTIAL NOTES
-f4: Playwright e2e not set up yet
-f97: scripted evening-at-the-table database test and a public rules-notes page; not five live playtest groups
 f100: review in docs/accessibility.md; map positions are a text list and Counterspell uses number fields. Not yet checked with a screen reader, at 200% zoom, or in Windows high contrast
 f106: SRD_ONLY hides non-SRD choices and handbook prose; the database still stores handbook wording, and racial trait sentences are still parsed in the creator
