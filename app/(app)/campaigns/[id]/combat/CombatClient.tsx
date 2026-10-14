@@ -7,7 +7,7 @@ import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Select } from "@/app/components/ui/Input";
 import {
-  addConditionTo, addMonster, addParty, adjustHitPoints, applyFall, attack, createEncounter, endEncounter, endTurn, grappleOrShove, moveCombatant,
+  runMonsterTurn, addConditionTo, addMonster, addParty, adjustHitPoints, applyFall, attack, createEncounter, endEncounter, endTurn, grappleOrShove, moveCombatant,
   removeCombatant, removeConditionFrom, setEnvironment, signalReady, standFromProne, startEncounter, takeAction, toggleMount, undoLast, takeReaction,
   starve, suffocate, legendaryAction, rechargeAbility,
 } from "@/lib/combat/actions";
@@ -24,12 +24,14 @@ type Props = {
   log: LogLine[];
   creatures: { index: string; label: string }[];
   spellbooks: Record<string, Spellbook>;
+  /** newest campaign event when the page was built, so the live stream only delivers what comes after */
+  lastEventId?: number;
 };
 
 const CONDITIONS = ["blinded", "charmed", "deafened", "frightened", "grappled", "incapacitated", "invisible", "paralyzed", "petrified", "poisoned", "prone", "restrained", "stunned", "unconscious"];
 const HEALTH_TONE: Record<string, "emerald" | "gold" | "ember" | "crimson" | "neutral"> = { Unhurt: "emerald", Scratched: "emerald", Bloodied: "gold", Wounded: "ember", "Near death": "crimson", Defeated: "neutral" };
 
-export function CombatClient({ campaignId, isDm, encounters, view, log, creatures, spellbooks }: Props) {
+export function CombatClient({ campaignId, isDm, encounters, view, log, creatures, spellbooks, lastEventId = 0 }: Props) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
@@ -37,13 +39,32 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
   const [aim, setAim] = useState<{ x: number; y: number } | null>(null);
   const [aiming, setAiming] = useState(false);
 
-  // the fight is shared state: refresh from the server every couple of seconds (visibility is filtered server-side)
+  // The fight is shared state. Every change writes a combat event, so listen to the live stream and refresh the moment one
+  // arrives (visibility is still filtered on the server). A slow poll remains as a safety net if the stream drops.
   useEffect(() => {
-    const t = setInterval(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const refreshSoon = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => router.refresh(), 80);
+    };
+    const source = new EventSource(`/api/campaigns/${campaignId}/stream?after=${lastEventId}`);
+    source.onmessage = (msg: MessageEvent) => {
+      try {
+        const e = JSON.parse(msg.data) as { type?: string };
+        if (e.type === "combat" || e.type === "system") refreshSoon();
+      } catch {
+        // ignore malformed lines
+      }
+    };
+    const poll = setInterval(() => {
       if (document.visibilityState === "visible") router.refresh();
-    }, 2500);
-    return () => clearInterval(t);
-  }, [router]);
+    }, 15000);
+    return () => {
+      source.close();
+      clearInterval(poll);
+      clearTimeout(timer);
+    };
+  }, [router, campaignId, lastEventId]);
 
   function run(fn: () => Promise<{ ok: boolean; errors?: string[]; id?: string }>, after?: (id?: string) => void) {
     start(async () => {
@@ -145,6 +166,12 @@ function Header({ view, isDm, run, pending }: { view: EncounterView; isDm: boole
       </div>
       {isDm && (
         <div className="flex flex-wrap gap-2">
+          {view.state === "ACTIVE" && view.combatants.some((c) => c.active && c.kind !== "character") && (
+            <>
+              <Button disabled={pending} onClick={() => run(() => runMonsterTurn(view.id))}>Run monster turn</Button>
+              <Button variant="secondary" disabled={pending} onClick={() => run(() => runMonsterTurn(view.id, { endAfter: true }))}>Run &amp; end turn</Button>
+            </>
+          )}
           {view.state !== "ACTIVE" && view.state !== "DONE" && <Button disabled={pending} onClick={() => run(() => startEncounter(view.id))}>Roll initiative &amp; start</Button>}
           {view.state !== "DONE" && (
             <>

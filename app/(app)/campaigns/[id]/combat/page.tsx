@@ -36,6 +36,7 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
     }
   }
 
+  const latest = await prisma.campaignEvent.findFirst({ where: { campaignId: id }, orderBy: { id: "desc" }, select: { id: true } });
   let log: LogLine[] = [];
   if (enc) {
     const rows = await prisma.campaignEvent.findMany({ where: { campaignId: id, type: "combat" }, orderBy: { id: "desc" }, take: 60 });
@@ -62,6 +63,7 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
         encounters={encounters}
         view={view}
         log={log}
+        lastEventId={latest?.id ?? 0}
         spellbooks={spellbooks}
         creatures={creatures.map((c) => ({ index: c.index, label: `${c.name} (CR ${String(c.challenge ?? "?").split(" ")[0]})` }))}
       />

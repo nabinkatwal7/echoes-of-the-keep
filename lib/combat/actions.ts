@@ -23,6 +23,7 @@ import {
 import { changed, clearSheetConcentration, concentrationRolls, dropForDowned } from "./concentration";
 import { adjustSlot } from "@/lib/characters/playActions";
 import { slotViews } from "@/lib/characters/play";
+import { expectedDamage, planMonsterTurn } from "./ai";
 import { canControl, context, fail, isCtx, loadActing, refresh, type Result } from "./access";
 import { loadEncounter, profilesOf, rowToCmb, sideOf } from "./store";
 
@@ -522,6 +523,16 @@ export async function moveCombatant(combatantId: string, x: number, y: number): 
       });
     }
   }
+  // monsters and other DM-run creatures take their opportunity attacks on their own
+  for (const id of provokes) {
+    const foe = enc.combatants.find((r) => r.id === id);
+    if (!foe || foe.characterId) continue;
+    const melee = profilesOf(foe).filter((p) => p.melee);
+    if (!melee.length) continue;
+    const mover = rowToCmb(row);
+    const best = [...melee].sort((a, b) => expectedDamage(b, mover.ac) - expectedDamage(a, mover.ac))[0];
+    await attack({ attackerId: id, targetId: row.id, attack: best.name, reaction: true });
+  }
   refresh(enc.campaignId);
   return { ok: true, provokes };
 }
@@ -720,4 +731,68 @@ export async function undoLast(encounterId: string): Promise<Result> {
   });
   refresh(ctx.enc.campaignId);
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------------------------- monster turns
+
+const wallSet = (env: unknown) => new Set(((env as { walls?: string[] } | null)?.walls ?? []) as string[]);
+
+/**
+ * Play the active DM-run creature's turn: choose the best target and attack, walk to it if needed, make every attack of its
+ * Multiattack, and optionally end the turn. Heroes are always played by their players.
+ */
+export async function runMonsterTurn(encounterId: string, opts: { endAfter?: boolean } = {}): Promise<Result & { lines?: string[] }> {
+  const ctx = await context(encounterId);
+  if (!isCtx(ctx)) return ctx;
+  if (!ctx.isDm) return fail("Only the DM can run monster turns");
+  const { enc } = ctx;
+  if (enc.state !== "ACTIVE") return fail("The encounter is not running");
+  const active = enc.combatants[enc.activeIndex];
+  if (!active) return fail("No active creature");
+  if (active.kind === "character") return fail("Heroes are played by their players");
+  const lines: string[] = [];
+
+  const self0 = rowToCmb(active);
+  const cannot = self0.defeated || !self0.turn.action;
+  if (!cannot) {
+    const fresh = async () => (await loadEncounter(encounterId))!;
+    const plan = (e: Awaited<ReturnType<typeof fresh>>) => {
+      const me = e.combatants.find((r) => r.id === active.id)!;
+      const cmb = rowToCmb(me);
+      const walls = wallSet(e.environment);
+      const occupied = new Set<string>([...walls, ...e.combatants.filter((r) => r.id !== me.id && !r.defeated && r.x !== null && r.y !== null).map((r) => `${r.x},${r.y}`)]);
+      const foes = e.combatants.filter((r) => sideOf(r) !== sideOf(me) && !r.defeated && !r.hidden).map(rowToCmb);
+      return planMonsterTurn({ self: cmb, profiles: profilesOf(me), foes, occupied, width: e.gridWidth, height: e.gridHeight });
+    };
+    const p = plan(enc);
+    lines.push(p.note);
+    if (p.kind === "attack") {
+      if (p.moveTo) {
+        const m = await moveCombatant(active.id, p.moveTo.x, p.moveTo.y);
+        if (!m.ok) lines.push(m.errors[0]);
+      }
+      let step = p;
+      for (let i = 0; i < p.attacks; i++) {
+        const e = await fresh();
+        if (e.state !== "ACTIVE") break;
+        if (!e.combatants.find((r) => r.id === step.targetId && !r.defeated)) {
+          const next = plan(e);
+          if (next.kind !== "attack" || next.attacks === 0) break;
+          step = next;
+        }
+        const r = await attack({ attackerId: active.id, targetId: step.targetId, attack: step.attack });
+        if (!r.ok) {
+          lines.push(r.errors[0]);
+          break;
+        }
+      }
+    }
+  } else lines.push(`${active.name} cannot act this turn`);
+
+  if (opts.endAfter) {
+    const end = await endTurn(encounterId);
+    if (!end.ok) return end;
+  }
+  refresh(enc.campaignId);
+  return { ok: true, lines };
 }
