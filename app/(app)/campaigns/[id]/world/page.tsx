@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { getCampaignForMember } from "@/lib/campaigns/queries";
 import { prisma } from "@/lib/prisma";
 import { WorldClient } from "./WorldClient";
+import type { TableView } from "./TablesPanel";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "World" };
@@ -17,6 +18,8 @@ export default async function WorldPage({ params }: { params: Promise<{ id: stri
   const isDm = mine?.role === "DM";
   const only = isDm ? {} : { revealed: true };
 
+  const tableRows = await prisma.randomTable.findMany({ where: { campaignId: id, ...(isDm ? {} : { shared: true }) }, orderBy: { name: "asc" } });
+  const tables: TableView[] = tableRows.map((t) => ({ id: t.id, name: t.name, shared: t.shared, entries: (Array.isArray(t.entries) ? t.entries : []) as TableView["entries"] }));
   const [npcs, places, quests, stash, party, homebrew, homebrewSpells] = await Promise.all([
     prisma.npc.findMany({ where: { campaignId: id, ...only }, orderBy: { name: "asc" } }),
     prisma.location.findMany({ where: { campaignId: id, ...only }, orderBy: { name: "asc" } }),
@@ -43,6 +46,7 @@ export default async function WorldPage({ params }: { params: Promise<{ id: stri
         stash={stash.map((s) => ({ id: s.id, name: s.name, quantity: s.quantity, notes: s.notes, valueGp: s.valueCp / 100 }))}
         monsters={homebrew.map((m) => ({ index: m.index, name: m.name, size: m.size, ac: m.armorClass ?? "", hp: m.hitPoints ?? "", challenge: m.challenge ?? "" }))}
         spells={homebrewSpells.map((s) => ({ index: s.index, name: s.name, level: s.level, className: s.classes[0] ?? "" }))}
+        tables={tables}
         heroes={party.filter((p) => isDm || p.character.ownerId === user.id).map((p) => ({ id: p.character.id, name: p.character.name }))}
       />
     </div>

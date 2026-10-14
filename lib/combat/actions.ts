@@ -846,3 +846,27 @@ export async function setFog(encounterId: string, on: boolean): Promise<Result> 
   refresh(ctx.enc.campaignId);
   return { ok: true };
 }
+
+/**
+ * Quick add for running the tracker without stat blocks: a name, an initiative and optional hit points. Hit points and
+ * armor class are the DM's own bookkeeping; the creature takes its turn in order like any other.
+ */
+export async function addManualCombatant(encounterId: string, input: { name: string; initiative: number | null; hp?: number; ac?: number; side: "party" | "foes" }): Promise<Result> {
+  const ctx = await context(encounterId);
+  if (!isCtx(ctx)) return ctx;
+  if (!ctx.isDm) return fail("Only the DM can add combatants");
+  const name = input.name.trim();
+  if (name.length < 1 || name.length > 60) return fail("Give the combatant a name");
+  if (input.initiative !== null && (!Number.isInteger(input.initiative) || input.initiative < -10 || input.initiative > 50)) return fail("Initiative must be a whole number");
+  const hp = input.hp ?? 10;
+  const ac = input.ac ?? 10;
+  if (!Number.isInteger(hp) || hp < 1 || hp > 9999 || !Number.isInteger(ac) || ac < 1 || ac > 40) return fail("Hit points and armor class are out of range");
+  const taken = ctx.enc.combatants.filter((c) => c.x !== null).length;
+  const create: Prisma.CombatantUncheckedCreateInput[] = [{
+    encounterId, kind: "npc", name, initiative: input.initiative, dexMod: 0, ac, hp, maxHp: hp, speed: 30,
+    x: 1 + (taken % 10), y: 1 + Math.floor(taken / 10), extra: { ally: input.side === "party", manual: true },
+  }];
+  await commit(ctx.enc, ctx.user, { create, lines: [`${name} joins the order${input.initiative !== null ? ` at ${input.initiative}` : ""}`] });
+  refresh(ctx.enc.campaignId);
+  return { ok: true };
+}

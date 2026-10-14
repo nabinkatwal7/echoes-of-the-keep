@@ -30,6 +30,19 @@ async function main() {
       data: [1, 2].map((n) => ({ encounterId: enc.id, kind: "monster", creatureIndex: "wolf", name: `Wolf ${n}`, dexMod: 2, ac: 13, hp: 11, maxHp: 11, speed: 40, x: 4 + n, y: 3 })),
     });
   }
+  let hero = await prisma.character.findFirst({ where: { ownerId: player.id, name: "Demo Hero" } });
+  if (!hero) {
+    hero = await prisma.character.create({
+      data: {
+        ownerId: player.id, name: "Demo Hero", raceIndex: "human", backgroundIndex: "soldier", alignment: "neutral-good",
+        classes: [{ classIndex: "fighter", level: 1 }], baseScores: { str: 15, dex: 13, con: 14, int: 8, wis: 10, cha: 12 }, abilityMethod: "standard",
+        scoreBonuses: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 }, skillProficiencies: ["athletics", "perception"], speed: 30, currentHp: 13,
+        equipment: [], currency: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 }, personality: {},
+      },
+    });
+  }
+  await prisma.campaignCharacter.upsert({ where: { campaignId_characterId: { campaignId: campaign.id, characterId: hero.id } }, update: {}, create: { campaignId: campaign.id, characterId: hero.id } });
+  console.log(`Hero /characters/${hero.id}`);
   console.log(`Campaign ${campaign.id}: /campaigns/${campaign.id}`);
   console.log(`Sign in as demo_dm or demo_player, password: ${PASSWORD}`);
   await prisma.$disconnect();

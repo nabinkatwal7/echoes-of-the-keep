@@ -9,7 +9,7 @@ import { Input, Select } from "@/app/components/ui/Input";
 import {
   runMonsterTurn, addConditionTo, addMonster, addParty, adjustHitPoints, applyFall, attack, createEncounter, endEncounter, endTurn, grappleOrShove, moveCombatant,
   removeCombatant, removeConditionFrom, setEnvironment, signalReady, standFromProne, startEncounter, takeAction, toggleMount, undoLast, takeReaction,
-  starve, suffocate, legendaryAction, rechargeAbility, setWalls, setFog,
+  starve, suffocate, legendaryAction, rechargeAbility, setWalls, setFog, addManualCombatant,
 } from "@/lib/combat/actions";
 import type { CombatantView, EncounterView } from "@/lib/combat/view";
 import type { Spellbook } from "@/lib/combat/spellList";
@@ -91,6 +91,7 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
           <div className="flex flex-col gap-4">
             <Header view={view} isDm={isDm} run={run} pending={pending} wallMode={wallMode} setWallMode={setWallMode} />
             {isDm && view.state !== "DONE" && <DmSetup view={view} creatures={creatures} run={run} pending={pending} />}
+            {isDm && view.state !== "DONE" && <QuickAdd view={view} run={run} pending={pending} />}
             <Order view={view} selected={selected} onSelect={setSelected} />
             <Board wallMode={wallMode} view={view} selected={selected} onSelect={setSelected} run={run} aim={aim} aiming={aiming} onAim={(x, y) => { setAim({ x, y }); setAiming(false); }} />
           </div>
@@ -426,6 +427,39 @@ function Actions({ view, creatures, selected, run, pending, isDm, spellbooks, ai
           <Button variant="ghost" disabled={pending} onClick={() => run(() => removeCombatant(me.id))}>Remove from encounter</Button>
         </div>
       )}
+    </Card>
+  );
+}
+
+/** Run the initiative order without stat blocks: type a name, an initiative and optional hit points. */
+function QuickAdd({ view, run, pending }: { view: EncounterView; run: Run; pending: boolean }) {
+  const [name, setName] = useState("");
+  const [init, setInit] = useState("");
+  const [hp, setHp] = useState("");
+  const [side, setSide] = useState<"foes" | "party">("foes");
+  return (
+    <Card className="flex flex-wrap items-end gap-3 p-4">
+      <p className="rune-label w-full">Quick add (no stat block)</p>
+      <Input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} aria-label="Name" className="w-40" maxLength={60} />
+      <Input type="number" placeholder="Initiative" value={init} onChange={(e) => setInit(e.target.value)} aria-label="Initiative" className="w-28" />
+      <Input type="number" min={1} placeholder="HP" value={hp} onChange={(e) => setHp(e.target.value)} aria-label="Hit points" className="w-20" />
+      <Select aria-label="Side" value={side} onChange={(e) => setSide(e.target.value as "foes" | "party")} className="w-auto">
+        <option value="foes">Foe</option>
+        <option value="party">Ally</option>
+      </Select>
+      <Button
+        variant="secondary"
+        disabled={pending || !name.trim()}
+        onClick={() =>
+          run(() => addManualCombatant(view.id, { name, initiative: init === "" ? null : Number(init), hp: hp === "" ? undefined : Number(hp), side }), () => {
+            setName("");
+            setInit("");
+            setHp("");
+          })
+        }
+      >
+        Add
+      </Button>
     </Card>
   );
 }

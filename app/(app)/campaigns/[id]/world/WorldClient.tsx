@@ -6,6 +6,7 @@ import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Select, Textarea } from "@/app/components/ui/Input";
+import { TablesPanel, type TableView } from "./TablesPanel";
 import { addStashItem, removeStashItem, takeFromStash } from "@/lib/world/playActions";
 import { deleteHomebrewMonster, deleteHomebrewSpell, deleteWorldItem, saveHomebrewMonster, saveHomebrewSpell, saveLocation, saveNpc, saveQuest, setQuestStatus, setRevealed, setScene } from "@/lib/world/worldActions";
 
@@ -15,8 +16,8 @@ type Quest = { id: string; title: string; description: string; reward: string; s
 type Stash = { id: string; name: string; quantity: number; notes: string; valueGp: number };
 type Monster = { index: string; name: string; size: string; ac: string; hp: string; challenge: string };
 type SpellRow = { index: string; name: string; level: number; className: string };
-type Props = { campaignId: string; isDm: boolean; npcs: Npc[]; places: Place[]; quests: Quest[]; stash: Stash[]; monsters: Monster[]; spells: SpellRow[]; heroes: { id: string; name: string }[] };
-type Tab = "npcs" | "places" | "quests" | "stash" | "monsters" | "spells";
+type Props = { tables: TableView[]; campaignId: string; isDm: boolean; npcs: Npc[]; places: Place[]; quests: Quest[]; stash: Stash[]; monsters: Monster[]; spells: SpellRow[]; heroes: { id: string; name: string }[] };
+type Tab = "npcs" | "places" | "quests" | "stash" | "monsters" | "spells" | "tables";
 type Out = { ok: boolean; errors?: string[] };
 
 const ATTITUDE_TONE = { friendly: "emerald", indifferent: "neutral", hostile: "crimson" } as const;
@@ -44,12 +45,13 @@ export function WorldClient(p: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="World">
-        {([["quests", "Quests"], ["npcs", "People"], ["places", "Places"], ["stash", "Party stash"], ...(p.isDm ? [["monsters", "Homebrew monsters"] as const, ["spells", "Homebrew spells"] as const] : [])] as const).map(([k, label]) => (
+        {([["quests", "Quests"], ["npcs", "People"], ["places", "Places"], ["stash", "Party stash"], ["tables", "Random tables"], ...(p.isDm ? [["monsters", "Homebrew monsters"] as const, ["spells", "Homebrew spells"] as const] : [])] as const).map(([k, label]) => (
           <Button key={k} role="tab" aria-selected={tab === k} variant={tab === k ? "primary" : "secondary"} className="px-4" onClick={() => { setTab(k); clear(); }}>{label}</Button>
         ))}
       </div>
       {error && <p role="alert" className="rounded border border-crimson/60 bg-crimson/10 px-3 py-2 text-sm text-danger">{error}</p>}
 
+      {tab === "tables" ? <TablesPanel campaignId={p.campaignId} isDm={p.isDm} tables={p.tables} /> : (
       <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
         <div className="flex flex-col gap-3">
           {tab === "quests" && (p.quests.length === 0 ? <Empty /> : p.quests.map((q) => (
@@ -187,6 +189,7 @@ export function WorldClient(p: Props) {
           </Card>
         )}
       </div>
+      )}
     </div>
   );
 }

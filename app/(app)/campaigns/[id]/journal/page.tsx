@@ -34,6 +34,7 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
           kind: e.kind as "NOTE" | "HANDOUT" | "RECAP",
           title: e.title,
           body: e.body,
+          imageUrl: e.imageUrl,
           visibility: e.visibility as "PRIVATE" | "PARTY",
           pinned: e.pinned,
           authorId: e.authorId,

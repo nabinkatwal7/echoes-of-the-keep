@@ -3,11 +3,13 @@ import { cleanup, makeUser, RUN_DB, signInAs } from "./db";
 import { attachCharacter, createCampaign, joinCampaign } from "@/lib/campaigns/actions";
 import { createCharacter } from "@/lib/characters/actions";
 import { addStashItem, advanceTime, applyHazard, awardMilestone, awardPartyXp, callForCheck, lightSource, partyRest, raiseHero, setInspiration, socialCheck, splitCoin, takeFromStash, travel } from "@/lib/world/playActions";
-import { addMonster, createEncounter } from "@/lib/combat/actions";
+import { addManualCombatant, addMonster, createEncounter, startEncounter } from "@/lib/combat/actions";
+import { addStarterTables, deleteTable, rollOnTable, saveTable } from "@/lib/world/tableActions";
 import { monsterStats } from "@/lib/combat/profiles";
 import { getCreatures } from "@/lib/content/gear";
 import { deleteHomebrewMonster, deleteWorldItem, saveHomebrewMonster, saveLocation, saveNpc, saveQuest, setQuestStatus, setRevealed, setScene, spendDowntime } from "@/lib/world/worldActions";
 import { purseValueCp, type Purse } from "@/engine/economy";
+import { createEntry } from "@/lib/journal/actions";
 import { prisma } from "@/lib/prisma";
 
 const rogue = {
@@ -207,5 +209,48 @@ describe.skipIf(!RUN_DB)("the world around the party (database)", () => {
     expect((await spendDowntime(heroId, "research", 100)).ok).toBe(false); // 100 gp
     expect((await spendDowntime(heroId, "craft", 5, { itemValueGp: 50 })).ok).toBe(false); // no tools
     signInAs(dm);
+  });
+
+  it("random tables: the DM writes them, players roll only the shared ones, secret rolls stay secret", async () => {
+    signInAs(dm);
+    expect((await saveTable(cid, { name: "Odd", entriesText: "only one", shared: false })).ok).toBe(false); // needs two entries
+    const t = await saveTable(cid, { name: "Rumors", entriesText: "3 | The bridge is out\nA ghost walks the hill", shared: false });
+    const shared = await saveTable(cid, { name: "Weather", entriesText: "Rain\nSun\nFog", shared: true });
+    if (!t.ok || !shared.ok) throw new Error("setup");
+    const stored = await prisma.randomTable.findUniqueOrThrow({ where: { id: t.id } });
+    expect(stored.entries).toEqual([{ weight: 3, text: "The bridge is out" }, { weight: 1, text: "A ghost walks the hill" }]);
+    expect((await addStarterTables(cid)).ok).toBe(true);
+    expect((await addStarterTables(cid)).ok).toBe(false); // already there
+
+    signInAs(alice);
+    expect((await rollOnTable(cid, t.id)).ok).toBe(false); // DM only
+    expect((await rollOnTable(cid, shared.id)).ok).toBe(true);
+    expect((await saveTable(cid, { name: "Nope", entriesText: "a\nb", shared: true })).ok).toBe(false);
+    signInAs(dm);
+    const before = await prisma.campaignEvent.count({ where: { campaignId: cid, audience: "DM" } });
+    const rolled = await rollOnTable(cid, t.id, true);
+    expect(rolled.ok).toBe(true);
+    expect(await prisma.campaignEvent.count({ where: { campaignId: cid, audience: "DM" } })).toBe(before + 1);
+    expect((await deleteTable(cid, t.id)).ok).toBe(true);
+    expect((await rollOnTable(cid, t.id)).ok).toBe(false);
+  });
+
+  it("handouts can carry an https image, and the DM can run an initiative order without stat blocks", async () => {
+    signInAs(dm);
+    expect((await createEntry(cid, { kind: "HANDOUT", title: "Map", body: "", imageUrl: "javascript:alert(1)" })).ok).toBe(false);
+    expect((await createEntry(cid, { kind: "HANDOUT", title: "Map", body: "", imageUrl: "https://example.com/map.png" })).ok).toBe(true);
+    expect((await prisma.journalEntry.findFirstOrThrow({ where: { campaignId: cid, title: "Map" } })).imageUrl).toBe("https://example.com/map.png");
+
+    const enc = await createEncounter(cid, "Tavern brawl");
+    if (!enc.ok || !enc.id) throw new Error("setup");
+    expect((await addManualCombatant(enc.id, { name: "Brawler", initiative: 12, hp: 8, side: "foes" })).ok).toBe(true);
+    expect((await addManualCombatant(enc.id, { name: "Barkeep", initiative: 18, side: "party" })).ok).toBe(true);
+    expect((await addManualCombatant(enc.id, { name: "", initiative: 1, side: "foes" })).ok).toBe(false);
+    signInAs(alice);
+    expect((await addManualCombatant(enc.id, { name: "Sneak", initiative: 20, side: "foes" })).ok).toBe(false);
+    signInAs(dm);
+    expect((await startEncounter(enc.id)).ok).toBe(true);
+    const order = (await prisma.combatant.findMany({ where: { encounterId: enc.id }, orderBy: { turnOrder: "asc" } })).map((c) => c.name);
+    expect(order).toEqual(["Barkeep", "Brawler"]);
   });
 });

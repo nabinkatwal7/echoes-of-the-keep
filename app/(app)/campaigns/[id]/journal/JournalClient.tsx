@@ -13,6 +13,7 @@ type Entry = {
   kind: EntryKind;
   title: string;
   body: string;
+  imageUrl: string;
   visibility: "PRIVATE" | "PARTY";
   pinned: boolean;
   authorId: string;
@@ -30,6 +31,7 @@ export function JournalClient({ campaignId, isDm, userId, entries }: { campaignI
   const [kind, setKind] = useState<EntryKind>("NOTE");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [image, setImage] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState({ title: "", body: "" });
 
@@ -76,7 +78,13 @@ export function JournalClient({ campaignId, isDm, userId, entries }: { campaignI
                   </div>
                 </div>
               ) : (
+                <>
+                  {e.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={e.imageUrl} alt={`Handout: ${e.title}`} referrerPolicy="no-referrer" className="max-h-96 w-full rounded border border-border object-contain" />
+                  )}
                 <p className="whitespace-pre-wrap text-[0.95rem] leading-relaxed">{e.body || <span className="text-muted">(empty)</span>}</p>
+                </>
               )}
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
                 <span>{e.author} · {new Date(e.updatedAt).toLocaleDateString()}</span>
@@ -104,8 +112,9 @@ export function JournalClient({ campaignId, isDm, userId, entries }: { campaignI
           {isDm && <option value="RECAP">Recap</option>}
         </Select>
         <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} aria-label="Title" />
+        <Input type="url" placeholder="Image link (https, optional)" value={image} onChange={(e) => setImage(e.target.value)} aria-label="Image link" maxLength={500} />
         <Textarea placeholder="Write here…" value={body} onChange={(e) => setBody(e.target.value)} rows={8} aria-label="Body" />
-        <Button disabled={pending || !title.trim()} onClick={() => run(() => createEntry(campaignId, { kind, title, body }), () => { setTitle(""); setBody(""); })}>Add to journal</Button>
+        <Button disabled={pending || !title.trim()} onClick={() => run(() => createEntry(campaignId, { kind, title, body, imageUrl: image }), () => { setTitle(""); setBody(""); setImage(""); })}>Add to journal</Button>
       </Card>
     </div>
   );

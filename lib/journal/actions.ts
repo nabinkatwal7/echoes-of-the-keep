@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { getMembership } from "@/lib/campaigns/queries";
 import { prisma } from "@/lib/prisma";
+import { safeImageUrl } from "@/lib/safeUrl";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; errors: string[] };
 const fail = (m: string): { ok: false; errors: string[] } => ({ ok: false, errors: [m] });
@@ -20,7 +21,7 @@ function check(title: string, body: string) {
 }
 
 /** Notes are private to their author; handouts and recaps are written by the DM and published to the party on purpose. */
-export async function createEntry(campaignId: string, input: { kind: EntryKind; title: string; body: string }): Promise<Result<{ id: string }>> {
+export async function createEntry(campaignId: string, input: { kind: EntryKind; title: string; body: string; imageUrl?: string }): Promise<Result<{ id: string }>> {
   const user = await requireUser();
   const m = await getMembership(campaignId, user.id);
   if (!m) return fail("You are not in this campaign");
@@ -28,7 +29,9 @@ export async function createEntry(campaignId: string, input: { kind: EntryKind; 
   if (input.kind !== "NOTE" && m.role !== "DM") return fail("Only the DM can write handouts and recaps");
   const bad = check(input.title, input.body);
   if (bad) return fail(bad);
-  const e = await prisma.journalEntry.create({ data: { campaignId, authorId: user.id, kind: input.kind, title: input.title.trim(), body: input.body } });
+  const image = (input.imageUrl ?? "").trim();
+  if (!safeImageUrl(image)) return fail("Use an https link to a png, jpg, webp, gif or avif image");
+  const e = await prisma.journalEntry.create({ data: { campaignId, authorId: user.id, kind: input.kind, title: input.title.trim(), body: input.body, imageUrl: image } });
   refresh(campaignId);
   return { ok: true, id: e.id };
 }
@@ -46,13 +49,15 @@ async function ownEntry(id: string): Promise<Own> {
   return { e, user, isDm: m.role === "DM" };
 }
 
-export async function updateEntry(id: string, input: { title: string; body: string }): Promise<Result> {
+export async function updateEntry(id: string, input: { title: string; body: string; imageUrl?: string }): Promise<Result> {
   const r = await ownEntry(id);
   if (r.error) return r.error;
   if (r.e.authorId !== r.user.id) return fail("Only the author can edit this");
   const bad = check(input.title, input.body);
   if (bad) return fail(bad);
-  await prisma.journalEntry.update({ where: { id }, data: { title: input.title.trim(), body: input.body } });
+  const image = input.imageUrl === undefined ? r.e.imageUrl : input.imageUrl.trim();
+  if (!safeImageUrl(image)) return fail("Use an https link to a png, jpg, webp, gif or avif image");
+  await prisma.journalEntry.update({ where: { id }, data: { title: input.title.trim(), body: input.body, imageUrl: image } });
   refresh(r.e.campaignId);
   return { ok: true };
 }

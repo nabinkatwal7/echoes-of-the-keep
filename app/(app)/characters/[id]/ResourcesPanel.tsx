@@ -68,7 +68,7 @@ export function ResourcesPanel({
                 <span className="ml-2 text-xs text-muted">{r.recharge === "short" ? "short rest" : r.recharge === "long" ? "long rest" : r.recharge}</span>
               </span>
               {r.style === "uses" && r.max <= 10 ? (
-                <span className="flex gap-1.5" aria-label={`${r.max - r.used} of ${r.max} uses left`}>
+                <span role="img" className="flex gap-1.5" aria-label={`${r.max - r.used} of ${r.max} uses left`}>
                   {Array.from({ length: r.max }, (_, i) => (
                     <span key={i} className={`h-4 w-4 rounded-full border ${i < r.max - r.used ? "border-goldBright bg-gold" : "border-border"}`} />
                   ))}

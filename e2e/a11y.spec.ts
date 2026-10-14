@@ -88,3 +88,27 @@ test("keyboard: the skip link is first, visible, and works", async ({ page }) =>
   await page.keyboard.press("Enter");
   await expect(page.locator("#main")).toBeFocused();
 });
+
+// The character sheet, on a desktop and on a phone (where the hit point bar is pinned to the bottom of the screen).
+test("the character sheet passes axe and fits a phone without sideways scrolling", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel(/username/i).fill("demo_player");
+  await page.getByLabel(/password/i).fill("demo-password-1");
+  await page.getByRole("button", { name: /sign in|enter|log in/i }).click();
+  await page.waitForURL(/\/characters/, { timeout: 10_000 }).catch(() => {});
+  test.skip(!/\/characters/.test(page.url()), "demo data is not seeded");
+  const href = await page.locator('a[href^="/characters/"]:not([href="/characters/new"])').first().getAttribute("href");
+  test.skip(!href, "no hero to scan");
+
+  await page.goto(href!);
+  let results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+  expect(results.violations.map((v) => `${v.id}: ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
+
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(href!);
+  await expect(page.getByRole("group", { name: "Quick hit point changes" })).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+  expect(results.violations.map((v) => `${v.id}: ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
+});

@@ -297,6 +297,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
 function Pip({ on }: { on: boolean }) {
   return (
     <span
+      role="img"
       aria-label={on ? "proficient" : "not proficient"}
       className={`h-3.5 w-3.5 shrink-0 rotate-45 border ${on ? "border-goldBright bg-gold shadow-[0_0_8px_rgba(239,205,111,0.6)]" : "border-border"}`}
     />

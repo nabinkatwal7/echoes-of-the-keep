@@ -244,6 +244,7 @@ model Campaign {
   quests      Quest[]
   stash       StashItem[]
   homebrew       Creature[]
+  tables         RandomTable[]
   homebrewSpells Spell[]
   /// in-game time: minutes since midnight of day 1 (starts at 8:00)
   clockMinutes Int                @default(480)
@@ -406,6 +407,8 @@ model JournalEntry {
   /// PRIVATE (author, plus the DM for handout drafts) or PARTY (everyone in the campaign)
   visibility String   @default("PRIVATE")
   pinned     Boolean  @default(false)
+  /// https image shown with a handout
+  imageUrl   String   @default("")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -487,6 +490,21 @@ model StashItem {
   quantity   Int      @default(1)
   notes      String   @default("")
   valueCp    Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([campaignId])
+}
+
+/// A table the DM rolls on: weighted entries such as rumors, loot or wandering monsters.
+model RandomTable {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name       String
+  /// [{ text, weight }]
+  entries    Json     @default("[]")
+  /// players may roll it themselves
+  shared     Boolean  @default(false)
   createdAt  DateTime @default(now())
 
   @@index([campaignId])
