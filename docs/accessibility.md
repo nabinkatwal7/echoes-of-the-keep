@@ -17,6 +17,7 @@ A manual review against the success criteria that matter most for this interface
 | 2.4.7 Focus visible | Global `:focus-visible` ring in `app/globals.css` |
 | 2.5.8 Target size | Buttons are at least 44 px tall (`min-h-11`); compact secondary buttons are 36 px, which still meets the 24 px AA minimum |
 | 2.3.3 / motion | `prefers-reduced-motion` turns off animation |
+| 1.4.3 / 1.4.11 contrast option | Footer toggles a higher-contrast palette and Atkinson Hyperlegible (“Plain type”), remembered in this browser |
 | 3.3.1 / 3.3.3 Errors | Server errors appear next to the form in an element with `role="alert"`; messages say what to fix |
 | 4.1.3 Status messages | Success and progress messages use `role="status"` |
 

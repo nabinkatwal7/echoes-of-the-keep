@@ -22,6 +22,26 @@
   color-scheme: dark;
 }
 
+html[data-contrast="high"] {
+  --background: #000000;
+  --foreground: #fff8e8;
+  --surface: #0a0a0a;
+  --surface-2: #161616;
+  --border: #efcd6f;
+  --muted: #ffe7b8;
+  --gold-bright: #ffe08a;
+}
+
+html[data-font="readable"] body,
+html[data-font="readable"] h1,
+html[data-font="readable"] h2,
+html[data-font="readable"] h3,
+html[data-font="readable"] h4,
+html[data-font="readable"] .font-display {
+  font-family: var(--font-readable), Verdana, sans-serif;
+  letter-spacing: 0.01em;
+}
+
 html {
   background: var(--background);
   scroll-behavior: smooth;
