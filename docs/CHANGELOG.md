@@ -4,6 +4,12 @@ What was built, grouped by area, newest first. The project has no version number
 
 ## 2026-10-14
 
+### Emberhall: new name, light and dark themes, pixel art
+- **Renamed to Emberhall.** The product name is now Emberhall; "5th Edition" and the not-affiliated notices are unchanged.
+- **Light and dark themes.** The header and footer have an Auto / Light / Dark switch (Auto follows the device). The choice is remembered, applied before the page paints, and every colour is a theme token. Both themes pass the axe scan; high contrast still overrides either.
+- **Pixel art.** Every class has a pixel hero, creatures get one of 16 shapes by type, and five night scenes dress the landing page and solo games. They are drawn in code (`engine/pixel/`) as crisp SVG: no image files. Heroes without a portrait photo use their class sprite on the heroes list, sheet, campaign and solo pages; the initiative list and battle map show tokens.
+- **Layout fixes.** The header fits from 320 px to wide screens (full menu from 1280 px), the Combat page no longer repeats the wall and fog buttons or overflows on phones.
+
 ### Solo play
 - **Play alone.** Choose a seat on `/solo`: a player with a computer Dungeon Master and companions, or the Dungeon Master with computer heroes.
 - A generated chapter of seven scenes in four themes (crypt, wilds, bandits, caves), narrated by the computer DM, with fights chosen to suit the party, rests, treasure and levelling.

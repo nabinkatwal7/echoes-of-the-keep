@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { HeroAvatar, SceneBanner } from "@/app/components/pixel/Avatars";
+import { SCENE_THEMES, type SceneTheme } from "@/engine/pixel/scenes";
 import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
 import { LinkButton } from "@/app/components/ui/Button";
@@ -32,7 +34,7 @@ export default async function SoloGamePage({ params }: { params: Promise<{ id: s
   ]);
   const party = links.map(({ character: c }) => {
     const d = deriveStored(c as unknown as StoredCharacter);
-    return { id: c.id, name: c.name, mine: c.ownerId === user.id, level: d.level, hp: c.currentHp, maxHp: d.maxHp, ac: d.armorClass.total, classes: (c.classes as { classIndex: string }[]).map((k) => titleCase(k.classIndex)).join(" / ") };
+    return { id: c.id, name: c.name, classIndex: (c.classes as { classIndex: string }[])[0]?.classIndex ?? "fighter", portraitUrl: c.portraitUrl, mine: c.ownerId === user.id, level: d.level, hp: c.currentHp, maxHp: d.maxHp, ac: d.armorClass.total, classes: (c.classes as { classIndex: string }[]).map((k) => titleCase(k.classIndex)).join(" / ") };
   });
   const fight = encounters[0] && encounters[0].state === "ACTIVE" ? encounters[0] : null;
   const scene = adv ? SCENES[Math.min(adv.sceneIndex, SCENES.length - 1)] : null;
@@ -44,6 +46,8 @@ export default async function SoloGamePage({ params }: { params: Promise<{ id: s
         <h1 className="gilded text-3xl font-bold">{adv?.title || campaign.name}</h1>
         <p className="text-sm text-muted">{solo.mode === "player" ? "You play a hero. The computer runs the story and your companions." : "You are the Dungeon Master. Computer heroes play the party."}</p>
       </div>
+
+      <SceneBanner theme={(SCENE_THEMES as readonly string[]).includes(solo.theme) ? (solo.theme as SceneTheme) : "crypt"} seed={id} className="h-24 sm:h-32" />
 
       {adv && (
         <ol className="flex flex-wrap gap-2" aria-label="Chapter progress">
@@ -93,7 +97,8 @@ export default async function SoloGamePage({ params }: { params: Promise<{ id: s
             <h2 className="eyebrow">The party</h2>
             <ul className="flex flex-col gap-2">
               {party.map((p) => (
-                <li key={p.id} className="flex flex-wrap items-center gap-2 border-b border-border pb-2 last:border-0">
+                <li key={p.id} className="flex flex-wrap items-center gap-3 border-b border-border pb-2 last:border-0">
+                  <HeroAvatar classIndex={p.classIndex} name={p.name} portraitUrl={p.portraitUrl} size={44} />
                   <div className="min-w-0 flex-1">
                     <Link href={`/characters/${p.id}`} className="font-semibold hover:text-goldBright">{p.name}</Link>{p.mine && <Badge tone="gold" className="ml-2">You</Badge>}
                     <p className="text-xs text-muted">{p.classes} · level {p.level} · AC {p.ac}</p>

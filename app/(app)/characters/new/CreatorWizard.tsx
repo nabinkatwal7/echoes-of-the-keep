@@ -502,7 +502,7 @@ export function CreatorWizard({ data, subclassAllow }: { data: WizardData; subcl
                 <p className="text-xs text-muted">AC: {explain(preview.armorClass)}</p>
                 <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
                   {ABILITIES.map((a) => (
-                    <div key={a} className="rounded border border-border bg-black/30 p-3 text-center">
+                    <div key={a} className="rounded border border-border bg-shade/30 p-3 text-center">
                       <div className="rune-label">{a.toUpperCase()}</div>
                       <div className="font-display text-xl text-goldBright">{signed(preview.abilities[a].modifier)}</div>
                       <div className="text-xs text-muted">{preview.abilities[a].score}</div>

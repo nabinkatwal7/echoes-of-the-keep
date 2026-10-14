@@ -10,17 +10,23 @@ const body = EB_Garamond({ variable: "--font-body", subsets: ["latin"], weight: 
 const readable = Atkinson_Hyperlegible({ variable: "--font-readable", subsets: ["latin"], weight: ["400", "700"] });
 
 export const metadata: Metadata = {
-  title: { default: "Dungeons & Dragons", template: "%s · Dungeons & Dragons" },
-  description: "Rules tome, hero forge and live campaigns for D&D 5th Edition.",
+  title: { default: "Emberhall", template: "%s · Emberhall" },
+  description: "Emberhall: a rules tome, hero forge and shared table for 5th Edition role-playing, with solo play against a computer Dungeon Master.",
 };
 
-export const viewport: Viewport = { themeColor: "#0f0b08", colorScheme: "dark" };
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4ead2" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0b08" },
+  ],
+  colorScheme: "light dark",
+};
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${readable.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${display.variable} ${body.variable} ${readable.variable}`}>
       <body className="flex min-h-screen flex-col antialiased">
-        <script dangerouslySetInnerHTML={{ __html: "try{var r=document.documentElement;var c=localStorage.getItem('dnd-contrast');var f=localStorage.getItem('dnd-font');if(c)r.dataset.contrast=c;if(f)r.dataset.font=f}catch(e){}" }} />
+        <script dangerouslySetInnerHTML={{ __html: "try{var r=document.documentElement;var t=localStorage.getItem('emberhall-theme');r.dataset.theme=(t==='light'||t==='dark')?t:(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');var c=localStorage.getItem('dnd-contrast');var f=localStorage.getItem('dnd-font');if(c)r.dataset.contrast=c;if(f)r.dataset.font=f}catch(e){}" }} />
         <a href="#main" className="skip-link">Skip to content</a>
         <RegisterSW />
         <SiteHeader />

@@ -56,7 +56,7 @@ export default async function ClassPage({ params }: { params: Promise<{ index: s
         <Card flat className="overflow-x-auto p-0">
           <table className="w-full min-w-[34rem] text-left text-sm">
             <thead>
-              <tr className="border-b border-border bg-black/30 font-display text-xs uppercase tracking-[0.14em] text-gold">
+              <tr className="border-b border-border bg-shade/30 font-display text-xs uppercase tracking-[0.14em] text-gold">
                 <th className="px-4 py-3">Level</th>
                 <th className="px-4 py-3">Prof.</th>
                 <th className="px-4 py-3">Features</th>
@@ -64,7 +64,7 @@ export default async function ClassPage({ params }: { params: Promise<{ index: s
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.level} className="border-b border-borderSoft even:bg-white/[0.02]">
+                <tr key={r.level} className="border-b border-borderSoft even:bg-foreground/[0.02]">
                   <td className="px-4 py-2 font-display text-goldBright">{ordinal(r.level)}</td>
                   <td className="px-4 py-2">{r.proficiencyBonus}</td>
                   <td className="px-4 py-2 text-foreground/85">{featuresAt(c.index, r.level).map((f) => f.name).join(", ") || "—"}</td>

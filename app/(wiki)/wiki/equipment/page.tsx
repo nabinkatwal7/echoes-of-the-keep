@@ -25,7 +25,7 @@ export default async function EquipmentPage() {
             <Card flat className="overflow-x-auto p-0">
               <table className="w-full min-w-[32rem] text-left text-sm">
                 <thead>
-                  <tr className="border-b border-border bg-black/30 font-display text-xs uppercase tracking-[0.14em] text-gold">
+                  <tr className="border-b border-border bg-shade/30 font-display text-xs uppercase tracking-[0.14em] text-gold">
                     <th className="px-4 py-2.5">Name</th>
                     <th className="px-4 py-2.5">Cost</th>
                     <th className="px-4 py-2.5">Weight</th>
@@ -34,7 +34,7 @@ export default async function EquipmentPage() {
                 </thead>
                 <tbody>
                   {rows.map((r) => (
-                    <tr key={r.index} className="border-b border-borderSoft align-top even:bg-white/[0.02]">
+                    <tr key={r.index} className="border-b border-borderSoft align-top even:bg-foreground/[0.02]">
                       <td className="px-4 py-2 text-foreground">{r.name}</td>
                       <td className="px-4 py-2 text-goldBright">{r.cost}</td>
                       <td className="px-4 py-2 text-muted">{r.weight ?? ""}</td>

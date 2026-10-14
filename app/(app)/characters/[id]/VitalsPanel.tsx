@@ -66,7 +66,7 @@ export function VitalsPanel({
           {down && !stable && <Badge tone="ember">Unconscious · dying</Badge>}
         </div>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full border border-crimson/60 bg-black/50" role="progressbar" aria-valuenow={hp} aria-valuemax={maxHp} aria-label="Hit points">
+      <div className="h-2.5 overflow-hidden rounded-full border border-crimson/60 bg-shade/50" role="progressbar" aria-valuenow={hp} aria-valuemax={maxHp} aria-label="Hit points">
         <div className="h-full bg-gradient-to-r from-[#7a1b2a] to-[#d4566a] transition-all" style={{ width: `${pct}%` }} />
       </div>
 

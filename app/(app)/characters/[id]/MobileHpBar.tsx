@@ -19,7 +19,7 @@ export function MobileHpBar({ id, hp, maxHp }: { id: string; hp: number; maxHp: 
 
   const btn = "min-h-12 min-w-12 rounded border border-border bg-surface2 px-3 font-display text-sm font-semibold disabled:opacity-50 active:translate-y-px";
   return (
-    <div className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-border bg-[#0c0906]/95 px-3 py-2 backdrop-blur md:hidden" role="group" aria-label="Quick hit point changes">
+    <div className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-border bg-[var(--header-bg)] px-3 py-2 backdrop-blur md:hidden" role="group" aria-label="Quick hit point changes">
       {error && <p role="alert" className="pb-1 text-center text-xs text-danger">{error}</p>}
       <div className="mx-auto flex max-w-md items-center justify-between gap-2">
         <button type="button" className={`${btn} text-danger`} disabled={pending} onClick={() => change("damage", 5)} aria-label="Take 5 damage">−5</button>

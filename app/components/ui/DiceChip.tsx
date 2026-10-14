@@ -5,7 +5,7 @@ export function DiceChip({ expression, total, crit, fumble }: { expression: stri
   return (
     <span
       className={cn(
-        "inline-flex items-baseline gap-2 rounded border bg-black/30 px-2.5 py-1 text-sm",
+        "inline-flex items-baseline gap-2 rounded border bg-shade/30 px-2.5 py-1 text-sm",
         crit ? "border-goldBright text-goldBright shadow-[0_0_12px_rgba(239,205,111,0.35)]" : fumble ? "border-danger text-danger" : "border-border",
       )}
     >

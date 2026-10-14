@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getCampaignForMember } from "@/lib/campaigns/queries";
-import { buildEncounterView } from "@/lib/combat/view";
+import { buildEncounterView, type Look } from "@/lib/combat/view";
 import { loadEncounter } from "@/lib/combat/store";
 import { listEncounterCreatures } from "@/lib/content/gear";
 import { prisma } from "@/lib/prisma";
@@ -28,7 +28,22 @@ export default async function CombatPage({ params, searchParams }: { params: Pro
   const enc = chosen ? await loadEncounter(chosen.id) : null;
 
   const mine = await prisma.character.findMany({ where: { ownerId: user.id }, select: { id: true } });
-  const view = enc ? buildEncounterView(enc, { userId: user.id, isDm }, new Set(mine.map((c) => c.id))) : null;
+  // which picture each combatant gets: a hero's class, or a creature's type
+  const looks: Record<string, Look> = {};
+  if (enc) {
+    const heroIds = enc.combatants.map((r) => r.characterId).filter((x): x is string => !!x);
+    const creatureIds = enc.combatants.map((r) => r.creatureIndex).filter((x): x is string => !!x);
+    const [heroes, kinds] = await Promise.all([
+      heroIds.length ? prisma.character.findMany({ where: { id: { in: heroIds } }, select: { id: true, classes: true } }) : [],
+      creatureIds.length ? prisma.creature.findMany({ where: { index: { in: creatureIds } }, select: { index: true, type: true } }) : [],
+    ]);
+    for (const r of enc.combatants) {
+      const hero = r.characterId ? heroes.find((h) => h.id === r.characterId) : undefined;
+      if (hero) looks[r.id] = { k: "hero", type: (hero.classes as { classIndex: string }[])[0]?.classIndex ?? "fighter" };
+      else looks[r.id] = { k: "monster", type: kinds.find((k) => k.index === r.creatureIndex)?.type ?? "" };
+    }
+  }
+  const view = enc ? buildEncounterView(enc, { userId: user.id, isDm }, new Set(mine.map((c) => c.id)), looks) : null;
 
   const spellbooks: Record<string, Spellbook> = {};
   const sheetIds = (view?.combatants ?? []).map((c) => c.characterId).filter((x): x is string => !!x);

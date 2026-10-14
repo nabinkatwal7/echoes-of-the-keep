@@ -192,7 +192,7 @@ function EventLine({ event, mine }: { event: TableEvent; mine: boolean }) {
   if (event.payload.silent) return null;
   if (event.type === "sheet") {
     return (
-      <li className="rounded border border-borderSoft bg-black/20 px-3 py-1.5 text-sm text-foreground/80">
+      <li className="rounded border border-borderSoft bg-shade/20 px-3 py-1.5 text-sm text-foreground/80">
         <span className="rune-label mr-2 text-gold">Sheet</span>
         {String(p.text)}{" "}
         <span className="text-xs text-muted">
@@ -219,7 +219,7 @@ function EventLine({ event, mine }: { event: TableEvent; mine: boolean }) {
         : null;
     return (
       <li
-        className={`flex flex-wrap items-center gap-2 rounded px-3 py-2 ${p.secret ? "border border-dashed border-crimson/60 bg-crimson/5" : "bg-white/[0.03]"}`}
+        className={`flex flex-wrap items-center gap-2 rounded px-3 py-2 ${p.secret ? "border border-dashed border-crimson/60 bg-crimson/5" : "bg-foreground/[0.03]"}`}
       >
         <span className="font-display text-xs uppercase tracking-[0.12em] text-gold">
           {who}
@@ -250,7 +250,7 @@ function EventLine({ event, mine }: { event: TableEvent; mine: boolean }) {
   const whisper = Boolean(p.whisper);
   return (
     <li
-      className={`rounded px-3 py-2 ${mine ? "bg-gold/10" : "bg-white/[0.03]"} ${whisper ? "border border-dashed border-arcane/60" : ""}`}
+      className={`rounded px-3 py-2 ${mine ? "bg-gold/10" : "bg-foreground/[0.03]"} ${whisper ? "border border-dashed border-arcane/60" : ""}`}
     >
       <div className="flex items-baseline gap-2">
         <span className="font-display text-xs uppercase tracking-[0.12em] text-gold">

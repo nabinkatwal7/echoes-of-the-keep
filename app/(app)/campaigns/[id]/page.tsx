@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GiCastle } from "react-icons/gi";
-import { classIcon } from "@/app/components/icons";
+import { HeroAvatar } from "@/app/components/pixel/Avatars";
 import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
 import { LinkButton } from "@/app/components/ui/Button";
@@ -79,12 +79,9 @@ export default async function CampaignHub({ params }: { params: Promise<{ id: st
             <div className="grid gap-4 sm:grid-cols-2">
               {campaign.characters.map(({ character }) => {
                 const classes = character.classes as { classIndex: string; level: number }[];
-                const Icon = classIcon(classes[0]?.classIndex);
                 return (
                   <Card key={character.id} flat className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-gold/50 text-2xl text-gold">
-                      <Icon />
-                    </div>
+                    <HeroAvatar classIndex={classes[0]?.classIndex ?? "fighter"} name={character.name} portraitUrl={character.portraitUrl} size={56} />
                     <div className="min-w-0">
                       <p className="truncate font-display uppercase tracking-[0.08em]">{character.name}</p>
                       <p className="text-sm text-muted">

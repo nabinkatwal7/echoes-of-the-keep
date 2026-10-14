@@ -83,7 +83,7 @@ export function LevelUpPanel({
           Level {level} · {xp} XP{nextAt ? ` · next level at ${nextAt}` : " · maximum level"}
         </p>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full border border-gold/40 bg-black/50" role="progressbar" aria-valuenow={progress} aria-valuemax={100} aria-label="Progress to next level">
+      <div className="h-2.5 overflow-hidden rounded-full border border-gold/40 bg-shade/50" role="progressbar" aria-valuenow={progress} aria-valuemax={100} aria-label="Progress to next level">
         <div className="h-full bg-gradient-to-r from-[#8f6f2a] to-goldBright" style={{ width: `${progress}%` }} />
       </div>
       <div className="flex flex-wrap items-end gap-3">

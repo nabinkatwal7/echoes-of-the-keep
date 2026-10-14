@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { GiCastle, GiCrossedSwords, GiSpellBook } from "react-icons/gi";
-import { HeroDie } from "./components/HeroDie";
+import { HeroAvatar, MonsterAvatar, SceneBanner } from "./components/pixel/Avatars";
 import { schoolStyle } from "./components/icons";
 import { Badge } from "./components/ui/Badge";
 import { Card } from "./components/ui/Card";
@@ -40,7 +40,7 @@ export default async function Home() {
 
   return (
     <div className="mx-auto max-w-6xl px-4">
-      <section className="grid items-center gap-10 py-14 lg:grid-cols-[1.15fr_1fr] lg:py-20">
+      <section className="grid grid-cols-1 items-center gap-10 py-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:py-20">
         <div className="flex flex-col items-start gap-6">
           <p className="eyebrow">The 5th Edition table, wherever your friends are</p>
           <h1 className="gilded text-5xl font-extrabold leading-[1.05] sm:text-6xl lg:text-7xl">
@@ -78,8 +78,20 @@ export default async function Home() {
             ))}
           </dl>
         </div>
-        <div className="flex justify-center pb-6 lg:justify-end">
-          <HeroDie />
+        <div className="panel flex flex-col gap-4 p-4" aria-label="A party by the fire">
+          <SceneBanner theme="tavern" seed={7} className="h-44 sm:h-52" />
+          <ul className="flex flex-wrap items-end justify-center gap-3" aria-label="An example party">
+            {[["fighter", "Brannoch"], ["wizard", "Mirela"], ["rogue", "Tamsin"], ["cleric", "Orsolo"]].map(([k, n]) => (
+              <li key={n} className="flex flex-col items-center gap-1 text-xs text-muted">
+                <HeroAvatar classIndex={k} name={n} size={64} />
+                <span className="font-display uppercase tracking-[0.1em]">{k}</span>
+              </li>
+            ))}
+            <li className="flex flex-col items-center gap-1 text-xs text-muted">
+              <MonsterAvatar type="dragon" name="Ember drake" size={64} />
+              <span className="font-display uppercase tracking-[0.1em]">drake</span>
+            </li>
+          </ul>
         </div>
       </section>
 

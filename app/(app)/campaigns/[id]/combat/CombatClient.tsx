@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { Token } from "@/app/components/pixel/Avatars";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -123,15 +124,15 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
       )}
       <EncounterPicker campaignId={campaignId} isDm={isDm} encounters={encounters} current={view?.id} run={run} pending={pending} />
       {view ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
-          <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="flex min-w-0 flex-col gap-4">
             <Header view={view} isDm={isDm} run={run} pending={pending} wallMode={wallMode} setWallMode={setWallMode} />
             {isDm && view.state !== "DONE" && <DmSetup view={view} creatures={creatures} run={run} pending={pending} />}
             {isDm && view.state !== "DONE" && <QuickAdd view={view} run={run} pending={pending} />}
             <Order view={view} selected={selected} onSelect={setSelected} />
             <Board wallMode={wallMode} view={view} selected={selected} onSelect={setSelected} run={run} aim={aim} aiming={aiming} onAim={(x, y) => { setAim({ x, y }); setAiming(false); }} />
           </div>
-          <div className="flex flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-4">
             <Actions view={view} creatures={creatures} selected={selected} run={run} pending={pending} isDm={isDm} spellbooks={spellbooks} aim={aim} aiming={aiming} setAiming={setAiming} />
             <Card className="p-4">
               <h2 className="eyebrow mb-2">Combat log</h2>
@@ -225,8 +226,6 @@ function Header({ view, isDm, run, pending, wallMode, setWallMode }: { view: Enc
           )}
           <Button variant={wallMode ? "primary" : "secondary"} aria-pressed={wallMode} onClick={() => setWallMode(!wallMode)}>{wallMode ? "Drawing walls (click squares)" : "Draw walls"}</Button>
           <Button variant={view.environment.fog ? "primary" : "secondary"} aria-pressed={!!view.environment.fog} disabled={pending} onClick={() => run(() => setFog(view.id, !view.environment.fog))}>Fog of war</Button>
-          <Button variant={wallMode ? "primary" : "secondary"} aria-pressed={wallMode} onClick={() => setWallMode(!wallMode)}>{wallMode ? "Drawing walls (click squares)" : "Draw walls"}</Button>
-          <Button variant={view.environment.fog ? "primary" : "secondary"} aria-pressed={!!view.environment.fog} disabled={pending} onClick={() => run(() => setFog(view.id, !view.environment.fog))}>Fog of war</Button>
           <Button variant="secondary" disabled={pending} onClick={() => run(() => undoLast(view.id))}>Undo last</Button>
           {view.state !== "DONE" && (
             <Button variant="danger" disabled={pending} onClick={() => { if (confirm("End the encounter and award XP? This cannot be undone.")) run(() => endEncounter(view.id)); }}>End &amp; award XP</Button>
@@ -269,6 +268,7 @@ function Order({ view, selected, onSelect }: { view: EncounterView; selected: st
                 className={`flex w-full flex-wrap items-center gap-2 rounded border px-3 py-2 text-left transition ${c.active ? "border-goldBright bg-gold/10" : selected === c.id ? "border-gold/70" : "border-border"} ${c.defeated ? "opacity-55" : ""}`}
               >
                 <span className="w-8 text-center font-display text-lg text-goldBright">{c.initiative ?? "–"}</span>
+                <span aria-hidden className="flex h-9 w-9 items-end justify-center overflow-hidden rounded-full border border-border bg-surface2"><Token look={c.look} name={c.name} size={30} /></span>
                 <span className="flex-1 font-semibold">{c.name}{c.active ? " ◀" : ""}</span>
                 {c.hp !== null ? <Badge tone="neutral">{c.hp}/{c.maxHp}{c.tempHp ? ` +${c.tempHp}` : ""} HP</Badge> : <Badge tone={HEALTH_TONE[c.health] ?? "neutral"}>{c.health}</Badge>}
                 {c.ac !== null && <Badge>AC {c.ac}</Badge>}
@@ -299,7 +299,7 @@ function Board({ wallMode, view, selected, onSelect, run, aim, aiming, onAim }: 
   return (
     <Card className="overflow-x-auto p-4">
       <h2 className="eyebrow mb-2">Battlefield <span className="normal-case tracking-normal text-muted">(5 ft squares)</span></h2>
-      <div role="group" aria-label="Battle map" className="inline-grid gap-px bg-border" style={{ gridTemplateColumns: `repeat(${cols}, 1.75rem)` }}>
+      <div role="group" aria-label="Battle map" className="inline-grid gap-px bg-border" style={{ gridTemplateColumns: `repeat(${cols}, 2rem)` }}>
         {Array.from({ length: rows * cols }, (_, i) => {
           const x = i % cols;
           const y = Math.floor(i / cols);
@@ -313,9 +313,9 @@ function Board({ wallMode, view, selected, onSelect, run, aim, aiming, onAim }: 
               aria-label={c ? c.name : wall ? `Wall at ${x},${y}` : fogged ? `Unseen square ${x},${y}` : `Square ${x},${y}`}
               title={c?.name}
               onClick={() => (wallMode && view.isDm ? run(() => setWalls(view.id, [{ x, y }], !wall)) : aiming ? onAim(x, y) : c ? onSelect(c.id) : canMove && sel && run(() => moveCombatant(sel.id, x, y)))}
-              className={`flex h-7 w-7 items-center justify-center ${wall ? "bg-[#3a2f22] text-transparent" : fogged ? "bg-black/70 text-transparent" : "bg-surface"} text-[0.65rem] font-bold ${c ? (c.kind === "character" ? "text-emerald" : "text-danger") : "text-transparent hover:bg-surface2"} ${c && selected === c.id ? "outline outline-2 outline-goldBright" : ""} ${aim && aim.x === x && aim.y === y ? "bg-arcane/40" : ""} ${c?.defeated ? "line-through opacity-50" : ""}`}
+              className={`flex h-8 w-8 items-center justify-center ${wall ? "bg-shade/60 text-transparent" : fogged ? "bg-shade/70 text-transparent" : "bg-surface"} text-[0.65rem] font-bold ${c ? (c.kind === "character" ? "shadow-[inset_0_-2px_0_var(--emerald)]" : "shadow-[inset_0_-2px_0_var(--danger)]") : "text-transparent hover:bg-surface2"} ${c && selected === c.id ? "outline outline-2 outline-goldBright" : ""} ${aim && aim.x === x && aim.y === y ? "bg-arcane/40" : ""} ${c?.defeated ? "opacity-40 grayscale" : ""}`}
             >
-              {c ? c.name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase() : wall ? "▓" : "·"}
+              {c ? <Token look={c.look} name={c.name} size={28} /> : wall ? "▓" : "·"}
             </button>
           );
         })}

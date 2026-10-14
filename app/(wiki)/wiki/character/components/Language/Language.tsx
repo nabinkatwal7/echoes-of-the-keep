@@ -17,7 +17,7 @@ export default async function Language() {
           {groups.map(([title, rows]) => (
             <Card key={title} flat className="p-0">
               <table className="w-full text-left text-sm">
-                <caption className="border-b border-border bg-black/30 px-4 py-3 text-left font-display text-xs uppercase tracking-[0.14em] text-gold">{title}</caption>
+                <caption className="border-b border-border bg-shade/30 px-4 py-3 text-left font-display text-xs uppercase tracking-[0.14em] text-gold">{title}</caption>
                 <tbody>
                   {rows.map((l) => (
                     <tr key={l.index} className="border-b border-borderSoft last:border-0">

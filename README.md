@@ -1,4 +1,4 @@
-# Dungeons & Dragons
+# Emberhall
 
 A web app for playing D&D 5th Edition end to end: a rules wiki, a hero builder, live campaigns with a human Dungeon Master, a combat tracker with spells, a Dungeon Master toolkit, and **solo play** with a computer Dungeon Master and companions.
 

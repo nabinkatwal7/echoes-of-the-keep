@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { GiDiceTwentyFacesTwenty } from "react-icons/gi";
+import { SceneBanner } from "@/app/components/pixel/Avatars";
+import { SCENE_THEMES, type SceneTheme } from "@/engine/pixel/scenes";
 import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
 import { PageHeader } from "@/app/components/ui/PageHeader";
@@ -36,6 +38,7 @@ export default async function SoloPage() {
               return (
                 <Link key={g.id} href={`/campaigns/${g.id}/solo`} className="block">
                   <Card className="flex flex-wrap items-center gap-3 p-4 transition hover:border-gold">
+                    <SceneBanner theme={(SCENE_THEMES as readonly string[]).includes(solo.theme) ? (solo.theme as SceneTheme) : "crypt"} seed={g.id} className="h-16 w-28 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <h3 className="text-lg font-bold">{g.name}</h3>
                       <p className="text-sm text-muted">

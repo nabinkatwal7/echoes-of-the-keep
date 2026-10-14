@@ -7,7 +7,7 @@ export function CopyCode({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex items-center gap-3">
-      <code className="flex-1 rounded border border-gold/50 bg-black/40 px-4 py-3 text-center font-display text-2xl tracking-[0.35em] text-goldBright">
+      <code className="flex-1 rounded border border-gold/50 bg-shade/40 px-4 py-3 text-center font-display text-2xl tracking-[0.35em] text-goldBright">
         {code}
       </code>
       <Button

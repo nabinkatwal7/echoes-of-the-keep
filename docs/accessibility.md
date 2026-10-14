@@ -9,7 +9,7 @@ A manual review against the success criteria that matter most for this interface
 | 1.1.1 Non-text content | Decorative icons are `aria-hidden`; the map backdrop and scene images have descriptive `alt` text; the d20 mark is labelled |
 | 1.3.1 Info and relationships | Forms use `label` elements through the `Field` component; tab strips use `role="tablist"` and `aria-selected`; the battle map is a `grid` with labelled cells; the chronicle is `role="log"` with `aria-live="polite"` |
 | 1.4.1 Use of color | Health, conditions and online status always include text ("Bloodied", "poisoned", "is here"), not color alone |
-| 1.4.3 Contrast | The dark theme uses light parchment text (`#eadfc6`) on near-black (`#100c08`); muted text is `#a8997c` on the same background (about 7:1). Badge text colors were chosen from the same palette |
+| 1.4.3 Contrast | Two themes, chosen with the Auto / Light / Dark switch; both are scanned by axe in `e2e/a11y.spec.ts`. The light theme is ink `#2b1d12` on parchment `#f4ead2`. The dark theme uses light parchment text (`#eadfc6`) on near-black (`#100c08`); muted text is `#a8997c` on the same background (about 7:1). Badge text colors were chosen from the same palette |
 | 1.4.10 Reflow | Layouts collapse to one column at phone width; wide tables scroll inside their own container |
 | 2.1.1 Keyboard | Everything is a button, link or form control. The map can be driven by keyboard because each square is a button |
 | 2.4.1 Bypass blocks | "Skip to content" link as the first focusable element (`app/layout.tsx`) |

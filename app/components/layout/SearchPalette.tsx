@@ -65,15 +65,15 @@ export function SearchPalette() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Search the Tome"
-        className="flex h-9 items-center gap-2 rounded border border-border px-3 text-sm text-muted transition hover:border-gold hover:text-goldBright"
+        className="flex h-10 min-w-10 items-center justify-center gap-2 rounded border border-border px-2.5 text-sm text-muted transition hover:border-gold hover:text-goldBright"
       >
         <span aria-hidden>⌕</span>
-        <span className="hidden lg:inline">Search</span>
-        <kbd className="hidden rounded border border-border px-1.5 text-[0.65rem] lg:inline">Ctrl K</kbd>
+        <span className="hidden 2xl:inline">Search</span>
+        <kbd className="hidden rounded border border-border px-1.5 text-[0.65rem] 2xl:inline">Ctrl K</kbd>
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-[12vh] backdrop-blur-sm" onClick={() => setOpen(false)} role="dialog" aria-modal="true" aria-label="Search">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-shade/70 p-4 pt-[12vh] backdrop-blur-sm" onClick={() => setOpen(false)} role="dialog" aria-modal="true" aria-label="Search">
           <div className="panel w-full max-w-xl overflow-hidden p-0" onClick={(e) => e.stopPropagation()}>
             <input
               ref={input}

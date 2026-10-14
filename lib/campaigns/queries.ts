@@ -19,7 +19,7 @@ export const getCampaignForMember = (campaignId: string, userId: string) =>
     include: {
       members: { include: { user: { select: { id: true, displayName: true, username: true } } }, orderBy: { joinedAt: "asc" } },
       characters: {
-        include: { character: { select: { id: true, name: true, ownerId: true, raceIndex: true, subraceIndex: true, classes: true } } },
+        include: { character: { select: { id: true, name: true, ownerId: true, raceIndex: true, subraceIndex: true, classes: true, portraitUrl: true } } },
       },
     },
   });

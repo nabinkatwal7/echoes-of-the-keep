@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { GiCrossedSwords } from "react-icons/gi";
-import { classIcon } from "@/app/components/icons";
+import { HeroAvatar } from "@/app/components/pixel/Avatars";
 import { Card } from "@/app/components/ui/Card";
 import { LinkButton } from "@/app/components/ui/Button";
 import { PageHeader } from "@/app/components/ui/PageHeader";
@@ -40,13 +40,10 @@ export default async function CharactersPage() {
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {characters.map((c) => {
             const classes = c.classes as { classIndex: string; level: number }[];
-            const Icon = classIcon(classes[0]?.classIndex);
             return (
               <Link key={c.id} href={`/characters/${c.id}`} className="block">
                 <Card interactive className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-gold/50 bg-black/30 text-4xl text-gold">
-                    <Icon />
-                  </div>
+                  <HeroAvatar classIndex={classes[0]?.classIndex ?? "fighter"} name={c.name} portraitUrl={c.portraitUrl} size={64} />
                   <div className="min-w-0">
                     <h2 className="truncate font-display text-lg uppercase tracking-[0.1em]">{c.name}</h2>
                     <p className="text-sm text-muted">

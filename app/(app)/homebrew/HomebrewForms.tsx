@@ -54,7 +54,7 @@ export function HomebrewForms() {
         <form action={load} className="flex flex-col gap-3">
           <h2 className="eyebrow">Import JSON</h2>
           <p className="text-sm text-muted">A list of objects with kind, name and data. This is the same shape as the download.</p>
-          <textarea name="json" required rows={8} className="rounded border border-border bg-black/40 p-2 font-mono text-sm" aria-label="Homebrew JSON" />
+          <textarea name="json" required rows={8} className="rounded border border-border bg-shade/40 p-2 font-mono text-sm" aria-label="Homebrew JSON" />
           {imported && <p role={imported.ok ? "status" : "alert"} className={imported.ok ? "text-sm text-emerald" : "text-sm text-danger"}>{imported.ok ? "Imported." : imported.error}</p>}
           <Button disabled={loading} variant="secondary">Import</Button>
         </form>

@@ -20,6 +20,8 @@ export default {
         ember: "var(--ember)",
         arcane: "var(--arcane)",
         emerald: "var(--emerald)",
+        shade: "rgb(var(--shade) / <alpha-value>)",
+        onGold: "var(--on-gold)",
       },
       fontFamily: {
         display: ["var(--font-display)", "Georgia", "serif"],

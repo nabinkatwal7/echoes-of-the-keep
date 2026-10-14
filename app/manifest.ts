@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Dungeons & Dragons",
-    short_name: "D&D",
-    description: "Rules tome, hero forge and live campaigns for D&D 5th Edition.",
+    name: "Emberhall",
+    short_name: "Emberhall",
+    description: "A rules tome, hero forge and shared table for 5th Edition role-playing, with solo play.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",

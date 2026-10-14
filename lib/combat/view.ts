@@ -4,6 +4,8 @@ import { visibleSquares } from "@/engine/combat/los";
 import { effectiveAc } from "./rules";
 import { rowToCmb, profilesOf, sideOf } from "./store";
 
+export type Look = { k: "hero" | "monster"; type: string };
+
 export type CombatantView = {
   id: string;
   kind: string;
@@ -34,6 +36,8 @@ export type CombatantView = {
   readied: string | null;
   recharge: { name: string; ready: boolean }[];
   legendary: { left: number; max: number; options: { name: string; cost: number }[] } | null;
+  /** which pixel picture to draw: a hero's class, or a creature's type */
+  look: Look;
   mounted: boolean;
   deathSaves: { successes: number; failures: number } | null;
 };
@@ -63,6 +67,7 @@ export function buildEncounterView(
   enc: Encounter & { combatants: Combatant[] },
   viewer: { userId: string; isDm: boolean },
   ownedCharacterIds: ReadonlySet<string>,
+  looks: Record<string, Look> = {},
 ): EncounterView {
   const env = (enc.environment ?? {}) as { underwater?: boolean; mounted?: boolean; fog?: boolean; walls?: string[] };
   const walls = new Set(env.walls ?? []);
@@ -107,6 +112,7 @@ export function buildEncounterView(
       readied: canAct ? r.readied : null,
       recharge: canAct ? (c.recharge ?? []).map((a) => ({ name: a.name, ready: a.ready })) : [],
       legendary: viewer.isDm && c.legendary ? { left: c.legendary.left, max: c.legendary.max, options: c.legendary.options } : null,
+      look: looks[r.id] ?? { k: r.kind === "character" ? "hero" : "monster", type: "" },
       mounted: !!c.mounted,
       deathSaves: exact && r.kind === "character" ? c.deathSaves : null,
       _order: i,

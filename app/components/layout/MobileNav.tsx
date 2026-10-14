@@ -24,7 +24,7 @@ export function MobileNav({
   const [open, setOpen] = useState(false);
   const item = "rounded px-3 py-3 font-display uppercase tracking-[0.16em] hover:bg-surface2";
   return (
-    <div className="md:hidden">
+    <div className="xl:hidden">
       <button
         aria-expanded={open}
         aria-label="Menu"
@@ -34,7 +34,7 @@ export function MobileNav({
         <span className="text-2xl leading-none">{open ? "✕" : "☰"}</span>
       </button>
       {open && (
-        <div className="absolute inset-x-0 top-16 border-b border-border bg-[#0c0906] p-4 shadow-2xl">
+        <div className="absolute inset-x-0 top-16 max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-border bg-surface p-4 shadow-2xl">
           <nav className="flex flex-col gap-1" onClick={() => setOpen(false)}>
             {LINKS.map((l) => (
               <Link key={l.href} href={l.href} className={item}>

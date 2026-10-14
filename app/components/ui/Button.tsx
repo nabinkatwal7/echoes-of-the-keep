@@ -8,7 +8,7 @@ const base =
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "border border-goldBright/70 bg-gradient-to-b from-[#e3c06a] via-gold to-[#8f6f2a] text-[#1a1208] shadow-[0_2px_0_#5c4818,0_6px_16px_rgba(0,0,0,0.45)] hover:brightness-110 hover:shadow-[0_2px_0_#5c4818,0_0_22px_rgba(239,205,111,0.35)] active:translate-y-px",
+    "border border-goldBright/70 bg-gradient-to-b from-[var(--btn-1)] via-[var(--btn-2)] to-[var(--btn-3)] text-onGold shadow-[0_2px_0_var(--btn-edge),0_6px_16px_rgb(var(--shade)/0.35)] hover:brightness-110 hover:shadow-[0_2px_0_var(--btn-edge),0_0_22px_rgba(239,205,111,0.35)] active:translate-y-px",
   secondary:
     "border border-border bg-surface2/80 text-foreground hover:border-gold hover:text-goldBright hover:shadow-[0_0_16px_rgba(201,162,75,0.15)]",
   danger: "border border-crimson bg-gradient-to-b from-[#b8344a] to-[#7a1b2a] text-white shadow-[0_2px_0_#4a0f19] hover:brightness-110",

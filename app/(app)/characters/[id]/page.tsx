@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { GiHearts, GiRoundShield } from "react-icons/gi";
-import { classIcon } from "@/app/components/icons";
+import { HeroAvatar } from "@/app/components/pixel/Avatars";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -67,7 +67,6 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
   const subclassNames = classes.map((k) => SUBCLASSES.find((s) => s.index === k.subclassIndex)?.name).filter(Boolean);
   const proficient = new Set(c.skillProficiencies as Skill[]);
   const saveProf = new Set(CLASS_RULES[classes[0].classIndex]?.saves ?? []);
-  const Icon = classIcon(classes[0].classIndex);
   // spellcasting: one section per caster class, with the spells that class could choose
   const spellState = (c.spells ?? {}) as { byClass?: Record<string, SpellSelection>; concentration?: { spell: string; name: string } | null };
   const casterClasses = classes.filter((k) => CASTER_KIND[k.classIndex] && maxSpellLevel(k.classIndex, k.level) > 0);
@@ -119,14 +118,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
 
       {/* header */}
       <header className="panel flex flex-wrap items-center gap-6 p-6">
-        {c.portraitUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={c.portraitUrl} alt={`Portrait of ${c.name}`} referrerPolicy="no-referrer" className="h-24 w-24 shrink-0 rounded-full border-2 border-gold/70 object-cover shadow-[0_0_30px_rgba(201,162,75,0.25)]" />
-        ) : (
-          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-2 border-gold/70 bg-black/40 text-6xl text-gold shadow-[0_0_30px_rgba(201,162,75,0.25)]">
-            <Icon />
-          </div>
-        )}
+        <HeroAvatar classIndex={classes[0]?.classIndex ?? "fighter"} name={c.name} portraitUrl={c.portraitUrl} size={96} className="shadow-[0_0_30px_var(--glow-1)]" />
         <div className="min-w-0 flex-1">
           <p className="eyebrow">{titleCase(c.backgroundIndex)}</p>
           <h1 className="gilded text-4xl font-bold">{c.name}</h1>
@@ -141,7 +133,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
           <Vital icon={<GiHearts />} label="Hit Points" value={`${c.currentHp}/${d.maxHp}`} tone="crimson" />
         </div>
         <div className="basis-full">
-          <div className="h-2 overflow-hidden rounded-full border border-crimson/60 bg-black/50" role="progressbar" aria-valuenow={c.currentHp} aria-valuemax={d.maxHp} aria-label="Hit points">
+          <div className="h-2 overflow-hidden rounded-full border border-crimson/60 bg-shade/50" role="progressbar" aria-valuenow={c.currentHp} aria-valuemax={d.maxHp} aria-label="Hit points">
             <div className="h-full bg-gradient-to-r from-[#7a1b2a] to-[#d4566a]" style={{ width: `${hpPct}%` }} />
           </div>
         </div>
@@ -173,7 +165,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
             <Card key={a} className="flex flex-col items-center gap-1 px-2 py-4 text-center">
               <span className="rune-label">{FULL[a]}</span>
               <span className="font-display text-4xl text-goldBright">{signed(d.abilities[a].modifier)}</span>
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-black/40 font-display text-sm">{d.abilities[a].score}</span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-shade/40 font-display text-sm">{d.abilities[a].score}</span>
             </Card>
           ))}
         </div>
@@ -221,7 +213,7 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
           <Card flat className="overflow-x-auto p-0">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-border bg-black/30 font-display text-xs uppercase tracking-[0.14em] text-gold">
+                <tr className="border-b border-border bg-shade/30 font-display text-xs uppercase tracking-[0.14em] text-gold">
                   <th className="px-4 py-2.5">Weapon</th>
                   <th className="px-4 py-2.5">Attack</th>
                   <th className="px-4 py-2.5">Damage</th>

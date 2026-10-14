@@ -19,7 +19,73 @@
   --arcane: #7d93e6;
   --emerald: #52ad82;
   --accent: #c9a24b;
+  --shade: 0 0 0;
+  --header-bg: rgba(12, 9, 6, 0.9);
+  --on-gold: #1a1208;
+  --panel-from: rgba(38, 29, 20, 0.92);
+  --panel-to: rgba(24, 18, 13, 0.94);
+  --panel-ring: rgba(16, 12, 8, 0.9);
+  --panel-ring-gold: rgba(201, 162, 75, 0.22);
+  --panel-shadow: rgba(0, 0, 0, 0.45);
+  --flat-bg: rgba(27, 21, 16, 0.85);
+  --field-bg: rgba(10, 7, 4, 0.7);
+  --field-shadow: rgba(0, 0, 0, 0.5);
+  --placeholder: rgba(168, 153, 124, 0.6);
+  --glow-1: rgba(201, 162, 75, 0.14);
+  --glow-2: rgba(163, 40, 58, 0.1);
+  --glow-3: rgba(125, 147, 230, 0.07);
+  --grain: 0.05;
+  --gilded-1: #f6e2a0;
+  --gilded-2: #c9a24b;
+  --gilded-3: #8f6f2a;
+  --btn-1: #e3c06a;
+  --btn-2: #c9a24b;
+  --btn-3: #8f6f2a;
+  --btn-edge: #5c4818;
   color-scheme: dark;
+}
+
+/* Daylight: a sunlit parchment page with iron-gall ink and bronze accents */
+html[data-theme="light"] {
+  --background: #f4ead2;
+  --foreground: #2b1d12;
+  --surface: #fbf4e2;
+  --surface-2: #efe3c6;
+  --border: #a98d55;
+  --border-soft: #d9c8a0;
+  --muted: #5f4e33;
+  --gold: #7d5a0e;
+  --gold-bright: #6b4a05;
+  --crimson: #a3283a;
+  --danger: #a8213a;
+  --ember: #a2430a;
+  --arcane: #34479f;
+  --emerald: #1a6544;
+  --accent: #7d5a0e;
+  --shade: 70 45 10;
+  --header-bg: rgba(251, 244, 226, 0.92);
+  --on-gold: #fff8e8;
+  --panel-from: rgba(253, 248, 234, 0.98);
+  --panel-to: rgba(244, 233, 205, 0.98);
+  --panel-ring: rgba(255, 250, 238, 0.9);
+  --panel-ring-gold: rgba(125, 90, 14, 0.25);
+  --panel-shadow: rgba(90, 60, 15, 0.18);
+  --flat-bg: rgba(251, 244, 226, 0.85);
+  --field-bg: rgba(255, 252, 244, 0.95);
+  --field-shadow: rgba(90, 60, 15, 0.14);
+  --placeholder: rgba(95, 78, 51, 0.65);
+  --glow-1: rgba(201, 162, 75, 0.22);
+  --glow-2: rgba(163, 40, 58, 0.06);
+  --glow-3: rgba(52, 71, 159, 0.05);
+  --grain: 0.07;
+  --gilded-1: #9a6f12;
+  --gilded-2: #7d5a0e;
+  --gilded-3: #5a3f06;
+  --btn-1: #9a7118;
+  --btn-2: #7d5a0e;
+  --btn-3: #5f4309;
+  --btn-edge: #3d2a04;
+  color-scheme: light;
 }
 
 html[data-contrast="high"] {
@@ -30,6 +96,10 @@ html[data-contrast="high"] {
   --border: #efcd6f;
   --muted: #ffe7b8;
   --gold-bright: #ffe08a;
+  --header-bg: rgba(0, 0, 0, 0.95);
+  --on-gold: #1a1208;
+  --shade: 0 0 0;
+  color-scheme: dark;
 }
 
 html[data-font="readable"] body,
@@ -54,9 +124,9 @@ body {
   line-height: 1.65;
   min-height: 100vh;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201, 162, 75, 0.14), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(163, 40, 58, 0.1), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(125, 147, 230, 0.07), transparent 70%),
+    radial-gradient(ellipse 80% 50% at 50% -10%, var(--glow-1), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, var(--glow-2), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, var(--glow-3), transparent 70%),
     var(--background);
   background-attachment: fixed;
 }
@@ -68,7 +138,7 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.05;
+  opacity: var(--grain);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 
@@ -100,23 +170,23 @@ h1, h2, h3, h4, .font-display {
 @layer components {
   /* Gold-leaf heading used for page titles */
   .gilded {
-    background: linear-gradient(180deg, #f6e2a0 0%, #c9a24b 55%, #8f6f2a 100%);
+    background: linear-gradient(180deg, var(--gilded-1) 0%, var(--gilded-2) 55%, var(--gilded-3) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    text-shadow: 0 2px 18px rgba(201, 162, 75, 0.25);
+    text-shadow: 0 2px 18px var(--glow-1);
   }
 
   /* Framed panel with corner flourishes */
   .panel {
     position: relative;
-    background: linear-gradient(180deg, rgba(38, 29, 20, 0.92), rgba(24, 18, 13, 0.94));
+    background: linear-gradient(180deg, var(--panel-from), var(--panel-to));
     border: 1px solid var(--border);
     border-radius: 6px;
     box-shadow:
-      inset 0 0 0 3px rgba(16, 12, 8, 0.9),
-      inset 0 0 0 4px rgba(201, 162, 75, 0.22),
-      0 10px 30px rgba(0, 0, 0, 0.45);
+      inset 0 0 0 3px var(--panel-ring),
+      inset 0 0 0 4px var(--panel-ring-gold),
+      0 10px 30px var(--panel-shadow);
   }
   .panel::before,
   .panel::after {
@@ -132,7 +202,7 @@ h1, h2, h3, h4, .font-display {
   .panel::after { bottom: 7px; right: 7px; border-left: 0; border-top: 0; }
 
   .panel-flat {
-    background: rgba(27, 21, 16, 0.85);
+    background: var(--flat-bg);
     border: 1px solid var(--border-soft);
     border-radius: 6px;
   }
@@ -144,9 +214,9 @@ h1, h2, h3, h4, .font-display {
     transform: translateY(-2px);
     border-color: var(--gold);
     box-shadow:
-      inset 0 0 0 3px rgba(16, 12, 8, 0.9),
+      inset 0 0 0 3px var(--panel-ring),
       inset 0 0 0 4px rgba(239, 205, 111, 0.4),
-      0 14px 34px rgba(0, 0, 0, 0.55),
+      0 14px 34px var(--panel-shadow),
       0 0 24px rgba(201, 162, 75, 0.18);
   }
 
@@ -171,17 +241,17 @@ h1, h2, h3, h4, .font-display {
     min-height: 2.75rem;
     padding: 0.5rem 0.8rem;
     color: var(--foreground);
-    background: rgba(10, 7, 4, 0.7);
+    background: var(--field-bg);
     border: 1px solid var(--border);
     border-radius: 4px;
-    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+    box-shadow: inset 0 2px 6px var(--field-shadow);
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .field::placeholder { color: rgba(168, 153, 124, 0.6); }
+  .field::placeholder { color: var(--placeholder); }
   .field:focus {
     outline: none;
     border-color: var(--gold-bright);
-    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(201, 162, 75, 0.25);
+    box-shadow: inset 0 2px 6px var(--field-shadow), 0 0 0 3px rgba(201, 162, 75, 0.25);
   }
   select.field { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--gold) 50%), linear-gradient(135deg, var(--gold) 50%, transparent 50%); background-position: calc(100% - 18px) 55%, calc(100% - 13px) 55%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 2rem; }
 }
@@ -220,7 +290,7 @@ h1, h2, h3, h4, .font-display {
   padding: 0.6rem 1rem;
   border-radius: 0.25rem;
   background: var(--gold, #c9a24b);
-  color: #1a1208;
+  color: var(--on-gold);
   font-weight: 700;
   transition: top 0.15s;
 }

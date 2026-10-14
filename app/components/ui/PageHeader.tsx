@@ -18,7 +18,7 @@ export function PageHeader({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-center gap-4">
           {icon && (
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-gold/60 bg-black/30 text-3xl text-gold shadow-[0_0_20px_rgba(201,162,75,0.2)]">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-gold/60 bg-shade/30 text-3xl text-gold shadow-[0_0_20px_rgba(201,162,75,0.2)]">
               {icon}
             </div>
           )}
