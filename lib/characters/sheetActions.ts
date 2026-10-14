@@ -89,6 +89,23 @@ export async function addCatalogItem(characterId: string, catalogIndex: string, 
   const c = await editable(characterId, user.id);
   if (!c) return fail("Character not found");
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return fail("Quantity must be 1-999");
+  if (catalogIndex.startsWith("homebrew-")) {
+    const hb = await prisma.homebrewEntry.findFirst({ where: { id: catalogIndex.slice("homebrew-".length), ownerId: c.ownerId, kind: "item" } });
+    if (!hb) return fail("Unknown item");
+    const cost = String((hb.data as { cost?: string }).cost ?? "0 gp");
+    let purse = c.currency as Purse;
+    if (mode === "buy") {
+      try {
+        purse = pay(purse, parseCostCp(cost) * quantity);
+      } catch {
+        return fail(`Not enough money for ${quantity} × ${hb.name} (${cost} each)`);
+      }
+    }
+    await prisma.character.update({ where: { id: characterId }, data: { equipment: [...itemsOf(c), customItem(hb.name, quantity, undefined, cost)] as unknown as object, currency: purse } });
+    await audit(characterId, c.name, user.id, user.name ?? "Someone", `${c.name} ${mode === "buy" ? "buys" : "gains"} ${quantity} × ${hb.name}`);
+    touch(characterId);
+    return { ok: true };
+  }
   const row = await prisma.equipmentItem.findUnique({ where: { index: catalogIndex } });
   if (!row) return fail("Unknown item");
 

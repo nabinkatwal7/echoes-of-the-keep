@@ -23,7 +23,8 @@ const LISTS: Record<Kind, string[]> = { race: SRD_RACES, subclass: SRD_SUBCLASSE
 /** Prisma `where` fragment that limits a query to SRD content when the mode is on. */
 export const srdWhere = (kind: Kind): { index?: { in: string[] } } => (srdOnly() ? { index: { in: LISTS[kind] } } : {});
 
-export const allowed = (kind: Kind, index: string | undefined | null) => !srdOnly() || !index || LISTS[kind].includes(index);
+export const allowed = (kind: Kind, index: string | undefined | null) =>
+  !srdOnly() || !index || index.startsWith("homebrew-") || LISTS[kind].includes(index);
 
 const letters = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
 const SPELLS = new Set<string>(SRD_SPELL_NAMES);

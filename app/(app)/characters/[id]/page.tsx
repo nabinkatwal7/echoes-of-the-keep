@@ -53,7 +53,14 @@ export default async function CharacterSheet({ params }: { params: Promise<{ id:
   if (!c) notFound();
 
   const d = deriveStored(c);
-  const catalog = await prisma.equipmentItem.findMany({ select: { index: true, name: true, cost: true, category: true }, orderBy: { name: "asc" } });
+  const [catalogRows, myItems] = await Promise.all([
+    prisma.equipmentItem.findMany({ select: { index: true, name: true, cost: true, category: true }, orderBy: { name: "asc" } }),
+    prisma.homebrewEntry.findMany({ where: { ownerId: user.id, kind: "item" }, select: { id: true, name: true, data: true } }),
+  ]);
+  const catalog = [
+    ...catalogRows,
+    ...myItems.map((h) => ({ index: `homebrew-${h.id}`, name: h.name, cost: String((h.data as { cost?: string }).cost ?? "0 gp"), category: String((h.data as { category?: string }).category ?? "Adventuring Gear") })),
+  ];
   const feats = await prisma.feat.findMany({ where: srdWhere("feat"), select: { index: true, name: true, prerequisite: true }, orderBy: { name: "asc" } });
   const classes = c.classes as { classIndex: string; level: number; subclassIndex?: string }[];
   const subclassNames = classes.map((k) => SUBCLASSES.find((s) => s.index === k.subclassIndex)?.name).filter(Boolean);

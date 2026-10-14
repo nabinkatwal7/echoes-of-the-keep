@@ -5,7 +5,7 @@ import Link from "next/link";
 export const metadata = { title: "FAQ" };
 
 const faqs = [
-  ["I forgot my password.", "There is no email reset. Ask the person who hosts the app."],
+  ["I forgot my password.", "There is no email reset. Generate recovery codes on your account page and keep them. The recover page accepts one code and sets a new password."],
   ["Why is a spell missing?", "The free-rules build only shows SRD spells. A full build shows the handbook list. Homebrew spells added to a campaign appear in that campaign."],
   ["The table looks quiet.", "Open the table and stay on the page. Presence updates within a second. If the connection drops, the log resumes from the last event you saw."],
   ["Can I play with no network?", "The last character sheet you opened is kept in this browser. Visit /offline when you are disconnected. The live table still needs the server."],

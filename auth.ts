@@ -1,30 +1,23 @@
+import { WINDOW_MS, holdExpired, isThrottled } from "@/lib/account/throttle";
 import { verifyPassword } from "@/lib/password";
 import { logger } from "@/lib/log";
 import { prisma } from "@/lib/prisma";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
-// Username + password only. Credentials sign-in requires JWT sessions (no database session table).
-const MAX_FAILURES = 5;
-const WINDOW_MS = 10 * 60 * 1000;
-const failures = new Map<string, { count: number; first: number }>();
-
-/** Small in-memory brake on password guessing; swap for a shared store when running several instances. */
-function throttled(username: string): boolean {
-  const f = failures.get(username);
-  if (!f) return false;
-  if (Date.now() - f.first > WINDOW_MS) {
-    failures.delete(username);
-    return false;
-  }
-  return f.count >= MAX_FAILURES;
+async function throttled(username: string): Promise<boolean> {
+  const row = await prisma.loginThrottle.findUnique({ where: { username } });
+  return !!row && isThrottled(row.failures, row.windowStart);
 }
 
-function recordFailure(username: string) {
-  const f = failures.get(username);
-  if (!f || Date.now() - f.first > WINDOW_MS)
-    failures.set(username, { count: 1, first: Date.now() });
-  else f.count++;
+async function recordFailure(username: string) {
+  const row = await prisma.loginThrottle.findUnique({ where: { username } });
+  const fresh = !row || Date.now() - row.windowStart.getTime() > WINDOW_MS;
+  await prisma.loginThrottle.upsert({
+    where: { username },
+    create: { username, failures: 1 },
+    update: fresh ? { failures: 1, windowStart: new Date() } : { failures: { increment: 1 } },
+  });
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -39,17 +32,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .toLowerCase();
         const password = String(raw?.password ?? "");
         if (!username || !password) return null;
-        if (throttled(username)) {
+        if (await throttled(username)) {
           logger.warn("login throttled", { username });
           return null;
         }
         const user = await prisma.user.findUnique({ where: { username } });
         if (!user || !verifyPassword(password, user.passwordHash)) {
-          recordFailure(username);
+          await recordFailure(username);
           logger.info("login failed", { username });
           return null;
         }
-        failures.delete(username);
+        if (user.deletedAt) {
+          if (holdExpired(user.deletedAt)) {
+            await prisma.user.delete({ where: { id: user.id } });
+            return null;
+          }
+          await prisma.user.update({ where: { id: user.id }, data: { deletedAt: null } });
+        }
+        await prisma.loginThrottle.deleteMany({ where: { username } });
         return { id: user.id, name: user.displayName };
       },
     }),

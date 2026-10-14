@@ -10,6 +10,7 @@ export const NAV = [
   { href: "/learn", label: "Learn" },
   { href: "/wiki", label: "The Tome" },
   { href: "/characters", label: "Heroes" },
+  { href: "/homebrew", label: "Homebrew" },
   { href: "/campaigns", label: "Campaigns" },
 ] as const;
 

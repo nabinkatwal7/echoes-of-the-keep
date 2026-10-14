@@ -84,6 +84,8 @@ export async function postMessage(campaignId: string, input: string): Promise<Re
   const user = await requireUser();
   const membership = await getMembership(campaignId, user.id);
   if (!membership) return { ok: false, errors: ["You are not in this campaign"] };
+  const recent = await prisma.campaignEvent.count({ where: { actorId: user.id, createdAt: { gte: new Date(Date.now() - 60_000) } } });
+  if (recent >= 30) return { ok: false, errors: ["Slow down a moment, then send that again"] };
   const isDm = membership.role === "DM";
   const actorName = user.name ?? "Someone";
   const msg = parseMessage(input);

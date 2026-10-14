@@ -13,6 +13,8 @@ export async function register(_prev: AccountResult, formData: FormData): Promis
   if (!check.ok) return { ok: false, error: check.error };
   const displayName = String(formData.get("displayName") ?? "").trim().slice(0, 40) || check.username;
   if (formData.get("password") !== formData.get("confirm")) return { ok: false, error: "Passwords do not match" };
+  const recent = await prisma.user.count({ where: { createdAt: { gte: new Date(Date.now() - 60_000) } } });
+  if (recent >= 20) return { ok: false, error: "Too many new accounts right now. Try again in a minute." };
 
   try {
     await prisma.user.create({

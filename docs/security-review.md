@@ -9,9 +9,9 @@ Reviewed at the end of the build. Findings are listed with what was done.
 | Sign-in | Username and password only, no third-party providers |
 | Password storage | scrypt with a random 16-byte salt per password; cost parameters are stored in the hash (`lib/password.ts`) |
 | Password rules | At least 8 characters; usernames 3-24 characters of `a-z 0-9 _` |
-| Guessing | In-memory throttle: 5 failures per username in 10 minutes. **Single instance only.** With several instances move the counter to the database or a shared cache |
+| Guessing | Database throttle: 5 failures per username in 10 minutes, including names that do not exist (`LoginThrottle`) |
 | Sessions | JWT sessions signed with `AUTH_SECRET`, 30-day lifetime. Changing the secret signs everyone out |
-| Account changes | Changing the password needs the current password. Deleting the account needs the password and the exact username |
+| Account changes | Changing the password needs the current password. Deleting the account needs the password and the exact username, then the account can be restored by signing in within 14 days. Recovery codes are hashed and shown once |
 
 ## Authorization
 

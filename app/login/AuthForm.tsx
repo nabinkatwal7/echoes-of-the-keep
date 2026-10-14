@@ -42,6 +42,10 @@ export function AuthForm({ mode, next }: { mode: "login" | "register"; next?: st
             <Link href="/register" className="text-gold underline-offset-4 hover:underline">
               Create an account
             </Link>
+            {" · "}
+            <Link href="/recover" className="text-gold underline-offset-4 hover:underline">
+              Use a recovery code
+            </Link>
           </>
         ) : (
           <>

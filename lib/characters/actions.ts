@@ -23,24 +23,39 @@ export async function createCharacter(choices: CreatorChoices, startingEquipment
   const outside = srdViolations({ raceIndex: choices.raceIndex, subraceIndex: choices.subraceIndex, backgroundIndex: choices.backgroundIndex, subclassIndex: choices.subclassIndex, feats: choices.variantFeat ? [choices.variantFeat] : [] });
   if (outside.length) return { ok: false, errors: outside };
 
-  const [race, subrace, background] = await Promise.all([
-    prisma.race.findUnique({ where: { index: choices.raceIndex } }),
-    choices.subraceIndex ? prisma.race.findUnique({ where: { index: choices.subraceIndex } }) : null,
-    prisma.background.findUnique({ where: { index: choices.backgroundIndex } }),
+  const owned = (kind: string, index?: string | null) =>
+    index?.startsWith("homebrew-")
+      ? prisma.homebrewEntry.findFirst({ where: { id: index.slice("homebrew-".length), ownerId: user.id, kind } })
+      : Promise.resolve(null);
+  const [race, subrace, background, hbRace, hbBackground, hbFeat] = await Promise.all([
+    choices.raceIndex.startsWith("homebrew-") ? Promise.resolve(null) : prisma.race.findUnique({ where: { index: choices.raceIndex } }),
+    choices.subraceIndex && !choices.subraceIndex.startsWith("homebrew-") ? prisma.race.findUnique({ where: { index: choices.subraceIndex } }) : null,
+    choices.backgroundIndex.startsWith("homebrew-") ? Promise.resolve(null) : prisma.background.findUnique({ where: { index: choices.backgroundIndex } }),
+    owned("race", choices.raceIndex),
+    owned("background", choices.backgroundIndex),
+    owned("feat", choices.variantFeat),
   ]);
-  if (!race) return { ok: false, errors: ["Unknown race"] };
-  if (!background) return { ok: false, errors: ["Unknown background"] };
+  const hbTraits = (row: { data: unknown } | null) => {
+    const traits = (row?.data as { traits?: { name: string; description: string }[] } | undefined)?.traits;
+    return Array.isArray(traits) ? traits : null;
+  };
+  const raceTraits = hbRace ? hbTraits(hbRace) : (race?.traits as { name: string; description: string }[] | undefined);
+  if (!raceTraits) return { ok: false, errors: ["Unknown race"] };
+  const backgroundRow = hbBackground
+    ? { index: choices.backgroundIndex, skillProficiencies: String((hbBackground.data as { skillProficiencies?: string }).skillProficiencies ?? "") }
+    : background;
+  if (!backgroundRow) return { ok: false, errors: ["Unknown background"] };
   if (choices.subraceIndex && !subrace) return { ok: false, errors: ["Unknown subrace"] };
 
   const built = buildCharacter(choices, {
-    race: { index: race.index, traits: race.traits as { name: string; description: string }[] },
+    race: { index: hbRace ? choices.raceIndex : race!.index, traits: raceTraits },
     subrace: subrace ? { index: subrace.index, traits: subrace.traits as { name: string; description: string }[] } : undefined,
-    background: { index: background.index, skillProficiencies: background.skillProficiencies },
+    background: { index: backgroundRow.index, skillProficiencies: backgroundRow.skillProficiencies },
   });
   if (!built.ok) return built;
 
   const c = built.character;
-  if (c.feats.length) {
+  if (c.feats.length && !hbFeat) {
     const feat = await prisma.feat.findUnique({ where: { index: c.feats[0] } });
     if (!feat) return { ok: false, errors: ["Unknown feat"] };
     const check = checkPrerequisites(

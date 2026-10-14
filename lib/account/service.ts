@@ -1,5 +1,6 @@
+import { randomBytes } from "node:crypto";
 import { exportCharacter } from "@/lib/characters/portable";
-import { hashPassword, MIN_PASSWORD_LENGTH, verifyPassword } from "@/lib/password";
+import { checkCredentials, hashPassword, MIN_PASSWORD_LENGTH, verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 
 export type Outcome = { ok: true } | { ok: false; error: string };
@@ -41,6 +42,35 @@ export async function removeAccount(userId: string, password: string, typedUsern
   if (!user) return { ok: false, error: "Account not found" };
   if (typedUsername.trim().toLowerCase() !== user.username) return { ok: false, error: "Type your username exactly to confirm" };
   if (!verifyPassword(password, user.passwordHash)) return { ok: false, error: "That password is not right" };
-  await prisma.user.delete({ where: { id: userId } });
+  await prisma.user.update({ where: { id: userId }, data: { deletedAt: new Date() } });
+  return { ok: true };
+}
+
+/** Eight one-time codes. The plaintext is returned once; only hashes are stored. */
+export async function createRecoveryCodes(userId: string): Promise<string[]> {
+  const codes = Array.from({ length: 8 }, () => randomCode());
+  await prisma.user.update({ where: { id: userId }, data: { recoveryHashes: codes.map(hashPassword) } });
+  return codes;
+}
+
+function randomCode() {
+  const alphabet = "abcdefghijkmnopqrstuvwxyz23456789";
+  const bytes = randomBytes(8);
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+}
+
+/** A recovery code sets a new password and is then discarded. */
+export async function recoverWithCode(username: string, code: string, next: string): Promise<Outcome> {
+  const check = checkCredentials(username, next);
+  if (!check.ok) return check;
+  const user = await prisma.user.findUnique({ where: { username: check.username } });
+  if (!user) return { ok: false, error: "That code does not match" };
+  const index = user.recoveryHashes.findIndex((hash) => verifyPassword(code.trim().toLowerCase(), hash));
+  if (index < 0) return { ok: false, error: "That code does not match" };
+  const recoveryHashes = user.recoveryHashes.filter((_, i) => i !== index);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: hashPassword(next), recoveryHashes, deletedAt: null },
+  });
   return { ok: true };
 }

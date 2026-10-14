@@ -17,10 +17,36 @@ model User {
   passwordHash String
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
+  /// set when the account is deleted; a sign-in within 14 days restores it
+  deletedAt    DateTime?
+  /// one-time recovery codes, stored as scrypt hashes. Shown once when created.
+  recoveryHashes String[]       @default([])
   characters   Character[]
   memberships  CampaignMember[]
   campaignsDm  Campaign[]
   journal      JournalEntry[]
+  homebrew     HomebrewEntry[]
+}
+
+/// Failed sign-ins, including usernames that do not exist. Shared by every server process.
+model LoginThrottle {
+  username    String   @id
+  failures    Int      @default(0)
+  windowStart DateTime @default(now())
+}
+
+/// A player's own race, background, feat or item. Visible only to them, including in the creator.
+model HomebrewEntry {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// race | background | feat | item
+  kind      String
+  name      String
+  data      Json
+  createdAt DateTime @default(now())
+
+  @@index([ownerId, kind])
 }
 
 // Rules content (seeded from content/, read-only at runtime)

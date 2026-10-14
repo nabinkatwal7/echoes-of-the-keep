@@ -120,18 +120,15 @@ Details for each phase: docs/phases/*.md
 [x] f99, Mobile and PWA polish
 [~] f100, Accessibility audit (WCAG 2.2 AA)
 [x] f101, Performance and load testing
-[~] f102, Homebrew content support
-[~] f103, Backups, data export and account deletion
-[~] f104, Security and privacy review
+[x] f102, Homebrew content support
+[x] f103, Backups, data export and account deletion
+[x] f104, Security and privacy review
 [x] f105, Monitoring, logging and runbooks
 [~] f106, Licensing and attribution (SRD-only mode)
 [x] f107, User docs and release checklist
 
 PARTIAL NOTES
 f4: Playwright e2e not set up yet
-f102: a campaign can add a monster and a spell (damage, attack or healing) and use them in play; custom races, backgrounds, feats and items are not built
 f97: scripted evening-at-the-table database test and a public rules-notes page; not five live playtest groups
 f100: review in docs/accessibility.md; map positions are a text list and Counterspell uses number fields. Not yet checked with a screen reader, at 200% zoom, or in Windows high contrast
-f103: account export, campaign JSON and Markdown journal, delete account, and pnpm backup; deleting an account is still immediate, with no recovery window
-f104: review in docs/security-review.md; login throttle is per process and there is no password recovery
 f106: SRD_ONLY hides non-SRD choices and handbook prose; the database still stores handbook wording, and racial trait sentences are still parsed in the creator
