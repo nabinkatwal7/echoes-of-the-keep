@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "description": "Echoes of the Keep: a 5th Edition rules tome, hero forge and shared table with solo play.",
-  "repository": { "type": "git", "url": "git+https://github.com/nabinkatwal7/dungeons-and-dragons.git" },
+  "repository": { "type": "git", "url": "git+https://github.com/nabinkatwal7/echoes-of-the-keep.git" },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
