@@ -38,6 +38,7 @@
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@tabler/icons-react": "^3.30.0",
+    "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.1",
     "framer-motion": "^14.1.0",
     "gsap": "^3.15.0",

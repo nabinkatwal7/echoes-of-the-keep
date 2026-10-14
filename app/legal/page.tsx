@@ -24,6 +24,10 @@ export default function Legal() {
         <h2 className="font-display text-xl text-goldBright">Your content</h2>
         <p>Heroes, journal entries, homebrew monsters and campaign notes belong to the people who write them. You can download everything you have made, and delete your account, from the Account page.</p>
       </Card>
+      <Card className="flex flex-col gap-3 p-5">
+        <h2 className="font-display text-xl text-goldBright">Analytics</h2>
+        <p>When hosted on Vercel, the site counts page views with Vercel Web Analytics. It sets no cookies and does not follow you across sites; it records which pages are visited and broad details such as country and browser.</p>
+      </Card>
     </div>
   );
 }

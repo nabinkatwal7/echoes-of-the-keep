@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible, Cinzel, EB_Garamond, Pixelify_Sans } from "next/font/google";
 import { AmbientEmbers } from "./components/motion/AmbientEmbers";
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <div id="main" tabIndex={-1} className="flex-1 outline-none">{children}</div>
           <SiteFooter />
         </MotionRoot>
+        <Analytics />
       </body>
     </html>
   );
