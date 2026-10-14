@@ -27,6 +27,8 @@ export type CombatCast = {
   targetIds?: string[];
   /** the point (for areas and spheres) or the direction (for cones, lines, self cubes), as grid squares */
   point?: { x: number; y: number };
+  /** sorcerer Metamagic option, paid in sorcery points */
+  metamagic?: string;
 };
 
 /** Cast a spell as a hero in the middle of a fight: economy, targeting, slot, rolls, effects and concentration. */
@@ -43,7 +45,34 @@ export async function castInCombat(req: CombatCast): Promise<Result> {
   const ch = await prisma.character.findUnique({ where: { id: row.characterId } });
   if (!ch) return fail("Character not found");
 
-  const kind = castingTimeKind(spell.castingTime);
+  let kind = castingTimeKind(spell.castingTime);
+  let metamagicSpend: { key: string; used: number; label: string } | null = null;
+  let saveDisadvantage = false;
+  let empowered = false;
+  let extended = false;
+  let distant = false;
+  if (req.metamagic) {
+    const { isMetamagic, knownMetamagic, metamagicCost } = await import("@/engine/spells/metamagic");
+    const { resourceViews } = await import("@/lib/characters/play");
+    if (!isMetamagic(req.metamagic)) return fail("Unknown metamagic");
+    const sorc = (ch.classes as { classIndex: string; level: number }[]).find((k) => k.classIndex === "sorcerer");
+    if (!sorc) return fail("Only a sorcerer can use Metamagic");
+    const saved = (ch.resources && typeof ch.resources === "object" && !Array.isArray(ch.resources) ? (ch.resources as Record<string, unknown>)._metamagic : undefined) as string[] | undefined;
+    const known = knownMetamagic(sorc.level, saved);
+    if (!known.includes(req.metamagic)) return fail(`You know ${known.join(", ")}`);
+    const pool = resourceViews(ch as never).find((r) => r.key.endsWith("sorcery-points"));
+    const cost = metamagicCost(req.metamagic, spell.level);
+    if (!pool || pool.max - pool.used < cost) return fail(`That costs ${cost} sorcery points`);
+    if (req.metamagic === "quickened") {
+      if (kind !== "action") return fail("Quickened Spell turns a spell with a casting time of 1 action into a bonus action");
+      kind = "bonus";
+    }
+    if (req.metamagic === "heightened") saveDisadvantage = true;
+    if (req.metamagic === "empowered") empowered = true;
+    if (req.metamagic === "extended") extended = true;
+    if (req.metamagic === "distant") distant = true;
+    metamagicSpend = { key: pool.key, used: pool.used + cost, label: `${req.metamagic} (${cost} sorcery points)` };
+  }
   if (kind === "long") return fail("That takes too long to cast in combat");
   const active = enc.combatants[enc.activeIndex]?.id === row.id;
   const caster0 = rowToCmb(row);
@@ -55,8 +84,13 @@ export async function castInCombat(req: CombatCast): Promise<Result> {
   if (kind === "action" && spell.level > 0 && caster0.turn.bonusSpell) return fail("After a bonus action spell you can cast only a cantrip this turn");
   if (kind === "bonus" && caster0.turn.leveledSpell) return fail("You can't cast a bonus action spell after a leveled spell");
 
-  const effect = parseSpellEffect(spell);
+  let effect = parseSpellEffect(spell);
   const slotLevel = spell.level === 0 ? 0 : Math.max(spell.level, req.slotLevel ?? spell.level);
+  if (distant && (effect.range.kind === "ranged" || effect.range.kind === "sight")) effect = { ...effect, range: { ...effect.range, feet: effect.range.feet * 2 } };
+  if (distant && effect.range.kind === "touch") effect = { ...effect, range: { kind: "ranged", feet: 30 } };
+  if (req.metamagic === "twinned") {
+    if (effect.area || effect.range.kind === "self" || maxTargets(effect, spell.level, slotLevel) !== 1) return fail("Twinned Spell only works on a spell that targets one creature");
+  }
 
   // ---- who is hit
   const all = enc.combatants.map(rowToCmb);
@@ -83,7 +117,8 @@ export async function castInCombat(req: CombatCast): Promise<Result> {
     const ids = [...new Set(req.targetIds ?? [])];
     const selfCast = effect.range.kind === "self";
     if (!ids.length && !selfCast) return fail("Choose a target");
-    const limit = effect.projectiles ? projectileCount(effect, spell.level, slotLevel) : maxTargets(effect, spell.level, slotLevel);
+    const limit = req.metamagic === "twinned" ? 2 : effect.projectiles ? projectileCount(effect, spell.level, slotLevel) : maxTargets(effect, spell.level, slotLevel);
+    if (req.metamagic === "twinned" && ids.length !== 2) return fail("Twinned Spell needs two targets");
     if (ids.length > limit) return fail(`${spell.name} can affect at most ${limit} target${limit > 1 ? "s" : ""} at this level`);
     for (const id of ids) {
       const t = alive.find((c) => c.id === id);
@@ -97,6 +132,11 @@ export async function castInCombat(req: CombatCast): Promise<Result> {
   // ---- pay for it (slot, concentration bookkeeping on the sheet, log)
   const paid = await castSpell(row.characterId, spell.index, { slotLevel: slotLevel || undefined, pact: req.pact });
   if (!paid.ok) return paid;
+  if (metamagicSpend) {
+    const resources = { ...((ch.resources && typeof ch.resources === "object" && !Array.isArray(ch.resources) ? ch.resources : {}) as Record<string, unknown>) };
+    resources[metamagicSpend.key] = metamagicSpend.used;
+    await prisma.character.update({ where: { id: ch.id }, data: { resources: resources as Prisma.InputJsonValue } });
+  }
 
   // ---- numbers
   const d = deriveStored(ch as unknown as StoredCharacter);
@@ -124,12 +164,25 @@ export async function castInCombat(req: CombatCast): Promise<Result> {
   state = state.map((c) => (c.id === caster.id ? caster : c));
 
   const includesCaster = targets.some((x) => x.id === caster.id);
+  const life = classes.some((k) => k.subclassIndex === "life-domain");
+  const invocations = (ch.resources && typeof ch.resources === "object" && !Array.isArray(ch.resources) ? (ch.resources as Record<string, unknown>)._invocations : []) as string[];
+  let castEffect = effect;
+  if (spell.index === "eldritch-blast" && invocations.includes("agonizing-blast") && castEffect.damage) {
+    castEffect = { ...castEffect, damage: { ...castEffect.damage, flat: (castEffect.damage.flat ?? 0) + Math.max(0, castMod) } };
+  }
+  const careful = req.metamagic === "careful" ? targets.filter((t) => t.kind === "character").slice(0, Math.max(1, castMod)).map((t) => t.id) : undefined;
+  const env = (enc.environment ?? {}) as { underwater?: boolean };
   const out = resolveSpell({
     caster, targets: targets.map((x) => (x.id === caster.id ? caster : state.find((s) => s.id === x.id) ?? x)),
     spell: { index: spell.index, name: spell.name, level: spell.level, concentration: spell.concentration },
-    effect, slotLevel, casterLevel: d.level, castMod, attackBonus: prof + castMod, saveDc: 8 + prof + castMod,
+    effect: castEffect, slotLevel, casterLevel: d.level, castMod, attackBonus: prof + castMod, saveDc: 8 + prof + castMod,
     distanceTo: (target) => dist(target),
+    underwater: !!env.underwater,
+    saveDisadvantage, empowered, extended,
+    autoSaveIds: careful,
+    bonusHeal: life && spell.level > 0 && castEffect.delivery === "heal" ? 2 + spell.level : undefined,
   });
+  if (metamagicSpend) lines.push(`${caster0.name} uses ${metamagicSpend.label}`);
   lines.push(...out.lines);
 
   const merged = new Map<string, Cmb>(state.map((c) => [c.id, c]));

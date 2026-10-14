@@ -1,10 +1,13 @@
 "use server";
 
 import type { Combatant, Prisma } from "@prisma/client";
-import { rollInitiative, standUp, type Cover } from "@/engine/combat";
+import { rollDamage, rollInitiative, standUp, type Cover } from "@/engine/combat";
+import { mountMoveCost } from "@/engine/combat/environment";
+import { spendLegendary, spendRecharge } from "@/engine/combat/special";
+import { rollD20 } from "@/engine/dice";
 import { moveCost, opportunityAttackers, distanceFeet, withinFiveFeet as adjacent } from "@/engine/combat/grid";
 import { addCondition, isCondition, removeCondition } from "@/engine/conditions/timers";
-import { applyDamage, heal } from "@/engine/damage";
+import { heal } from "@/engine/damage";
 import { xpForChallenge } from "@/engine/xp";
 import { requireUser } from "@/lib/auth";
 import { roleIn } from "./store";
@@ -12,7 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { characterCombatStats, characterProfiles, monsterStats } from "./profiles";
 import { commit } from "./commit";
 import {
-  advance, beginTurn, finishTurn, fromVitals, resolveAttackAction, resolveGrappleAction, spendReaction, spendSimpleAction,
+  absorbDamage, advance, beginTurn, finishTurn, fromVitals, resolveAttackAction, resolveGrappleAction, spendReaction, spendSimpleAction,
   toVitals, type AttackProfile, type Cmb, type SimpleAction,
 } from "./rules";
 import { changed, clearSheetConcentration, concentrationRolls, dropForDowned } from "./concentration";
@@ -70,7 +73,7 @@ export async function addMonster(encounterId: string, creatureIndex: string, cou
     encounterId, kind: "monster", creatureIndex, name: count + existing > 1 ? `${m.name} ${existing + i + 1}` : m.name,
     dexMod: s.dexMod, ac: s.ac, hp: s.hp, maxHp: s.hp, speed: s.speed, hidden, attacks: s.attacks as unknown as object,
     defenses: s.defenses as object, x: 14 + (i % 3), y: 2 + Math.floor(i / 3) * 2,
-    extra: { attacksPerAction: s.attacksPerAction, cr: s.cr, size: s.size },
+    extra: { attacksPerAction: s.attacksPerAction, cr: s.cr, size: s.size, recharge: s.recharge, legendary: s.legendary },
   }));
   await commit(ctx.enc, ctx.user, { create, lines: [`${count} × ${m.name} added`], dmOnly: hidden });
   refresh(ctx.enc.campaignId);
@@ -112,11 +115,122 @@ export async function toggleCombatantFlag(combatantId: string, flag: "surprised"
   return { ok: true };
 }
 
-export async function setEnvironment(encounterId: string, env: { underwater?: boolean }): Promise<Result> {
+export async function setEnvironment(encounterId: string, env: { underwater?: boolean; mounted?: boolean }): Promise<Result> {
   const ctx = await context(encounterId);
   if (!isCtx(ctx)) return ctx;
   if (!ctx.isDm) return fail("Only the DM can change the environment");
-  await commit(ctx.enc, ctx.user, { encounter: { environment: env as Prisma.InputJsonValue }, lines: [env.underwater ? "The fight moves underwater" : "The fight is above water"] });
+  const prev = (ctx.enc.environment ?? {}) as { underwater?: boolean; mounted?: boolean };
+  const next = { ...prev, ...env };
+  const lines: string[] = [];
+  if (env.underwater !== undefined) lines.push(env.underwater ? "The fight moves underwater" : "The fight is above water");
+  if (env.mounted !== undefined) lines.push(env.mounted ? "Mounted combat: mounting costs half your speed, and a controlled mount can only Dash, Disengage or Dodge" : "The fight is on foot");
+  await commit(ctx.enc, ctx.user, { encounter: { environment: next as Prisma.InputJsonValue }, lines });
+  refresh(ctx.enc.campaignId);
+  return { ok: true };
+}
+
+/** Mount or dismount. On your turn it costs half your speed, and you can do it only once. */
+export async function toggleMount(combatantId: string): Promise<Result> {
+  const a = await loadActing(combatantId);
+  if (a.error) return a.error;
+  const { row, ctx } = a;
+  const c = rowToCmb(row);
+  const active = ctx.enc.state === "ACTIVE" && ctx.enc.combatants[ctx.enc.activeIndex]?.id === row.id;
+  let turn = c.turn;
+  const cost = mountMoveCost(c.speed);
+  if (active) {
+    if (turn.mountedThisTurn) return fail("You can mount or dismount only once on your turn");
+    if (turn.movement < cost) return fail(`That costs ${cost} feet of movement`);
+    turn = { ...turn, movement: turn.movement - cost, mountedThisTurn: true };
+  }
+  const mounted = !c.mounted;
+  const next = { ...c, mounted, mountSpeed: c.mountSpeed ?? 60, turn };
+  const rule = mounted ? " A controlled mount acts on your initiative and can only Dash, Disengage or Dodge. An independent mount rolls its own initiative." : "";
+  await commit(ctx.enc, ctx.user, { update: [next], lines: [`${c.name} ${mounted ? `mounts (speed ${next.mountSpeed} ft, ${active ? `${cost} ft` : "free"})` : "dismounts"}.${rule}`], dmOnly: row.hidden });
+  refresh(ctx.enc.campaignId);
+  return { ok: true };
+}
+
+/** Tell the creature who readied an action that the DM has seen the trigger. */
+export async function signalReady(combatantId: string): Promise<Result> {
+  const row = await prisma.combatant.findUnique({ where: { id: combatantId } });
+  if (!row) return fail("Combatant not found");
+  const ctx = await context(row.encounterId);
+  if (!isCtx(ctx)) return ctx;
+  if (!ctx.isDm) return fail("Only the DM can call a trigger");
+  if (!row.readied) return fail("Nothing is readied");
+  const owner = row.characterId ? await prisma.character.findUnique({ where: { id: row.characterId }, select: { ownerId: true } }) : null;
+  await prisma.campaignEvent.create({
+    data: {
+      campaignId: ctx.enc.campaignId,
+      actorId: ctx.user.id,
+      type: "chat",
+      audience: owner ? `USER:${owner.ownerId}` : "ALL",
+      payload: { actorName: ctx.user.name ?? "DM", text: `Your trigger happened: ${row.readied}. Use your reaction.`, whisper: !!owner },
+    },
+  });
+  refresh(ctx.enc.campaignId);
+  return { ok: true };
+}
+
+/** Use a recharge ability. With a target, a parsed save and damage roll are applied (half on a successful save). */
+export async function useRecharge(combatantId: string, name: string, targetId?: string): Promise<Result> {
+  const a = await loadActing(combatantId);
+  if (a.error) return a.error;
+  const { row, ctx } = a;
+  const c = rowToCmb(row);
+  if (!c.recharge?.length) return fail("No recharge abilities");
+  const ability = c.recharge.find((x) => x.name.toLowerCase() === name.toLowerCase());
+  if (!ability) return fail("Unknown ability");
+  const spent = spendRecharge(c.recharge, ability.name);
+  if (!spent) return fail(`${ability.name} has not recharged`);
+  const lines = [`${c.name} uses ${ability.name}`];
+  let targetUpdate: Cmb | null = null;
+  if (ability.dice) {
+    const rolled = rollDamage(ability.dice, 0);
+    let amount = rolled.total;
+    if (targetId && ability.saveDc && ability.saveAbility) {
+      const targetRow = ctx.enc.combatants.find((r) => r.id === targetId);
+      if (!targetRow) return fail("Target not found");
+      const target = rowToCmb(targetRow);
+      const key = ability.saveAbility as "str" | "dex" | "con" | "int" | "wis" | "cha";
+      const bonus = target.defenses.saves?.[key] ?? (key === "dex" ? target.dexMod : 0);
+      const save = rollD20(bonus);
+      const ok = save.total >= ability.saveDc;
+      amount = ok ? Math.floor(amount / 2) : amount;
+      lines.push(`${target.name} ${ok ? "saves" : "fails"} (${save.total} vs DC ${ability.saveDc})`);
+      if (amount > 0) {
+        const hit = absorbDamage(target, amount);
+        targetUpdate = hit.cmb;
+        lines.push(`${target.name} takes ${amount} ${ability.damageType ?? ""} damage`.trim(), ...hit.lines);
+      }
+    } else {
+      lines.push(`${rolled.total} ${ability.damageType ?? "damage"}${ability.saveDc ? ` before the DC ${ability.saveDc} save` : ""}`);
+    }
+  }
+  const update = [{ ...c, recharge: spent }, ...(targetUpdate ? [targetUpdate] : [])];
+  await commit(ctx.enc, ctx.user, { update, lines, dmOnly: row.hidden });
+  refresh(ctx.enc.campaignId);
+  return { ok: true };
+}
+
+/** One legendary action at the end of another creature's turn. The pool refills at the start of this creature's turn. */
+export async function useLegendary(combatantId: string, option?: string): Promise<Result> {
+  const row = await prisma.combatant.findUnique({ where: { id: combatantId } });
+  if (!row) return fail("Combatant not found");
+  const ctx = await context(row.encounterId);
+  if (!isCtx(ctx)) return ctx;
+  if (!ctx.isDm) return fail("Only the DM uses legendary actions");
+  if (ctx.enc.state !== "ACTIVE") return fail("The encounter is not running");
+  if (ctx.enc.combatants[ctx.enc.activeIndex]?.id === row.id) return fail("Legendary actions happen at the end of someone else's turn");
+  const c = rowToCmb(row);
+  if (!c.legendary) return fail("No legendary actions");
+  const chosen = option ? c.legendary.options.find((o) => o.name.toLowerCase() === option.toLowerCase()) : undefined;
+  if (option && !chosen) return fail("Unknown legendary action");
+  const cost = chosen?.cost ?? 1;
+  const next = spendLegendary(c.legendary, cost);
+  if (!next) return fail(c.legendary.pending ? "Only one legendary action at the end of a turn" : "Not enough legendary actions");
+  await commit(ctx.enc, ctx.user, { update: [{ ...c, legendary: next }], lines: [`${c.name} uses ${chosen?.name ?? "a legendary action"} (${next.left} left)`], dmOnly: row.hidden });
   refresh(ctx.enc.campaignId);
   return { ok: true };
 }
@@ -166,6 +280,7 @@ export async function endTurn(encounterId: string): Promise<Result> {
   const lines: string[] = [];
   const done = finishTurn(rowToCmb(row));
   lines.push(...done.lines);
+  const releasePending = (c: Cmb): Cmb => (c.legendary?.pending ? { ...c, legendary: { ...c.legendary, pending: false } } : c);
   const order = enc.combatants.map((r) => ({ id: r.id, defeated: r.id === row.id ? done.cmb.defeated : r.defeated }));
   const next = advance(order, enc.activeIndex, enc.round);
   const nextRow = enc.combatants[next.activeIndex];
@@ -173,7 +288,12 @@ export async function endTurn(encounterId: string): Promise<Result> {
   lines.push(...started.lines);
   const wrapped = next.round > enc.round ? [`Round ${next.round} begins`] : [];
   lines.unshift(`${row.name} ends their turn`, ...wrapped, `${nextRow.name}'s turn`);
-  const update = [done.cmb, ...(nextRow.id === row.id ? [] : [started.cmb])];
+  const finished = releasePending(done.cmb);
+  const others = enc.combatants.filter((r) => r.id !== row.id && r.id !== nextRow.id).flatMap((r) => {
+    const c = rowToCmb(r);
+    return c.legendary?.pending ? [releasePending(c)] : [];
+  });
+  const update = [finished, ...others, ...(nextRow.id === row.id ? [] : [started.cmb])];
   if (nextRow.id === row.id) update[0] = started.cmb;
   await commit(enc, ctx.user, { update, encounter: { round: next.round, activeIndex: next.activeIndex }, lines, dmOnly: row.hidden && nextRow.hidden });
   refresh(enc.campaignId);
@@ -362,12 +482,35 @@ export async function moveCombatant(combatantId: string, x: number, y: number): 
         .filter((r) => rowToCmb(r).turn.reaction)
         .map((r) => ({ id: r.id, at: { x: r.x!, y: r.y! }, reach: Math.max(5, ...profilesOf(r).filter((p) => p.melee).map((p) => p.reach ?? 5)) }));
       provokes = opportunityAttackers(from, to, foes);
-      if (provokes.length) lines.push(`${provokes.map((id) => enc.combatants.find((r) => r.id === id)!.name).join(", ")} can make an opportunity attack`);
+      if (provokes.length) {
+        const names = provokes.map((id) => enc.combatants.find((r) => r.id === id)!.name);
+        lines.push(`${names.join(", ")} can make an opportunity attack${c.mounted ? " (choose the mount or the rider)" : ""}`);
+      }
     }
   } else {
     lines.push(`${c.name} is placed on the map`);
   }
   await commit(enc, ctx.user, { update: [next], lines, dmOnly: row.hidden });
+  if (provokes.length) {
+    const attackers = enc.combatants.filter((r) => provokes.includes(r.id) && r.characterId);
+    const chars = attackers.length
+      ? await prisma.character.findMany({ where: { id: { in: attackers.map((r) => r.characterId!) } }, select: { id: true, ownerId: true } })
+      : [];
+    const owner = new Map(chars.map((ch) => [ch.id, ch.ownerId]));
+    for (const attacker of attackers) {
+      const userId = owner.get(attacker.characterId!);
+      if (!userId) continue;
+      await prisma.campaignEvent.create({
+        data: {
+          campaignId: enc.campaignId,
+          actorId: ctx.user.id,
+          type: "chat",
+          audience: `USER:${userId}`,
+          payload: { actorName: ctx.user.name ?? "DM", text: `${c.name} left your reach. You can make an opportunity attack.`, whisper: true },
+        },
+      });
+    }
+  }
   refresh(enc.campaignId);
   return { ok: true, provokes };
 }
@@ -430,12 +573,17 @@ export async function adjustHitPoints(targetId: string, kind: "damage" | "heal" 
   if (!Number.isInteger(amount) || amount <= 0) return fail("Enter an amount above zero");
   const c = rowToCmb(row);
   const v = toVitals(c);
-  const after = kind === "damage" ? applyDamage(v, amount, { diesAtZero: c.kind !== "character" }) : kind === "heal" ? heal(v, amount) : { ...v, tempHp: Math.max(v.tempHp, amount) };
-  await commit(ctx.enc, ctx.user, {
-    update: [fromVitals(c, after)],
-    lines: [`${c.name} ${kind === "damage" ? `takes ${amount} damage` : kind === "heal" ? `heals ${amount}` : `gains ${amount} temporary HP`}${after.dead ? " and dies" : after.hp === 0 && v.hp > 0 ? " and falls unconscious" : ""}`],
-    dmOnly: row.hidden,
-  });
+  if (kind === "damage") {
+    const hit = absorbDamage(c, amount);
+    await commit(ctx.enc, ctx.user, { update: [hit.cmb], lines: [`${c.name} takes ${amount} damage`, ...hit.lines], dmOnly: row.hidden });
+  } else {
+    const after = kind === "heal" ? heal(v, amount) : { ...v, tempHp: Math.max(v.tempHp, amount) };
+    await commit(ctx.enc, ctx.user, {
+      update: [fromVitals(c, after)],
+      lines: [`${c.name} ${kind === "heal" ? `heals ${amount}` : `gains ${amount} temporary HP`}`],
+      dmOnly: row.hidden,
+    });
+  }
   refresh(ctx.enc.campaignId);
   return { ok: true };
 }

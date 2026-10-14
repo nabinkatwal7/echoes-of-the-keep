@@ -15,6 +15,7 @@ import {
   type TurnResources,
 } from "@/engine/combat";
 import { underwaterAttack } from "@/engine/combat/environment";
+import { rechargeRoll, resetLegendary, type LegendaryState, type RechargeAbility } from "@/engine/combat/special";
 import { conditionSet, tickConditions, type ActiveCondition } from "@/engine/conditions/timers";
 import { attackModifiers, cannotAct, effectiveSpeed } from "@/engine/conditions";
 import { adjustDamage, applyDamage, deathSave, type DamageType, type Defenses, type Vitals } from "@/engine/damage";
@@ -56,10 +57,33 @@ export type Buff = {
   /** who is concentrating on it, so ending concentration removes it */
   source?: string;
   acBonus?: number;
+  /** added to speed in feet (before a multiplier) */
+  speedBonus?: number;
+  /** Haste doubles speed */
+  speedMultiplier?: number;
   /** a die added to attack rolls (Bless) */
   attackDie?: number;
   /** a die added to saving throws (Bless) */
   saveDie?: number;
+  /** advantage on Dexterity saves (Haste) */
+  dexSaveAdvantage?: boolean;
+  /** one extra action: a single weapon attack, Dash, Disengage, Hide, or Use an Object */
+  haste?: boolean;
+  /** when the buff ends, the creature cannot move or act on that turn */
+  lethargy?: boolean;
+};
+
+/** The form a polymorphed creature returns to. Excess damage past 0 HP carries over. */
+export type SavedForm = {
+  name: string;
+  ac: number;
+  hp: number;
+  maxHp: number;
+  speed: number;
+  attacks: unknown;
+  defenses: unknown;
+  attacksPerAction?: number;
+  size?: string;
 };
 
 export const acBonus = (c: Pick<Cmb, "buffs">) => (c.buffs ?? []).reduce((s, b) => s + (b.acBonus ?? 0), 0);
@@ -94,11 +118,40 @@ export type Cmb = {
   buffs?: Buff[];
   /** summoned or controlled creatures fight on the party's side */
   ally?: boolean;
+  /** original stats while polymorphed; cleared when the new form drops to 0 HP */
+  polymorph?: SavedForm | null;
+  recharge?: RechargeAbility[];
+  legendary?: LegendaryState;
+  mounted?: boolean;
+  /** speed while mounted; the creature's own speed is kept for when they dismount */
+  mountSpeed?: number;
 };
 
-export type Turn = TurnResources & { attacksRemaining?: number; helped?: boolean; /** a bonus-action spell was cast this turn: only cantrips may follow */ bonusSpell?: boolean; /** a leveled action spell was cast this turn */ leveledSpell?: boolean; /** Sneak Attack has been used this turn */ sneakUsed?: boolean };
+export type Turn = TurnResources & {
+  attacksRemaining?: number;
+  helped?: boolean;
+  /** a bonus-action spell was cast this turn: only cantrips may follow */
+  bonusSpell?: boolean;
+  /** a leveled action spell was cast this turn */
+  leveledSpell?: boolean;
+  /** Sneak Attack has been used this turn */
+  sneakUsed?: boolean;
+  /** Haste's extra action is still available */
+  hasteAction?: boolean;
+  /** already mounted or dismounted this turn */
+  mountedThisTurn?: boolean;
+};
 
 export const emptyTurn = (speed = 30): Turn => startTurn(speed, false);
+
+/** Speed for this turn: a mount replaces it, then buffs add or multiply (Haste doubles). */
+export function movementSpeed(c: Pick<Cmb, "speed" | "mounted" | "mountSpeed" | "buffs">): number {
+  const base = c.mounted ? (c.mountSpeed ?? c.speed) : c.speed;
+  const buffs = c.buffs ?? [];
+  const flat = buffs.reduce((s, b) => s + (b.speedBonus ?? 0), 0);
+  const mult = buffs.reduce((m, b) => m * (b.speedMultiplier ?? 1), 1);
+  return base * mult + flat;
+}
 
 /** Monsters and NPCs die at 0 HP; player characters fall unconscious and make death saves. */
 export const diesAtZero = (c: Pick<Cmb, "kind">) => c.kind !== "character";
@@ -126,11 +179,22 @@ export function beginTurn(c: Cmb, rng: Rng = cryptoRng): { cmb: Cmb; lines: Line
   const tick = tickConditions(c.conditions, "start");
   cmb = { ...cmb, conditions: tick.remaining };
   for (const e of tick.expired) lines.push(`${c.name} is no longer ${e.condition}`);
+  let lethargy = false;
   if (cmb.buffs?.length) {
     const aged = cmb.buffs.map((b) => ({ ...b, rounds: b.rounds - 1 }));
-    for (const b of aged.filter((x) => x.rounds <= 0)) lines.push(`${b.label} fades from ${c.name}`);
+    for (const b of aged.filter((x) => x.rounds <= 0)) {
+      lines.push(`${b.label} fades from ${c.name}`);
+      if (b.lethargy) lethargy = true;
+    }
     cmb = { ...cmb, buffs: aged.filter((x) => x.rounds > 0) };
   }
+  if (cmb.recharge?.some((a) => !a.ready)) {
+    const d6 = () => Math.floor(rng() * 6) + 1;
+    const rolled = rechargeRoll(cmb.recharge, d6);
+    cmb = { ...cmb, recharge: rolled.abilities };
+    for (const line of rolled.lines) lines.push(`${c.name}: ${line}`);
+  }
+  if (cmb.legendary) cmb = { ...cmb, legendary: resetLegendary(cmb.legendary) };
 
   // a dying character makes a death saving throw at the start of each turn (PHB p.197)
   if (cmb.kind === "character" && cmb.hp === 0 && !cmb.defeated && !cmb.stable) {
@@ -141,11 +205,15 @@ export function beginTurn(c: Cmb, rng: Rng = cryptoRng): { cmb: Cmb; lines: Line
   }
 
   const set = conditionSet(cmb.conditions);
-  const speed = effectiveSpeed(cmb.speed, set, cmb.exhaustion ?? 0);
+  const speed = effectiveSpeed(movementSpeed(cmb), set, cmb.exhaustion ?? 0);
   const fresh = startTurn(speed, cmb.surprised);
-  const stopped = cannotAct(set) || cmb.defeated || (cmb.kind === "character" && cmb.hp === 0);
-  const turn: Turn = stopped ? { ...fresh, action: false, bonusAction: false, reaction: false, movement: cmb.defeated ? 0 : fresh.movement } : fresh;
-  if (stopped && !cmb.defeated) lines.push(`${c.name} cannot act this turn`);
+  const stopped = cannotAct(set) || cmb.defeated || (cmb.kind === "character" && cmb.hp === 0) || lethargy;
+  const turn: Turn = stopped
+    ? { ...fresh, action: false, bonusAction: false, reaction: lethargy && !cmb.defeated && !cannotAct(set) ? fresh.reaction : false, movement: cmb.defeated || lethargy ? 0 : fresh.movement }
+    : fresh;
+  if (lethargy) lines.push(`${c.name} is lethargic and cannot move or take actions`);
+  else if ((cmb.buffs ?? []).some((b) => b.haste)) turn.hasteAction = true;
+  if (stopped && !cmb.defeated && !lethargy) lines.push(`${c.name} cannot act this turn`);
   return { cmb: { ...cmb, turn }, lines };
 }
 
@@ -178,9 +246,18 @@ export function advance(order: Order, activeIndex: number, round: number): { act
 
 export type SimpleAction = "dash" | "disengage" | "dodge" | "help" | "hide" | "search" | "use-object" | "ready";
 
+const HASTE_ACTIONS: SimpleAction[] = ["dash", "disengage", "hide", "use-object"];
+
 export function spendSimpleAction(c: Cmb, action: SimpleAction): { cmb: Cmb; line: Line } {
   if (cannotAct(conditionSet(c.conditions))) throw new Error(`${c.name} cannot take actions`);
-  const turn = takeAction(c.turn, action === "ready" ? "ready" : action === "use-object" ? "use-object" : action, c.speed);
+  if (!c.turn.action && c.turn.hasteAction && HASTE_ACTIONS.includes(action)) {
+    const turn: Turn = { ...c.turn, hasteAction: false };
+    if (action === "dash") turn.movement += movementSpeed(c);
+    if (action === "disengage") turn.disengaged = true;
+    const verb: Record<string, string> = { dash: "dash", disengage: "disengage", hide: "hide", "use-object": "use an object" };
+    return { cmb: { ...c, turn }, line: `${c.name} uses Haste to ${verb[action]}` };
+  }
+  const turn = takeAction(c.turn, action === "ready" ? "ready" : action === "use-object" ? "use-object" : action, movementSpeed(c));
   const verb: Record<SimpleAction, string> = {
     dash: "dashes (movement doubled)",
     disengage: "disengages",
@@ -241,6 +318,39 @@ export function splitDamage(expr: string): { dice: string; modifier: number } {
   return { dice: dice || "0", modifier: p.modifier };
 }
 
+/** Apply damage, including a polymorphed form breaking and spilling the excess onto the original. */
+export function absorbDamage(target: Cmb, amount: number, opts: { critical?: boolean } = {}): { cmb: Cmb; dropped: boolean; lines: Line[] } {
+  const before = toVitals(target);
+  const form = target.polymorph;
+  const after = applyDamage(before, amount, { critical: opts.critical, diesAtZero: form ? false : diesAtZero(target) });
+  const lines: Line[] = [];
+  const formDropped = before.hp > 0 && after.hp === 0;
+  if (form && formDropped) {
+    const overflow = Math.max(0, amount - before.tempHp - before.hp);
+    const restored: Cmb = {
+      ...target,
+      name: form.name,
+      ac: form.ac,
+      hp: form.hp,
+      maxHp: form.maxHp,
+      speed: form.speed,
+      tempHp: 0,
+      attacksPerAction: form.attacksPerAction,
+      polymorph: null,
+      defeated: false,
+      stable: false,
+      defenses: form.defenses && typeof form.defenses === "object" ? (form.defenses as CombatDefenses) : target.defenses,
+    };
+    const carried = overflow > 0 ? applyDamage(toVitals(restored), overflow, { diesAtZero: diesAtZero(restored) }) : toVitals(restored);
+    lines.push(`${target.name} reverts to ${form.name}${overflow ? `; ${overflow} damage carries over` : ""}`);
+    if (form.hp > 0 && carried.hp === 0) lines.push(carried.dead ? `${form.name} is slain` : `${form.name} falls unconscious`);
+    return { cmb: fromVitals(restored, carried), dropped: form.hp > 0 && carried.hp === 0, lines };
+  }
+  if (formDropped) lines.push(after.dead ? `${target.name} is slain` : `${target.name} falls unconscious`);
+  else if (before.hp === 0 && after.deathSaves.failures > before.deathSaves.failures) lines.push(`${target.name} suffers a death save failure${after.dead ? " and dies" : ""}`);
+  return { cmb: fromVitals(target, after), dropped: formDropped, lines };
+}
+
 /** Resolve one attack from start to finish: economy, advantage sources, the roll, damage, resistances and dropping to 0. */
 export function resolveAttackAction(attacker: Cmb, target: Cmb, profile: AttackProfile, ctx: AttackContext = {}, rng: Rng = cryptoRng): AttackOutcome {
   if (attacker.defeated) throw new Error(`${attacker.name} is defeated`);
@@ -253,6 +363,7 @@ export function resolveAttackAction(attacker: Cmb, target: Cmb, profile: AttackP
     // already paid for
   } else if (ctx.reaction) turn = takeReaction(turn);
   else if (ctx.offHand) turn = takeBonusAction(turn);
+  else if (!turn.action && turn.hasteAction) turn = { ...turn, hasteAction: false, attacksRemaining: 0 };
   else if ((turn.attacksRemaining ?? 0) > 0) turn = { ...turn, attacksRemaining: (turn.attacksRemaining ?? 0) - 1 };
   else {
     // the first attack spends the action; Extra Attack and Multiattack give the rest for free
@@ -315,17 +426,16 @@ export function resolveAttackAction(attacker: Cmb, target: Cmb, profile: AttackP
       adjusted += bonusAdjusted;
       bonusText += ` including ${bonusAdjusted} ${bonusType} from ${extra.label ?? extra.dice}`;
     }
-    const before = toVitals(target);
-    const after = applyDamage(before, adjusted, { critical: out.critical, diesAtZero: diesAtZero(target) });
-    t = fromVitals(target, after);
+    if (ctx.underwater && profile.damageType === "fire") adjusted = Math.floor(adjusted / 2);
+    const absorbed = absorbDamage(target, adjusted, { critical: out.critical });
+    t = absorbed.cmb;
     damage = adjusted;
-    dropped = before.hp > 0 && after.hp === 0;
+    dropped = absorbed.dropped;
     const resisted = adjusted !== dmg.total ? ` (${dmg.total} before resistances)` : "";
     lines.push(`${verb}: ${out.critical ? "CRITICAL HIT" : "hit"} (${rollText}) for ${adjusted} ${profile.damageType} damage${bonusText}${resisted}`);
-    if (dropped) lines.push(after.dead ? `${target.name} is slain` : `${target.name} falls unconscious`);
-    else if (before.hp === 0 && after.deathSaves.failures > before.deathSaves.failures) lines.push(`${target.name} suffers a death save failure`);
-    if (target.concentrating && !dropped) concentrationDc = Math.max(10, Math.floor(adjusted / 2));
-    if (target.concentrating && dropped) lines.push(`${target.name} loses concentration`);
+    lines.push(...absorbed.lines);
+    if (target.concentrating && !dropped && t.hp > 0) concentrationDc = Math.max(10, Math.floor(adjusted / 2));
+    if (target.concentrating && (dropped || t.hp === 0)) lines.push(`${t.name} loses concentration`);
   }
   return {
     attacker: { ...attacker, turn }, target: t, hit, critical: out.critical, fumble: out.fumble,

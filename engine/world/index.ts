@@ -81,22 +81,63 @@ export function journey(miles: number, pace: Pace, slowestSpeed: number, terrain
 // ---------------------------------------------------------------- encounter budget
 
 /**
- * A simple difficulty gauge for a party. The handbook has no encounter-building tables, so this is a rule of thumb:
- * total monster XP is compared with 25 XP per character level per hero for "easy", scaling up to 100 for "deadly", and groups
- * count extra because many weak enemies out-act one strong one.
+ * Encounter budgets from the Basic Rules (DM), "Creating a Combat Encounter". The Player's Handbook has no table.
+ * Each threshold is the sum of the per-character values. The monster-count multiplier steps up for a party of
+ * fewer than 3 and down for a party of 6 or more.
  */
 export type Difficulty = "trivial" | "easy" | "medium" | "hard" | "deadly";
+
+/** Easy, medium, hard, deadly XP per character, levels 1–20. */
+const XP_PER_CHARACTER: readonly (readonly [number, number, number, number])[] = [
+  [25, 50, 75, 100],
+  [50, 100, 150, 200],
+  [75, 150, 225, 400],
+  [125, 250, 375, 500],
+  [250, 500, 750, 1100],
+  [300, 600, 900, 1400],
+  [350, 750, 1100, 1700],
+  [450, 900, 1400, 2100],
+  [550, 1100, 1600, 2400],
+  [600, 1200, 1900, 2800],
+  [800, 1600, 2400, 3600],
+  [1000, 2000, 3000, 4500],
+  [1100, 2200, 3400, 5100],
+  [1250, 2500, 3800, 5700],
+  [1400, 2800, 4300, 6400],
+  [1600, 3200, 4800, 7200],
+  [2000, 3900, 5900, 8800],
+  [2100, 4200, 6300, 9500],
+  [2400, 4900, 7300, 10900],
+  [2800, 5700, 8500, 12700],
+];
+
+const MULTIPLIER_LADDER = [1, 1.5, 2, 2.5, 3, 4];
 
 export function groupMultiplier(count: number): number {
   return count <= 1 ? 1 : count === 2 ? 1.5 : count <= 6 ? 2 : count <= 10 ? 2.5 : count <= 14 ? 3 : 4;
 }
 
+/** Shift one step on the multiplier ladder. A party smaller than 3 steps up; a party of 6 or more steps down. */
+export function partyMultiplier(count: number, partySize: number): number {
+  let mult = groupMultiplier(count);
+  const dir = partySize > 0 && partySize < 3 ? 1 : partySize >= 6 ? -1 : 0;
+  if (!dir) return mult;
+  const i = MULTIPLIER_LADDER.indexOf(mult);
+  return MULTIPLIER_LADDER[Math.min(MULTIPLIER_LADDER.length - 1, Math.max(0, i + dir))];
+}
+
 export function encounterDifficulty(monsterChallenges: string[], partyLevels: number[]): { xp: number; adjustedXp: number; difficulty: Difficulty; thresholds: Record<Exclude<Difficulty, "trivial">, number> } {
-  const sumLevels = partyLevels.reduce((s, l) => s + l, 0);
-  const thresholds = { easy: 25 * sumLevels, medium: 50 * sumLevels, hard: 75 * sumLevels, deadly: 100 * sumLevels };
+  const thresholds = { easy: 0, medium: 0, hard: 0, deadly: 0 };
+  for (const level of partyLevels) {
+    const row = XP_PER_CHARACTER[Math.min(20, Math.max(1, level)) - 1];
+    thresholds.easy += row[0];
+    thresholds.medium += row[1];
+    thresholds.hard += row[2];
+    thresholds.deadly += row[3];
+  }
   const xp = monsterChallenges.reduce((s, c) => s + xpForChallenge(c), 0);
-  const adjustedXp = Math.round(xp * groupMultiplier(monsterChallenges.length));
-  const difficulty: Difficulty = adjustedXp >= thresholds.deadly ? "deadly" : adjustedXp >= thresholds.hard ? "hard" : adjustedXp >= thresholds.medium ? "medium" : adjustedXp >= thresholds.easy ? "easy" : "trivial";
+  const adjustedXp = Math.round(xp * partyMultiplier(monsterChallenges.length, partyLevels.length));
+  const difficulty: Difficulty = adjustedXp === 0 ? "trivial" : adjustedXp >= thresholds.deadly ? "deadly" : adjustedXp >= thresholds.hard ? "hard" : adjustedXp >= thresholds.medium ? "medium" : adjustedXp >= thresholds.easy ? "easy" : "trivial";
   return { xp, adjustedXp, difficulty, thresholds };
 }
 

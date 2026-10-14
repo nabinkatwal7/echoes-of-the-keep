@@ -2,15 +2,17 @@ import { rollD20, cryptoRng, type Rng } from "@/engine/dice";
 import { autoFailsSave } from "@/engine/conditions";
 import { rollDamage } from "@/engine/combat";
 import { addCondition, conditionSet } from "@/engine/conditions/timers";
-import { adjustDamage, applyDamage, heal, type DamageType } from "@/engine/damage";
+import { adjustDamage, heal, type DamageType } from "@/engine/damage";
 import { projectileCount, scaledDice, type SpellEffect } from "@/engine/spells/effects";
-import { resolveAttackAction, diesAtZero, fromVitals, toVitals, type Buff, type Cmb } from "./rules";
+import { UTILITY_SPELLS } from "@/lib/spells/utility";
+import { absorbDamage, resolveAttackAction, fromVitals, toVitals, type Buff, type Cmb } from "./rules";
 
 /** Spells whose lasting effect is a bonus we can track in rounds. Everything else is damage, healing or a condition. */
-export const SPELL_BUFFS: Record<string, { to: "self" | "targets"; label: string; rounds: number; acBonus?: number; attackDie?: number; saveDie?: number }> = {
+export const SPELL_BUFFS: Record<string, { to: "self" | "targets"; label: string; rounds: number; acBonus?: number; attackDie?: number; saveDie?: number; speedMultiplier?: number; dexSaveAdvantage?: boolean; haste?: boolean; lethargy?: boolean }> = {
   shield: { to: "self", label: "Shield (+5 AC)", rounds: 1, acBonus: 5 },
   bless: { to: "targets", label: "Bless (+1d4)", rounds: 10, attackDie: 4, saveDie: 4 },
   "shield-of-faith": { to: "targets", label: "Shield of Faith (+2 AC)", rounds: 100, acBonus: 2 },
+  haste: { to: "targets", label: "Haste", rounds: 10, acBonus: 2, speedMultiplier: 2, dexSaveAdvantage: true, haste: true, lethargy: true },
 };
 
 export type SpellMeta = { index: string; name: string; level: number; concentration: boolean };
@@ -29,6 +31,18 @@ export type SpellCastInput = {
   /** distance in feet from the caster to a target, when positions are known */
   distanceTo?: (target: Cmb) => number | undefined;
   rng?: Rng;
+  /** the fight is underwater: fire damage is halved */
+  underwater?: boolean;
+  /** Heightened Spell: the target rolls the save with disadvantage */
+  saveDisadvantage?: boolean;
+  /** Careful Spell: these targets succeed automatically */
+  autoSaveIds?: string[];
+  /** Empowered Spell: keep the higher of two damage rolls */
+  empowered?: boolean;
+  /** Extended Spell: double the buff's duration */
+  extended?: boolean;
+  /** extra healing added to the roll (Disciple of Life) */
+  bonusHeal?: number;
 };
 
 export type SpellOutcome = {
@@ -57,10 +71,11 @@ export function resolveSpell(input: SpellCastInput): SpellOutcome {
     if (t.concentrating && after.hp > 0 && before.hp > after.hp) checks.push({ id: t.id, dc: Math.max(10, Math.floor((before.hp + before.tempHp - after.hp - after.tempHp) / 2)) });
     if (t.concentrating && after.hp === 0 && before.hp > 0) lines.push(`${t.name} loses concentration`);
   };
-  const hurt = (t: Cmb, raw: number, type: string, critical = false): { cmb: Cmb; dealt: number } => {
-    const dealt = adjustDamage(raw, type as DamageType, t.defenses);
-    const after = fromVitals(t, applyDamage(toVitals(t), dealt, { critical, diesAtZero: diesAtZero(t) }));
-    return { cmb: after, dealt };
+  const hurt = (t: Cmb, raw: number, type: string, critical = false): { cmb: Cmb; dealt: number; lines: string[] } => {
+    let dealt = adjustDamage(raw, type as DamageType, t.defenses);
+    if (input.underwater && type === "fire") dealt = Math.floor(dealt / 2);
+    const absorbed = absorbDamage(t, dealt, { critical });
+    return { cmb: absorbed.cmb, dealt, lines: absorbed.lines };
   };
 
   switch (effect.delivery) {
@@ -92,9 +107,12 @@ export function resolveSpell(input: SpellCastInput): SpellOutcome {
       const tally = new Map<string, number>();
       for (let i = 0; i < count; i++) {
         const t = targets[i % targets.length];
-        const roll = rollDamage(dmgDice, effect.damage?.flat ?? 0, { rng }).total;
+        const once = rollDamage(dmgDice, effect.damage?.flat ?? 0, { rng }).total;
+        const twice = input.empowered ? rollDamage(dmgDice, effect.damage?.flat ?? 0, { rng }).total : once;
+        const roll = Math.max(once, twice);
         const before = targets.find((x) => x.id === t.id)!;
-        const { cmb, dealt } = hurt(before, roll, effect.damage!.type);
+        const { cmb, dealt, lines: extra } = hurt(before, roll, effect.damage!.type);
+        lines.push(...extra);
         targets = upsert(targets, cmb);
         tally.set(t.id, (tally.get(t.id) ?? 0) + dealt);
         noteDamage(t, before, cmb);
@@ -103,7 +121,9 @@ export function resolveSpell(input: SpellCastInput): SpellOutcome {
       break;
     }
     case "save": {
-      const raw = effect.damage ? rollDamage(dmgDice, effect.damage.flat, { rng }).total : 0;
+      const once = effect.damage ? rollDamage(dmgDice, effect.damage.flat, { rng }).total : 0;
+      const twice = effect.damage && input.empowered ? rollDamage(dmgDice, effect.damage.flat, { rng }).total : once;
+      const raw = Math.max(once, twice);
       lines.push(`${verb} (save DC ${input.saveDc})`);
       for (const t0 of [...targets]) {
         const t = targets.find((x) => x.id === t0.id)!;
@@ -111,15 +131,19 @@ export function resolveSpell(input: SpellCastInput): SpellOutcome {
         const ability = effect.save!;
         const bonus = (t.defenses.saves?.[ability] ?? (ability === "dex" ? t.dexMod : 0)) + (t.buffs ?? []).reduce((s, b) => s + (b.saveDie ? Math.floor(rng() * b.saveDie) + 1 : 0), 0);
         const auto = autoFailsSave(set, ability);
-        const disadvantage = ability === "dex" && set.has("restrained");
-        const roll = rollD20(bonus, disadvantage ? "disadvantage" : "normal", rng);
-        const saved = !auto && roll.total >= input.saveDc;
+        const disadvantage = (ability === "dex" && set.has("restrained")) || !!input.saveDisadvantage;
+        const advantage = ability === "dex" && (t.buffs ?? []).some((b) => b.dexSaveAdvantage);
+        const mode = advantage && disadvantage ? "normal" : advantage ? "advantage" : disadvantage ? "disadvantage" : "normal";
+        const roll = rollD20(bonus, mode, rng);
+        const careful = input.autoSaveIds?.includes(t.id);
+        const saved = careful || (!auto && roll.total >= input.saveDc);
         let cur = t;
-        const parts: string[] = [`${t.name} ${auto ? "automatically fails" : saved ? "saves" : "fails"} (${auto ? "-" : roll.total})`];
+        const parts: string[] = [`${t.name} ${careful ? "automatically succeeds" : auto ? "automatically fails" : saved ? "saves" : "fails"} (${careful || auto ? "-" : roll.total})`];
         if (effect.damage) {
           const amount = saved ? (effect.halfOnSave ? Math.floor(raw / 2) : 0) : raw;
           if (amount > 0) {
-            const { cmb, dealt } = hurt(cur, amount, effect.damage.type);
+            const { cmb, dealt, lines: extra } = hurt(cur, amount, effect.damage.type);
+            lines.push(...extra);
             noteDamage(cur, cur, cmb);
             parts.push(`takes ${dealt} ${effect.damage.type} damage`);
             cur = cmb;
@@ -138,21 +162,28 @@ export function resolveSpell(input: SpellCastInput): SpellOutcome {
       const base = effect.healing ? scaledDice(effect.healing.dice, effect, spell.level, slotLevel, input.casterLevel) : "0d1";
       for (const t0 of [...targets]) {
         const t = targets.find((x) => x.id === t0.id)!;
-        const amount = rollDamage(base, effect.healing?.addModifier ? input.castMod : 0, { rng }).total;
+        const amount = rollDamage(base, effect.healing?.addModifier ? input.castMod : 0, { rng }).total + (input.bonusHeal ?? 0);
         const next = fromVitals(t, heal(toVitals(t), amount));
         targets = upsert(targets, next);
         lines.push(`${verb} on ${t.name}: heals ${next.hp - t.hp} (${next.hp}/${next.maxHp} HP)`);
       }
       break;
     }
-    default:
-      lines.push(`${verb}${targets.length ? ` on ${targets.map((t) => t.name).join(", ")}` : ""}. The DM resolves the effect.`);
+    default: {
+      const useful = UTILITY_SPELLS[spell.index];
+      lines.push(useful ? `${verb}. ${useful}` : `${verb}${targets.length ? ` on ${targets.map((t) => t.name).join(", ")}` : ""}. The DM resolves the effect.`);
+    }
   }
 
   // lasting bonuses tracked in rounds
   const buff = SPELL_BUFFS[spell.index];
   if (buff) {
-    const make = (): Buff => ({ id: spell.index, label: buff.label, rounds: buff.rounds, source: spell.concentration ? caster.id : undefined, acBonus: buff.acBonus, attackDie: buff.attackDie, saveDie: buff.saveDie });
+    const rounds = input.extended ? buff.rounds * 2 : buff.rounds;
+    const make = (): Buff => ({
+      id: spell.index, label: buff.label, rounds, source: spell.concentration ? caster.id : undefined,
+      acBonus: buff.acBonus, attackDie: buff.attackDie, saveDie: buff.saveDie,
+      speedMultiplier: buff.speedMultiplier, dexSaveAdvantage: buff.dexSaveAdvantage, haste: buff.haste, lethargy: buff.lethargy,
+    });
     const give = (c: Cmb): Cmb => ({ ...c, buffs: [...(c.buffs ?? []).filter((b) => !(b.id === spell.index && b.source === (spell.concentration ? caster.id : undefined))), make()] });
     if (buff.to === "self") caster = give(caster);
     else {

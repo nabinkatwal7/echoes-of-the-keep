@@ -61,8 +61,15 @@ describe("encounter budget", () => {
   it("rates fights against the party", () => {
     expect(encounterDifficulty(["1/4"], party).difficulty).toBe("trivial");
     expect(encounterDifficulty(["1", "1", "1"], party).adjustedXp).toBe(1200);
-    expect(encounterDifficulty(["1", "1", "1"], party).difficulty).toBe("deadly");
+    expect(encounterDifficulty(["1", "1", "1"], party).difficulty).toBe("hard");
     expect(encounterDifficulty(["1/2", "1/2"], party).difficulty).toBe("easy");
+  });
+  it("uses the Basic Rules per-character thresholds and party-size steps", () => {
+    expect(encounterDifficulty(["1/4"], [1, 1, 1, 1]).thresholds).toEqual({ easy: 100, medium: 200, hard: 300, deadly: 400 });
+    expect(encounterDifficulty(["1"], [5, 5, 5]).thresholds.deadly).toBe(1100 * 3);
+    expect(encounterDifficulty(["1"], [20, 20, 20, 20, 20, 20]).thresholds.easy).toBe(2800 * 6);
+    // four CR 1/4 monsters are x2, and a party of 2 steps that to x2.5
+    expect(encounterDifficulty(["1/4", "1/4", "1/4", "1/4"], [1, 1]).adjustedXp).toBe(500);
   });
 });
 

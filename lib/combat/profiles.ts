@@ -4,6 +4,7 @@ import { parseChallenge } from "@/engine/companions";
 import { proficiencyBonus } from "@/engine/abilities";
 import { attacksPerAction, type ClassLevel } from "@/engine/progression";
 import { parseDefenses, parseMonsterActions } from "@/engine/combat";
+import { parseLegendary, parseRecharge } from "@/engine/combat/special";
 import { deriveStored, toEngineInput, type StoredCharacter } from "@/lib/characters/derive";
 import type { InventoryItem } from "@/lib/characters/inventory";
 import { splitDamage, monsterProfiles, type AttackProfile, type CombatDefenses } from "./rules";
@@ -77,6 +78,8 @@ export function monsterStats(m: MonsterRow) {
     defenses,
     cr: parseChallenge(m.challenge),
     size: m.size,
+    recharge: parseRecharge(m.text),
+    legendary: parseLegendary(m.text),
   };
 }
 

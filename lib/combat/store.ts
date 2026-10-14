@@ -1,7 +1,8 @@
 import type { Combatant, Prisma } from "@prisma/client";
 import type { ActiveCondition } from "@/engine/conditions/timers";
 import { prisma } from "@/lib/prisma";
-import { emptyTurn, type AttackProfile, type Buff, type Cmb, type CombatDefenses, type Turn } from "./rules";
+import type { LegendaryState, RechargeAbility } from "@/engine/combat/special";
+import { emptyTurn, type AttackProfile, type Buff, type Cmb, type CombatDefenses, type SavedForm, type Turn } from "./rules";
 
 export type Extra = {
   stable?: boolean;
@@ -15,7 +16,11 @@ export type Extra = {
   /** fights on the party's side (summons, companions) */
   ally?: boolean;
   /** original stats while polymorphed, restored when the new form drops to 0 HP or the spell ends */
-  polymorph?: { name: string; ac: number; hp: number; maxHp: number; speed: number; attacks: unknown; defenses: unknown; attacksPerAction?: number; size?: string } | null;
+  polymorph?: SavedForm | null;
+  recharge?: RechargeAbility[];
+  legendary?: LegendaryState;
+  mounted?: boolean;
+  mountSpeed?: number;
 };
 
 const obj = <T,>(v: unknown, fallback: T): T => (v && typeof v === "object" ? (v as T) : fallback);
@@ -49,6 +54,11 @@ export function rowToCmb(r: Combatant): Cmb {
     concentrating: extra.concentrating ?? null,
     buffs: extra.buffs ?? [],
     ally: extra.ally ?? false,
+    polymorph: extra.polymorph ?? null,
+    recharge: extra.recharge,
+    legendary: extra.legendary,
+    mounted: extra.mounted,
+    mountSpeed: extra.mountSpeed,
   };
 }
 
@@ -73,7 +83,20 @@ export function cmbToData(c: Cmb, prev: Combatant): Prisma.CombatantUpdateInput 
     turn: c.turn as unknown as Prisma.InputJsonValue,
     x: c.x,
     y: c.y,
-    extra: { ...extra, stable: !!c.stable, concentrating: c.concentrating ?? null, buffs: c.buffs ?? [] } as unknown as Prisma.InputJsonValue,
+    ...(extra.polymorph && !c.polymorph
+      ? { attacks: (extra.polymorph.attacks ?? []) as Prisma.InputJsonValue, defenses: (extra.polymorph.defenses ?? {}) as Prisma.InputJsonValue }
+      : {}),
+    extra: {
+      ...extra,
+      stable: !!c.stable,
+      concentrating: c.concentrating ?? null,
+      buffs: c.buffs ?? [],
+      polymorph: c.polymorph ?? null,
+      recharge: c.recharge,
+      legendary: c.legendary,
+      mounted: !!c.mounted,
+      mountSpeed: c.mountSpeed,
+    } as unknown as Prisma.InputJsonValue,
   };
 }
 

@@ -28,9 +28,12 @@ export type CombatantView = {
   /** the character sheet behind a combatant the viewer may act for */
   characterId: string | null;
   /** present only for combatants the viewer may act for */
-  turn: { action: boolean; bonusAction: boolean; reaction: boolean; movement: number; dodging: boolean; disengaged: boolean; attacksRemaining: number } | null;
+  turn: { action: boolean; bonusAction: boolean; reaction: boolean; movement: number; dodging: boolean; disengaged: boolean; attacksRemaining: number; hasteAction?: boolean } | null;
   attacks: { name: string; melee: boolean; light?: boolean }[];
   readied: string | null;
+  recharge: { name: string; ready: boolean }[];
+  legendary: { left: number; max: number; options: { name: string; cost: number }[] } | null;
+  mounted: boolean;
   deathSaves: { successes: number; failures: number } | null;
 };
 
@@ -42,7 +45,7 @@ export type EncounterView = {
   activeIndex: number;
   gridWidth: number;
   gridHeight: number;
-  environment: { underwater?: boolean };
+  environment: { underwater?: boolean; mounted?: boolean };
   combatants: CombatantView[];
   isDm: boolean;
 };
@@ -85,10 +88,13 @@ export function buildEncounterView(
       mine,
       characterId: canAct ? r.characterId : null,
       turn: canAct
-        ? { action: c.turn.action, bonusAction: c.turn.bonusAction, reaction: c.turn.reaction, movement: c.turn.movement, dodging: c.turn.dodging, disengaged: c.turn.disengaged, attacksRemaining: c.turn.attacksRemaining ?? 0 }
+        ? { action: c.turn.action, bonusAction: c.turn.bonusAction, reaction: c.turn.reaction, movement: c.turn.movement, dodging: c.turn.dodging, disengaged: c.turn.disengaged, attacksRemaining: c.turn.attacksRemaining ?? 0, hasteAction: c.turn.hasteAction }
         : null,
       attacks: canAct ? profilesOf(r).map((a) => ({ name: a.name, melee: a.melee, light: a.light })) : [],
       readied: canAct ? r.readied : null,
+      recharge: canAct ? (c.recharge ?? []).map((a) => ({ name: a.name, ready: a.ready })) : [],
+      legendary: viewer.isDm && c.legendary ? { left: c.legendary.left, max: c.legendary.max, options: c.legendary.options } : null,
+      mounted: !!c.mounted,
       deathSaves: exact && r.kind === "character" ? c.deathSaves : null,
       _order: i,
     };
@@ -101,7 +107,7 @@ export function buildEncounterView(
     activeIndex: enc.activeIndex,
     gridWidth: enc.gridWidth,
     gridHeight: enc.gridHeight,
-    environment: (enc.environment ?? {}) as { underwater?: boolean },
+    environment: (enc.environment ?? {}) as { underwater?: boolean; mounted?: boolean },
     combatants: combatants.map(({ _order, ...rest }) => (void _order, rest)),
     isDm: viewer.isDm,
   };

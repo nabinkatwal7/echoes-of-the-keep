@@ -28,6 +28,7 @@ export function SpellPanel({
   const [slot, setSlot] = useState(0);
   const [pact, setPact] = useState(false);
   const [filter, setFilter] = useState<"castable" | "all">("castable");
+  const [metamagic, setMetamagic] = useState("");
 
   const spell = book.spells.find((s) => s.index === index);
   const canCast = (s: Spellbook["spells"][number]) => {
@@ -42,7 +43,7 @@ export function SpellPanel({
   const cast = () => {
     if (!spell) return;
     run(
-      () => castInCombat({ casterId: actor.id, spell: spell.index, slotLevel: pact ? book.pact?.slotLevel : slot || slotOptions[0]?.level, pact, targetIds: targets, point: aim ?? undefined }),
+      () => castInCombat({ casterId: actor.id, spell: spell.index, slotLevel: pact ? book.pact?.slotLevel : slot || slotOptions[0]?.level, pact, targetIds: targets, point: aim ?? undefined, metamagic: metamagic || undefined }),
       () => {
         setTargets([]);
         setAiming(false);
@@ -70,6 +71,10 @@ export function SpellPanel({
       {spell && (
         <div className="flex flex-col gap-2 rounded border border-border p-2 text-sm">
           <p className="text-muted">{spell.summary}{spell.concentration ? " · concentration" : ""}</p>
+          <Select aria-label="Metamagic" value={metamagic} onChange={(e) => setMetamagic(e.target.value)}>
+            <option value="">No metamagic</option>
+            {["careful", "distant", "empowered", "extended", "heightened", "quickened", "subtle", "twinned"].map((m) => <option key={m} value={m}>{m}</option>)}
+          </Select>
           {spell.level > 0 && (slotOptions.length > 0 || (book.pact && book.pact.left > 0)) && (
             <Select aria-label="Spell slot" value={pact ? "pact" : String(slot || slotOptions[0]?.level || "")} onChange={(e) => { if (e.target.value === "pact") setPact(true); else { setPact(false); setSlot(Number(e.target.value)); } }}>
               {slotOptions.map((s) => <option key={s.level} value={s.level}>Level {s.level} slot ({s.left} left)</option>)}

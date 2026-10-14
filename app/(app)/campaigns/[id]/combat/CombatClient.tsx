@@ -8,7 +8,8 @@ import { Card } from "@/app/components/ui/Card";
 import { Input, Select } from "@/app/components/ui/Input";
 import {
   addConditionTo, addMonster, addParty, adjustHitPoints, attack, createEncounter, endEncounter, endTurn, grappleOrShove, moveCombatant,
-  removeCombatant, removeConditionFrom, setEnvironment, standFromProne, startEncounter, takeAction, undoLast, takeReaction,
+  removeCombatant, removeConditionFrom, setEnvironment, signalReady, standFromProne, startEncounter, takeAction, toggleMount, undoLast, takeReaction,
+  useLegendary, useRecharge,
 } from "@/lib/combat/actions";
 import type { CombatantView, EncounterView } from "@/lib/combat/view";
 import type { Spellbook } from "@/lib/combat/spellList";
@@ -126,15 +127,21 @@ function Header({ view, isDm, run, pending }: { view: EncounterView; isDm: boole
         <p className="text-sm text-muted">
           {view.state === "SETUP" ? "Setting up" : view.state === "ACTIVE" ? `Round ${view.round}` : "Finished"}
           {view.environment.underwater ? " · underwater" : ""}
+          {view.environment.mounted ? " · mounted" : ""}
         </p>
       </div>
       {isDm && (
         <div className="flex flex-wrap gap-2">
           {view.state !== "ACTIVE" && view.state !== "DONE" && <Button disabled={pending} onClick={() => run(() => startEncounter(view.id))}>Roll initiative &amp; start</Button>}
           {view.state !== "DONE" && (
-            <Button variant="secondary" disabled={pending} onClick={() => run(() => setEnvironment(view.id, { underwater: !view.environment.underwater }))}>
-              {view.environment.underwater ? "Surface" : "Go underwater"}
-            </Button>
+            <>
+              <Button variant="secondary" disabled={pending} onClick={() => run(() => setEnvironment(view.id, { underwater: !view.environment.underwater }))}>
+                {view.environment.underwater ? "Surface" : "Go underwater"}
+              </Button>
+              <Button variant="secondary" disabled={pending} onClick={() => run(() => setEnvironment(view.id, { mounted: !view.environment.mounted }))}>
+                {view.environment.mounted ? "On foot" : "Mounted fight"}
+              </Button>
+            </>
           )}
           <Button variant="secondary" disabled={pending} onClick={() => run(() => undoLast(view.id))}>Undo last</Button>
           {view.state !== "DONE" && (
@@ -259,6 +266,8 @@ function Actions({ view, selected, run, pending, isDm, spellbooks, aim, aiming, 
             <Badge tone={actor.turn.reaction ? "emerald" : "neutral"}>Reaction</Badge>
             <Badge>{actor.turn.movement} ft</Badge>
             {actor.turn.attacksRemaining > 0 && <Badge tone="gold">{actor.turn.attacksRemaining} attacks left</Badge>}
+            {actor.turn.hasteAction && <Badge tone="gold">Haste action</Badge>}
+            {actor.mounted && <Badge tone="gold">Mounted</Badge>}
           </div>
           {actor.attacks.length > 0 && (
             <div className="flex flex-col gap-2">
@@ -306,12 +315,36 @@ function Actions({ view, selected, run, pending, isDm, spellbooks, aim, aiming, 
               <Button key={a} variant="secondary" className="px-3" disabled={pending || !actor.active} onClick={() => run(() => takeAction(actor.id, a))}>{a.replace("-", " ")}</Button>
             ))}
             <Button variant="secondary" className="px-3" disabled={pending} onClick={() => run(() => standFromProne(actor.id))}>Stand up</Button>
+            <Button variant="secondary" className="px-3" disabled={pending} onClick={() => run(() => toggleMount(actor.id))}>{actor.mounted ? "Dismount" : "Mount"}</Button>
           </div>
+          {actor.recharge.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {actor.recharge.map((a) => (
+                <Button key={a.name} variant="secondary" disabled={pending || !a.ready} onClick={() => run(() => useRecharge(actor.id, a.name, target || undefined))}>
+                  {a.name}{a.ready ? "" : " (spent)"}
+                </Button>
+              ))}
+            </div>
+          )}
+          {view.isDm && actor.legendary && !actor.active && (
+            <div className="flex flex-wrap gap-2">
+              <Badge>Legendary {actor.legendary.left}/{actor.legendary.max}</Badge>
+              <Button variant="secondary" disabled={pending || actor.legendary.left < 1} onClick={() => run(() => useLegendary(actor.id))}>Legendary action</Button>
+              {actor.legendary.options.map((o) => (
+                <Button key={o.name} variant="secondary" disabled={pending || actor.legendary!.left < o.cost} onClick={() => run(() => useLegendary(actor.id, o.name))}>{o.name} ({o.cost})</Button>
+              ))}
+            </div>
+          )}
           <div className="flex gap-2">
             <Input placeholder="Ready: trigger…" value={trigger} onChange={(e) => setTrigger(e.target.value)} aria-label="Readied trigger" />
             <Button variant="secondary" disabled={pending || !actor.active || !trigger.trim()} onClick={() => run(() => takeAction(actor.id, "ready", trigger), () => setTrigger(""))}>Ready</Button>
           </div>
-          {actor.readied && <p className="text-sm text-muted">Readied: {actor.readied}</p>}
+          {actor.readied && (
+            <p className="flex flex-wrap items-center gap-2 text-sm text-muted">
+              Readied: {actor.readied}
+              {view.isDm && <Button variant="secondary" className="px-3" disabled={pending} onClick={() => run(() => signalReady(actor.id))}>Trigger fired</Button>}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" disabled={pending || !actor.turn.reaction} onClick={() => run(() => takeReaction(actor.id))}>Use reaction</Button>
             {actor.active && <Button disabled={pending} onClick={() => run(() => endTurn(view.id))}>End turn</Button>}

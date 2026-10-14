@@ -214,7 +214,7 @@ export function DmTools(p: DmToolsProps) {
         {verdict && (
           <p className="text-sm">
             <Badge tone={verdict.difficulty === "deadly" ? "crimson" : verdict.difficulty === "hard" ? "ember" : verdict.difficulty === "medium" ? "gold" : "emerald"}>{verdict.difficulty}</Badge>{" "}
-            {verdict.xp} XP, counted as {verdict.adjustedXp} for the group size. Thresholds for this party: easy {verdict.thresholds.easy}, medium {verdict.thresholds.medium}, hard {verdict.thresholds.hard}, deadly {verdict.thresholds.deadly}. A rule of thumb, not an official table.
+            {verdict.xp} XP, counted as {verdict.adjustedXp} for the group size. Thresholds for this party: easy {verdict.thresholds.easy}, medium {verdict.thresholds.medium}, hard {verdict.thresholds.hard}, deadly {verdict.thresholds.deadly}. Basic Rules encounter budget.
           </p>
         )}
         {!p.heroes.length && <p className="text-sm text-muted">Attach heroes to see how hard a fight is.</p>}
