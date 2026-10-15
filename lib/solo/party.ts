@@ -4,11 +4,13 @@ import { SUBCLASS_LEVEL } from "@/engine/classes/subclasses";
 import { asiLevels } from "@/engine/progression";
 import { CASTING_ABILITY } from "@/engine/spells";
 import type { Blueprint } from "@/engine/bots/blueprints";
+import { forFreeRules } from "@/engine/bots/freeRules";
 import { runAs } from "@/lib/actAs";
 import { createCharacter, levelUpCharacter } from "@/lib/characters/actions";
 import { deriveStored, type StoredCharacter } from "@/lib/characters/derive";
 import { saveSpellSelection } from "@/lib/characters/playActions";
 import { prisma } from "@/lib/prisma";
+import { SRD_BACKGROUNDS, srdOnly } from "@/lib/srd";
 
 /** A player or Dungeon Master the computer controls. It has no password, so nobody can sign in as it. */
 export async function createBotUser(displayName: string) {
@@ -49,7 +51,9 @@ export async function chooseSpells(classIndex: string, level: number, castingSco
  * Build a hero from a blueprint, level it with the same rules a person follows, and choose its spells.
  * Everything runs as the bot's owner, so the normal checks apply.
  */
-export async function buildBotHero(owner: { id: string; name: string }, bp: Blueprint, level: number, name: string): Promise<string> {
+export async function buildBotHero(owner: { id: string; name: string }, blueprint: Blueprint, level: number, name: string): Promise<string> {
+  // the free-rules build only has the Acolyte background, so the computer hero uses it too
+  const bp = srdOnly() ? forFreeRules(blueprint, SRD_BACKGROUNDS) : blueprint;
   return runAs(owner, async () => {
     const dueAtOne = SUBCLASS_LEVEL[bp.classIndex] === 1;
     const made = await createCharacter(

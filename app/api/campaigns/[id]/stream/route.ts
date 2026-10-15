@@ -4,6 +4,8 @@ import { getMembership, scanEvents } from "@/lib/campaigns/queries";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+/** Vercel may keep this connection open this long; the browser reconnects and resumes from the last event it saw. */
+export const maxDuration = 300;
 
 const POLL_MS = 1000;
 const HEARTBEAT_MS = 15000;

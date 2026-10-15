@@ -15,6 +15,24 @@ const FX_COLORS: Record<Fx, string[]> = {
   fire: ["#f6c445", "#e0702f", "#a3283a"],
   dark: ["#8a5ccf", "#3a1f56", "#c7c1ff"],
   arrow: ["#d8c9a0", "#7a5a36", "#ffffff"],
+  lightning: ["#fff9a8", "#7fd8ff", "#ffffff"],
+  frost: ["#bfe9ff", "#6fb8ff", "#ffffff"],
+  radiant: ["#fff3c4", "#ffd84a", "#ffffff"],
+  poison: ["#8de04f", "#3f9a2f", "#d8ff8a"],
+};
+
+const CONDITION_STYLE: Record<string, { icon: string; color: string; label: string }> = {
+  stunned: { icon: "✦", color: "#ffd84a", label: "Stunned" },
+  paralyzed: { icon: "❄", color: "#6fb8ff", label: "Paralyzed" },
+  poisoned: { icon: "●", color: "#8de04f", label: "Poisoned" },
+  frightened: { icon: "!", color: "#c7c1ff", label: "Frightened" },
+  charmed: { icon: "♥", color: "#ff7fb0", label: "Charmed" },
+  blinded: { icon: "◌", color: "#9b93a8", label: "Blinded" },
+  prone: { icon: "▼", color: "#d8c9a0", label: "Prone" },
+  restrained: { icon: "#", color: "#d8c9a0", label: "Restrained" },
+  grappled: { icon: "#", color: "#d8c9a0", label: "Grappled" },
+  unconscious: { icon: "z", color: "#c7c1ff", label: "Unconscious" },
+  incapacitated: { icon: "✦", color: "#ffd84a", label: "Incapacitated" },
 };
 
 /** A big sprite for a hero (by class) or a creature (by type). */
@@ -92,6 +110,28 @@ export function BattleCutscene({ event, encounterName, onDone }: { event: Cutsce
     );
   }
 
+  if (event.kind === "condition") {
+    const st = CONDITION_STYLE[event.condition.toLowerCase()] ?? { icon: "✦", color: "#ffd84a", label: event.condition };
+    const down = ["prone", "unconscious", "paralyzed", "stunned", "incapacitated"].includes(event.condition.toLowerCase());
+    return (
+      <CutsceneFrame label={`${event.target.name} is ${st.label.toLowerCase()}`} caption={`${event.target.name} is ${st.label.toLowerCase()}!`} theme={theme} seed={seed} durationMs={1700} onDone={onDone}>
+        <div className="relative mx-auto flex h-full max-w-md items-end justify-center pb-6">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={down ? { opacity: 1, y: 0, rotate: [0, -8, 8, 0, 82], filter: ["brightness(1)", "brightness(2.5)", "brightness(1)"] } : { opacity: 1, y: 0, x: [0, -8, 8, -6, 6, 0] }} transition={{ duration: 1.1, delay: 0.2 }}>
+            <Fighter actor={event.target} className="w-32 sm:w-48" />
+          </motion.div>
+          {[0, 1, 2, 3].map((i) => (
+            <motion.span key={i} aria-hidden className="absolute !font-pixel text-4xl font-bold drop-shadow-[2px_2px_0_#000]" style={{ color: st.color, left: `${36 + i * 8}%`, top: "26%" }} animate={{ y: [0, -14, 0], rotate: [0, 20, -20, 0], opacity: [0, 1, 1] }} transition={{ duration: 1.2, delay: 0.4 + i * 0.12, repeat: 1 }}>
+              {st.icon}
+            </motion.span>
+          ))}
+          <motion.p initial={{ opacity: 0, scale: 0.4 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5, type: "spring", stiffness: 220, damping: 12 }} className="absolute top-[8%] !font-pixel text-4xl font-bold uppercase tracking-widest drop-shadow-[3px_3px_0_#000]" style={{ color: st.color }}>
+            {st.label}
+          </motion.p>
+        </div>
+      </CutsceneFrame>
+    );
+  }
+
   if (event.kind === "heal") {
     return (
       <CutsceneFrame label={`${event.target.name} is healed`} caption={`${event.target.name} recovers ${event.amount} hit points.`} theme={theme} seed={seed} durationMs={1500} onDone={onDone}>
@@ -112,8 +152,9 @@ export function BattleCutscene({ event, encounterName, onDone }: { event: Cutsce
   const T = e.killed ? 2.3 : 1.9;
   const reach = 320;
   const who = e.attacker?.name ?? "";
-  const caption = e.attacker ? `${who} ${e.killed ? "strikes down" : e.fx === "magic" ? "casts at" : e.fx === "arrow" ? "shoots" : e.fx === "fire" ? "burns" : "strikes"} ${e.target.name}${e.killed ? "!" : "."}` : `${e.target.name} is hurt.`;
-  const projectile = e.fx !== "slash";
+  const verb = e.spell ? `casts ${e.spell} on` : e.killed ? "strikes down" : e.fx === "arrow" ? "shoots" : e.fx === "slash" ? "strikes" : "blasts";
+  const caption = e.attacker ? `${who} ${verb} ${e.target.name}${e.killed ? "!" : "."}${e.crit ? " Critical hit!" : ""}` : `${e.target.name} is hurt.`;
+  const projectile = ["magic", "arrow", "fire", "dark", "frost", "poison"].includes(e.fx);
   const impact = 0.78;
 
   return (
@@ -131,7 +172,7 @@ export function BattleCutscene({ event, encounterName, onDone }: { event: Cutsce
 
         {/* the blow */}
         <div className="absolute bottom-[14%] right-[6%] h-40 w-40 sm:h-56 sm:w-56">
-          {!projectile && [0, 1, 2].map((i) => (
+          {e.fx === "slash" && [0, 1, 2].map((i) => (
             <motion.span key={i} aria-hidden className="absolute left-0 top-1/2 block h-2 w-full origin-left bg-white shadow-[0_0_14px_#fff]" style={{ rotate: -38 + i * 14, y: -10 + i * 22 }} initial={{ scaleX: 0, opacity: 1 }} animate={{ scaleX: [0, 1, 1], opacity: [1, 1, 0] }} transition={{ delay: impact + i * 0.05, duration: 0.3 }} />
           ))}
           <Burst colors={colors} delay={impact} spread={e.big ? 150 : 100} n={e.big ? 22 : 14} />
@@ -145,9 +186,18 @@ export function BattleCutscene({ event, encounterName, onDone }: { event: Cutsce
             -{e.amount}
           </motion.p>
         )}
+        {e.fx === "lightning" && (
+          <motion.svg aria-hidden viewBox="0 0 40 100" className="absolute -top-[40%] right-[12%] h-[120%] w-24" initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 0, 1, 0] }} transition={{ delay: impact - 0.1, duration: 0.5 }}>
+            <polyline points="24,0 12,34 24,38 8,72 20,76 14,100" fill="none" stroke="#fff9a8" strokeWidth="4" strokeLinejoin="miter" />
+            <polyline points="24,0 12,34 24,38 8,72 20,76 14,100" fill="none" stroke="#7fd8ff" strokeWidth="9" opacity="0.5" />
+          </motion.svg>
+        )}
+        {e.fx === "radiant" && (
+          <motion.span aria-hidden className="absolute bottom-0 right-[10%] block h-full w-28 bg-gradient-to-b from-transparent via-[#fff3c4]/60 to-[#ffd84a]/80" initial={{ scaleY: 0, opacity: 0 }} animate={{ scaleY: [0, 1, 1], opacity: [0, 1, 0] }} transition={{ delay: impact - 0.1, duration: 0.7 }} style={{ transformOrigin: "top" }} />
+        )}
         {e.big && (
           <motion.p aria-hidden className="absolute left-1/2 top-[6%] -translate-x-1/2 !font-pixel text-2xl font-bold uppercase tracking-widest text-[#ffd48a] drop-shadow-[2px_2px_0_#000]" initial={{ opacity: 0, scale: 2 }} animate={{ opacity: [0, 1, 1, 0], scale: 1 }} transition={{ delay: impact, duration: 0.9 }}>
-            {e.killed ? "Down!" : "Heavy blow!"}
+            {e.killed ? "Down!" : e.crit ? "Critical hit!" : "Heavy blow!"}
           </motion.p>
         )}
       </motion.div>

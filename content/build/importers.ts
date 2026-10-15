@@ -30,8 +30,18 @@ export type Importer = {
 const extracted = (file: string) =>
   JSON.parse(readFileSync(path.join(__dirname, "..", "extracted", "structured", file), "utf-8"));
 
-async function upsertAll(delegate: { upsert: (args: any) => Promise<unknown> }, rows: { index: string }[]) {
-  for (const row of rows) await delegate.upsert({ where: { index: row.index }, update: row, create: row });
+/**
+ * Writes rows by `index`: rows the table does not have yet go in as a few bulk inserts (fast, even against a remote database),
+ * and rows it already has are updated one by one so a reseed still refreshes them.
+ */
+async function upsertAll(
+  delegate: { findMany: (args: any) => Promise<{ index: string }[]>; createMany: (args: any) => Promise<unknown>; upsert: (args: any) => Promise<unknown> },
+  rows: { index: string }[],
+) {
+  const have = new Set((await delegate.findMany({ select: { index: true } })).map((r) => r.index));
+  const fresh = rows.filter((r) => !have.has(r.index));
+  for (let i = 0; i < fresh.length; i += 200) await delegate.createMany({ data: fresh.slice(i, i + 200), skipDuplicates: true });
+  for (const row of rows) if (have.has(row.index)) await delegate.upsert({ where: { index: row.index }, update: row, create: row });
 }
 
 /** Equipment rows have no natural key (lifestyle tiers repeat), so derive a unique slug from the name. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { diffEncounter, fxFor } from "./cutscene";
+import { diffEncounter, fxFor, fxForSpell, hintsFromLog } from "./cutscene";
 import type { CombatantView, EncounterView } from "./view";
 
 const c = (id: string, over: Partial<CombatantView> = {}): CombatantView =>
@@ -59,3 +59,32 @@ describe("cutscene events", () => {
     expect(e.length).toBeLessThanOrEqual(3);
   });
 });
+
+describe("spell and condition scenes", () => {
+  it("reads the spell and a critical hit from the log", () => {
+    expect(hintsFromLog(["Mirela casts Fireball at level 4. Goblin takes 12 fire damage."]).spell).toBe("Fireball");
+    expect(hintsFromLog(["Brannoch casts Shocking Grasp on Wolf"]).spell).toBe("Shocking Grasp");
+    expect(hintsFromLog(["Attack: CRITICAL HIT (20+5) for 14 slashing damage"]).critical).toBe(true);
+    expect(hintsFromLog(["Brannoch hits Wolf"])).toEqual({});
+  });
+  it("gives each kind of spell its own look", () => {
+    expect(fxForSpell("Fireball")).toBe("fire");
+    expect(fxForSpell("Lightning Bolt")).toBe("lightning");
+    expect(fxForSpell("Ray of Frost")).toBe("frost");
+    expect(fxForSpell("Guiding Bolt")).toBe("radiant");
+    expect(fxForSpell("Stinking Cloud")).toBe("poison");
+    expect(fxForSpell("Magic Missile")).toBe("magic");
+  });
+  it("uses the spell and critical hint on a hit", () => {
+    const before = enc("ACTIVE", [c("a", { active: true }), c("w", { kind: "monster", look: { k: "monster", type: "beast" } })]);
+    const after = enc("ACTIVE", [c("a", { active: true }), c("w", { kind: "monster", hp: 10, look: { k: "monster", type: "beast" } })]);
+    const e = diffEncounter(before, after, { spell: "Fireball", critical: true });
+    expect(e[0]).toMatchObject({ kind: "hit", fx: "fire", spell: "Fireball", crit: true, big: true });
+  });
+  it("shows a new condition", () => {
+    const before = enc("ACTIVE", [c("a"), c("w", { kind: "monster", look: { k: "monster", type: "beast" } })]);
+    const after = enc("ACTIVE", [c("a"), c("w", { kind: "monster", conditions: [{ condition: "stunned" }], look: { k: "monster", type: "beast" } })]);
+    expect(diffEncounter(before, after)[0]).toMatchObject({ kind: "condition", condition: "stunned", target: { name: "w" } });
+  });
+});
+

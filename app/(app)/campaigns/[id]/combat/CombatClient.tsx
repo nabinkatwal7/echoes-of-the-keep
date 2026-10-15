@@ -14,7 +14,7 @@ import {
   removeCombatant, removeConditionFrom, setEnvironment, signalReady, standFromProne, startEncounter, takeAction, toggleMount, undoLast, takeReaction,
   starve, suffocate, legendaryAction, rechargeAbility, setWalls, setFog, addManualCombatant,
 } from "@/lib/combat/actions";
-import { diffEncounter, type CutsceneEvent } from "@/lib/combat/cutscene";
+import { diffEncounter, hintsFromLog, type CutsceneEvent } from "@/lib/combat/cutscene";
 import type { CombatantView, EncounterView } from "@/lib/combat/view";
 import type { Spellbook } from "@/lib/combat/spellList";
 import { autoStep } from "@/lib/combat/autoActions";
@@ -86,11 +86,15 @@ export function CombatClient({ campaignId, isDm, encounters, view, log, creature
       /* storage unavailable: leave them on */
     }
   }, []);
+  const lastLogId = useRef(Math.max(0, ...log.map((l) => l.id)));
   useEffect(() => {
-    const events = cutscenes ? diffEncounter(prevView.current, view) : [];
+    // the log lines written since the last snapshot tell us which spell was cast and whether it was a critical hit
+    const fresh = log.filter((l) => l.id > lastLogId.current).map((l) => l.text);
+    lastLogId.current = Math.max(lastLogId.current, ...log.map((l) => l.id));
+    const events = cutscenes && prevView.current !== view ? diffEncounter(prevView.current, view, hintsFromLog(fresh)) : [];
     prevView.current = view;
     if (events.length) setQueue((q) => [...q, ...events.map((e) => ({ id: nextId.current++, e }))].slice(-6));
-  }, [view, cutscenes]);
+  }, [view, log, cutscenes]);
   const toggleCutscenes = () => {
     const next = !cutscenes;
     setCutscenes(next);
